@@ -73,7 +73,6 @@ function WeeklyChartPage() {
       } catch { /* ignore */ }
     }
   }, [originalRequestedDate, date]);
-  const cfg = chartsConfig[chartId];
   const entries = data.entriesByDate[date];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
