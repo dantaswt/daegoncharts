@@ -40,7 +40,7 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
     <section>
       <h2 className="section-title">{displayChartName} <span className="text-sm text-muted-foreground font-normal">({entries.length})</span></h2>
       <div className="bg-[var(--muted)] rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="table-responsive">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="text-left text-xs uppercase text-muted-foreground border-b border-[var(--border)]">
@@ -111,7 +111,7 @@ function ArtistPage() {
   const otherCharts = Object.keys(artist.chartsByKind).filter(c => !order.includes(c) && c !== "Top 50 Artists" && c !== "Artists");
 
   return (
-    <div className="max-w-4xl mx-auto pb-16">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
       <Link to="/artists" className="text-sm text-muted-foreground hover:text-[var(--accent)] mb-4 inline-block">
         <i className="fas fa-arrow-left" /> All artists
       </Link>

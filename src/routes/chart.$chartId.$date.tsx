@@ -48,8 +48,8 @@ function WeeklyChartPage() {
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
-    <div className="grid gap-6 md:grid-cols-[280px_1fr]">
-      <aside className="md:sticky md:top-24 md:self-start">
+    <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
+      <aside className="lg:sticky lg:top-24 lg:self-start">
         <ChartTypeNav activeId={chartId} date={date} />
       </aside>
       <main>

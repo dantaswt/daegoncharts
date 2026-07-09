@@ -84,7 +84,7 @@ function TopChartsSection({ charts }: { charts: any }) {
   return (
     <section className="mb-14">
       <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">Top Charts</h2>
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {labels.map(l => (
           <button
             key={l.key}
@@ -290,7 +290,7 @@ function LandingPage() {
   const { charts, chartBeat, numberOnes, artistList } = Route.useLoaderData();
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
       {/* Hero Title */}
       <div className="text-center py-10 md:py-16">
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black gold tracking-tight">daegon charts</h1>

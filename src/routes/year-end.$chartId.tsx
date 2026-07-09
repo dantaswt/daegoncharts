@@ -22,7 +22,7 @@ function YearEndChartPage() {
   const cfg = chartsConfig[chartId];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
       <Link to="/year-end" className="text-sm text-muted-foreground hover:text-[var(--accent)]"><i className="fas fa-arrow-left" /> Year-End</Link>
       <h1 className="text-3xl md:text-4xl font-extrabold gold my-4"><i className={`fas ${cfg.icon} mr-2`} />{cfg.title}</h1>
       <div className="flex flex-wrap gap-2 mb-6">

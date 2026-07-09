@@ -48,7 +48,7 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
   const dateLabel = formatDate(currentDate);
 
   return (
-    <div className="flex items-center justify-center gap-2 md:gap-3 mb-4">
+    <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4">
       {prev ? (
         <Link to="/chart/$chartId/$date" params={{ chartId, date: prev }} className="btn-gold">
           <i className="fas fa-chevron-left" /> Prev
