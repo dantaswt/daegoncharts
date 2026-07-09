@@ -29,6 +29,5 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: .
-          prod: true
-          confirm: true
+          vercel-args: '--prod'
           github-comment: false
