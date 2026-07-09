@@ -1,0 +1,164 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { getAllArtistStats } from "@/lib/charts.functions";
+import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
+import { slugifyArtist } from "@/lib/charts-config";
+import React from "react";
+
+export const Route = createFileRoute("/artist/$slug")({
+  loader: async ({ params }) => {
+    const all = await getAllArtistStats();
+    const match = Object.values(all).find((a) => slugifyArtist(a.name) === params.slug);
+    
+    let profile = null;
+    if (match) {
+      profile = await getSpotifyArtistProfile({ data: { artistName: match.name } });
+    }
+    
+    return { artist: match ?? null, slug: params.slug, profile };
+  },
+  head: ({ loaderData }) => {
+    const name = loaderData?.artist?.name ?? "Artist";
+    return {
+      meta: [
+        { title: `${name} — chart history | daegon charts` },
+        { name: "description", content: `Chart history and entries for ${name}.` },
+        { property: "og:title", content: `${name} — daegon charts` },
+      ],
+    };
+  },
+  component: ArtistPage,
+});
+
+function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const displayChartName = chart === "Top 40 Radio" ? "Radio Songs" : chart;
+  const visibleEntries = expanded ? entries : entries.slice(0, 10);
+  
+  if (entries.length === 0) return null;
+
+  return (
+    <section>
+      <h2 className="section-title">{displayChartName} <span className="text-sm text-muted-foreground font-normal">({entries.length})</span></h2>
+      <div className="bg-[var(--muted)] rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr className="text-left text-xs uppercase text-muted-foreground border-b border-[var(--border)]">
+                <th className="p-3">Item</th>
+                <th className="p-3 text-center">Peak</th>
+                <th className="p-3 text-center">Weeks</th>
+                <th className="p-3 text-center">First Entry</th>
+                <th className="p-3 text-center">Peak Date</th>
+                {!["Top 40 Radio", "Top Streaming Albums"].includes(chart) && <th className="p-3 text-right">Units</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {visibleEntries.map((e, i: number) => (
+                <tr key={i} className="border-t border-[var(--border)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
+                  <td className="p-3 font-semibold">{e.item}</td>
+                  <td className="p-3 text-center font-bold gold">#{e.peak}</td>
+                  <td className="p-3 text-center">{e.weeks}</td>
+                  <td className="p-3 text-center text-muted-foreground text-xs">{e.firstEntry ?? "—"}</td>
+                  <td className="p-3 text-center text-muted-foreground text-xs">{e.peakDate ?? "—"}</td>
+                  {!["Top 40 Radio", "Top Streaming Albums"].includes(chart) && (
+                    <td className="p-3 text-right text-muted-foreground text-xs">{e.totalUnits ?? e.unitsSold ?? "—"}</td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {entries.length > 10 && (
+          <div className="p-3 text-center border-t border-[var(--border)]">
+            <button
+              onClick={() => setExpanded((value) => !value)}
+              className="text-[var(--accent)] hover:underline text-sm font-semibold cursor-pointer"
+            >
+              {expanded ? "Show less" : "Show more"}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ArtistPage() {
+  const { artist, profile } = Route.useLoaderData();
+  
+  if (!artist) {
+    return (
+      <div className="text-center py-16">
+        <h2 className="text-2xl font-bold gold">Artist not found</h2>
+        <Link to="/artists" className="btn-gold mt-4 inline-flex">Browse all artists</Link>
+      </div>
+    );
+  }
+
+  const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
+
+  const order = [
+    "Hot 100 Songs",
+    "Digital Songs Sales",
+    "Streaming Songs",
+    "Top 40 Radio",
+    "Top 100 Albums",
+    "Top Album Sales",
+    "Top Streaming Albums"
+  ];
+
+  const chartsToRender = order.filter(c => artist.chartsByKind[c] && artist.chartsByKind[c].length > 0);
+  const otherCharts = Object.keys(artist.chartsByKind).filter(c => !order.includes(c) && c !== "Top 50 Artists" && c !== "Artists");
+
+  return (
+    <div className="max-w-4xl mx-auto pb-16">
+      <Link to="/artists" className="text-sm text-muted-foreground hover:text-[var(--accent)] mb-4 inline-block">
+        <i className="fas fa-arrow-left" /> All artists
+      </Link>
+      
+      <div className="mt-2 mb-10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 bg-[var(--card)] p-6 rounded-xl border border-[var(--border)] shadow-md">
+        {profile?.imageUrl ? (
+          <img src={profile.imageUrl} alt={artist.name} className="w-32 h-32 md:w-48 md:h-48 rounded-full object-cover shadow-xl border-4 border-[var(--border)] shrink-0" />
+        ) : (
+          <div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-[var(--muted)] flex items-center justify-center text-4xl text-gray-500 border-4 border-[var(--border)] shrink-0">
+            <i className="fas fa-user" />
+          </div>
+        )}
+        
+        <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-[192px]">
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-3">{artist.name}</h1>
+          
+          {profile && (
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground mb-6">
+               {profile.followers > 0 && <span className="bg-[var(--muted)] px-3 py-1.5 rounded-full border border-[var(--border)]"><i className="fas fa-users mr-2 text-gray-400"></i> {profile.followers.toLocaleString()} Followers</span>}
+               {profile.genres.length > 0 && <span className="bg-[var(--muted)] px-3 py-1.5 rounded-full border border-[var(--border)] capitalize"><i className="fas fa-music mr-2 text-gray-400"></i> {profile.genres.slice(0,3).join(", ")}</span>}
+            </div>
+          )}
+
+          {top50 && (
+            <div className="inline-flex flex-wrap justify-center md:justify-start gap-6 bg-[var(--muted)] p-4 rounded-xl border border-[var(--border)]">
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Top 50 Artists Peak</div>
+                <div className="text-2xl font-black gold">#{top50.peak}</div>
+              </div>
+              <div className="w-px bg-[var(--border)]"></div>
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Weeks on Chart</div>
+                <div className="text-2xl font-black">{top50.weeks}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-10">
+        {chartsToRender.map(c => (
+          <ChartSection key={c} chart={c} entries={artist.chartsByKind[c]} />
+        ))}
+        {otherCharts.map(c => (
+          <ChartSection key={c} chart={c} entries={artist.chartsByKind[c]} />
+        ))}
+      </div>
+    </div>
+  );
+}
