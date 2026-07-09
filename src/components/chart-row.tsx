@@ -93,7 +93,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   }, [chartDates, chartEntriesByDate, chartId, entry.artist, entry.name, isGoat]);
 
   return (
-    <div id={`entry-${entry.position}`} className={`chart-card flex items-start gap-4 ${entry.position === 1 ? "rank-1" : ""}`}>
+    <div id={`entry-${entry.position}`} className={`chart-card flex items-center gap-4 ${entry.position === 1 ? "rank-1" : ""}`}>
       <div className="flex items-start gap-3 md:gap-4 w-auto">
         <div className="rank-num flex items-center justify-center gap-2">
           <div className="text-3xl font-black">{entry.position}</div>

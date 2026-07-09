@@ -50,16 +50,19 @@ function ArtistThumbnail({ name }: { name: string }) {
 function AllArtistsPage() {
   const { list } = Route.useLoaderData();
   const [search, setSearch] = useState("");
-  const [selectedLetter, setSelectedLetter] = useState("All");
-
   const letters = useMemo(() => {
     return Array.from(new Set(list.map((a) => a.name[0].toUpperCase()))).sort();
   }, [list]);
+  const [selectedLetter, setSelectedLetter] = useState<string>(() => letters[0] ?? "");
+
+  React.useEffect(() => {
+    if (!selectedLetter && letters.length) setSelectedLetter(letters[0]);
+  }, [letters]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return list.filter((a) => {
-      const matchesLetter = selectedLetter === "All" || a.name[0].toUpperCase() === selectedLetter;
+      const matchesLetter = !selectedLetter || a.name[0].toUpperCase() === selectedLetter;
       const matchesSearch = !query || a.name.toLowerCase().includes(query);
       return matchesLetter && matchesSearch;
     });
@@ -80,13 +83,6 @@ function AllArtistsPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedLetter("All")}
-            className={`btn-nav ${selectedLetter === "All" ? "active" : ""}`}
-          >
-            All
-          </button>
           {letters.map((letter) => (
             <button
               key={letter}

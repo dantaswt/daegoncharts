@@ -8,8 +8,25 @@ export const Route = createFileRoute("/chart/$chartId/$date")({
   loader: async ({ params }) => {
     if (!weeklyChartIds.includes(params.chartId)) throw notFound();
     const data = await getWeeklyChart({ data: { chartId: params.chartId } });
-    if (!data.entriesByDate[params.date]) throw notFound();
-    return { data, date: params.date, chartId: params.chartId };
+    // normalize incoming date to the Saturday of that week (charts publish on Saturdays)
+    function toSaturdayIso(dStr: string) {
+      try {
+        const d = new Date(dStr + "T00:00:00");
+        const diff = 6 - d.getDay();
+        const sat = new Date(d);
+        sat.setDate(d.getDate() + diff);
+        return sat.toISOString().slice(0, 10);
+      } catch { return dStr; }
+    }
+    const normalized = toSaturdayIso(params.date);
+    if (data.entriesByDate[params.date]) {
+      return { data, date: params.date, chartId: params.chartId };
+    }
+    if (data.entriesByDate[normalized]) {
+      // return normalized date so the page can render correct data; component may replace URL
+      return { data, date: normalized, chartId: params.chartId, originalRequestedDate: params.date };
+    }
+    throw notFound();
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Chart not found | daegon charts" }] };
@@ -42,7 +59,20 @@ export const Route = createFileRoute("/chart/$chartId/$date")({
 });
 
 function WeeklyChartPage() {
-  const { data, date, chartId } = Route.useLoaderData();
+  const loader = Route.useLoaderData() as any;
+  const { data, date, chartId, originalRequestedDate } = loader;
+  const cfg = chartsConfig[chartId];
+  // if loader normalized the date, replace the URL so it always shows the Saturday
+  React.useEffect(() => {
+    if (originalRequestedDate && originalRequestedDate !== date) {
+      // client-side replace
+      try {
+        const nav = (window as any).history;
+        const newPath = window.location.pathname.replace(originalRequestedDate, date);
+        nav.replaceState(nav.state, nav.title, newPath + window.location.search);
+      } catch { /* ignore */ }
+    }
+  }, [originalRequestedDate, date]);
   const cfg = chartsConfig[chartId];
   const entries = data.entriesByDate[date];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });

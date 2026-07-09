@@ -67,16 +67,35 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
           <PopoverContent align="center">
             <Calendar
               mode="single"
-              selected={new Date(currentDate + "T00:00:00")}
+              selected={(() => {
+                try {
+                  // normalize currentDate -> saturday of that week
+                  const d = new Date(currentDate + "T00:00:00");
+                  const diff = 6 - d.getDay();
+                  const sat = new Date(d);
+                  sat.setDate(d.getDate() + diff);
+                  return sat;
+                } catch { return new Date(currentDate + "T00:00:00"); }
+              })()}
               onSelect={(d: any) => {
                 if (!d) return;
-                const iso = d.toISOString().slice(0, 10);
+                const date = new Date(d);
+                // compute upcoming Saturday for selected day
+                const diff = 6 - date.getDay();
+                const sat = new Date(date);
+                sat.setDate(date.getDate() + diff);
+                const iso = sat.toISOString().slice(0, 10);
                 if (datesSet.has(iso)) {
                   navigate({ to: "/chart/$chartId/$date", params: { chartId, date: iso } });
                 }
               }}
               disabled={(day: Date) => {
-                const iso = day.toISOString().slice(0, 10);
+                // a day is enabled if its corresponding Saturday exists in the chart dates
+                const date = new Date(day);
+                const diff = 6 - date.getDay();
+                const sat = new Date(date);
+                sat.setDate(date.getDate() + diff);
+                const iso = sat.toISOString().slice(0, 10);
                 return !datesSet.has(iso);
               }}
             />
