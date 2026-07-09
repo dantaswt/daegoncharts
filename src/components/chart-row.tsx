@@ -111,7 +111,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           params={{ slug }}
           className="text-xs md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block truncate"
         >
-          {kind === "artist" ? entry.name : entry.artist}
+          {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
         {kind === "song" && chartId !== "songs" && entry.album && (
           <div className="text-[11px] text-gray-500 truncate">{entry.album}</div>

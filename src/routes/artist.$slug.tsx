@@ -116,35 +116,35 @@ function ArtistPage() {
         <i className="fas fa-arrow-left" /> All artists
       </Link>
       
-      <div className="mt-2 mb-10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 bg-[var(--card)] p-6 rounded-xl border border-[var(--border)] shadow-md">
+      <div className="mt-2 mb-10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 bg-[var(--card)] p-4 md:p-6 rounded-xl border border-[var(--border)] shadow-md">
         {profile?.imageUrl ? (
-          <img src={profile.imageUrl} alt={artist.name} className="w-32 h-32 md:w-48 md:h-48 rounded-full object-cover shadow-xl border-4 border-[var(--border)] shrink-0" />
+          <img src={profile.imageUrl} alt={artist.name} className="w-20 h-20 sm:w-28 sm:h-28 md:w-48 md:h-48 rounded-full object-cover shadow-xl border-4 border-[var(--border)] shrink-0" />
         ) : (
-          <div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-[var(--muted)] flex items-center justify-center text-4xl text-gray-500 border-4 border-[var(--border)] shrink-0">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-48 md:h-48 rounded-full bg-[var(--muted)] flex items-center justify-center text-2xl sm:text-3xl md:text-4xl text-gray-500 border-4 border-[var(--border)] shrink-0">
             <i className="fas fa-user" />
           </div>
         )}
-        
-        <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-[192px]">
-          <h1 className="text-3xl md:text-5xl font-extrabold mb-3">{artist.name}</h1>
-          
+
+        <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-0">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-2">{artist.name}</h1>
+
           {profile && (
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground mb-6">
-               {profile.followers > 0 && <span className="bg-[var(--muted)] px-3 py-1.5 rounded-full border border-[var(--border)]"><i className="fas fa-users mr-2 text-gray-400"></i> {profile.followers.toLocaleString()} Followers</span>}
-               {profile.genres.length > 0 && <span className="bg-[var(--muted)] px-3 py-1.5 rounded-full border border-[var(--border)] capitalize"><i className="fas fa-music mr-2 text-gray-400"></i> {profile.genres.slice(0,3).join(", ")}</span>}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground mb-4">
+               {profile.followers > 0 && <span className="bg-[var(--muted)] px-2 py-1 rounded-full border border-[var(--border)]"><i className="fas fa-users mr-2 text-gray-400"></i> {profile.followers.toLocaleString()} Followers</span>}
+               {profile.genres.length > 0 && <span className="bg-[var(--muted)] px-2 py-1 rounded-full border border-[var(--border)] capitalize"><i className="fas fa-music mr-2 text-gray-400"></i> {profile.genres.slice(0,3).join(", ")}</span>}
             </div>
           )}
 
           {top50 && (
-            <div className="inline-flex flex-wrap justify-center md:justify-start gap-6 bg-[var(--muted)] p-4 rounded-xl border border-[var(--border)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 inline-flex flex-wrap justify-center md:justify-start gap-3 bg-[var(--muted)] p-3 sm:p-4 rounded-xl border border-[var(--border)]">
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Top 50 Artists Peak</div>
-                <div className="text-2xl font-black gold">#{top50.peak}</div>
+                <div className="text-xl sm:text-2xl font-black gold">#{top50.peak}</div>
               </div>
-              <div className="w-px bg-[var(--border)]"></div>
+              <div className="w-px bg-[var(--border)] hidden sm:block"></div>
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Weeks on Chart</div>
-                <div className="text-2xl font-black">{top50.weeks}</div>
+                <div className="text-xl sm:text-2xl font-black">{top50.weeks}</div>
               </div>
             </div>
           )}
