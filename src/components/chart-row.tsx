@@ -93,8 +93,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   }, [chartDates, chartEntriesByDate, chartId, entry.artist, entry.name, isGoat]);
 
   return (
-    <div id={`entry-${entry.position}`} className={`chart-card flex flex-col md:flex-row items-start md:items-center gap-4 ${entry.position === 1 ? "rank-1" : ""}`}>
-      <div className="flex items-start md:items-center gap-3 md:gap-4 w-full md:w-auto">
+    <div id={`entry-${entry.position}`} className={`chart-card flex items-start gap-4 ${entry.position === 1 ? "rank-1" : ""}`}>
+      <div className="flex items-start gap-3 md:gap-4 w-auto">
         <div className="rank-num flex items-center justify-center gap-2">
           <div className="text-3xl font-black">{entry.position}</div>
           {showDiff && <DiffIndicator diff={entry.diff} />}
@@ -127,7 +127,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+      <div className="flex flex-col items-end gap-2 w-auto flex-shrink-0">
         <div className="flex items-center gap-2">
           {metric && (
             <div className="text-right text-2xl font-bold text-foreground tracking-tight">{metric}</div>

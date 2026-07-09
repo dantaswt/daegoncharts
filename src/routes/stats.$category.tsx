@@ -1,5 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getStats } from "@/lib/charts.functions";
+import { getSpotifyImage } from "@/lib/spotify.functions";
+import React, { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/stats/$category")({
   loader: async ({ params }) => {
@@ -19,10 +21,38 @@ export const Route = createFileRoute("/stats/$category")({
   component: StatsCategoryPage,
 });
 
+function StatsItemImage({ query }: { query: string }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getSpotifyImage({ data: { query, type: "artist" } }).then((url) => {
+      if (active && url) setImageUrl(url);
+    });
+    return () => {
+      active = false;
+    };
+  }, [query]);
+
+  return (
+    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center text-xl text-gray-500">
+      {imageUrl ? <img src={imageUrl} alt={query} className="w-full h-full object-cover" /> : <i className="fas fa-chart-bar" />}
+    </div>
+  );
+}
+
+function parseStatsItem(item: string) {
+  const parts = item.split(/\s*\/\s*/);
+  if (parts.length > 1) {
+    return { title: parts[0].trim(), subtext: parts.slice(1).join(" / ").trim() };
+  }
+  return { title: item.trim(), subtext: undefined };
+}
+
 function StatsCategoryPage() {
   const { items, category, categories } = Route.useLoaderData();
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-16">
       <Link to="/stats" className="text-sm text-muted-foreground hover:text-[var(--accent)]"><i className="fas fa-arrow-left" /> Stats</Link>
       <h1 className="section-title mt-4">{category}</h1>
       <div className="flex flex-wrap gap-2 mb-6">
@@ -30,25 +60,20 @@ function StatsCategoryPage() {
           <Link key={c} to="/stats/$category" params={{ category: encodeURIComponent(c) }} className={`btn-nav ${c === category ? "active" : ""}`}>{c}</Link>
         ))}
       </div>
-      <div className="bg-[var(--muted)] rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase text-muted-foreground">
-              <th className="p-3 w-16">Rank</th>
-              <th className="p-3">Item</th>
-              <th className="p-3 text-right">Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it: { rank: number; item: string; number: string }, i: number) => (
-              <tr key={i} className="border-t border-[var(--border)]">
-                <td className="p-3 font-bold gold">#{it.rank}</td>
-                <td className="p-3">{it.item}</td>
-                <td className="p-3 text-right font-mono text-[var(--run-up)]">{it.number}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-3">
+        {items.map((it: { rank: number; item: string; number: string }, i: number) => {
+          const parsed = parseStatsItem(it.item);
+          return (
+            <div key={i} className="bg-[var(--muted)] rounded-3xl border border-[var(--border)] p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <StatsItemImage query={parsed.subtext ?? parsed.title} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold truncate">{parsed.title}</div>
+                {parsed.subtext && <div className="text-xs text-muted-foreground mt-1">{parsed.subtext}</div>}
+              </div>
+              <div className="text-right text-lg font-bold gold min-w-[5rem]">{it.number}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
