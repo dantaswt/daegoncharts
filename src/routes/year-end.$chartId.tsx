@@ -1,7 +1,8 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { getYearEndChart } from "@/lib/charts.functions";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { getYearEndChart, type ChartEntry } from "@/lib/charts.functions";
 import { chartsConfig, yearEndChartIds } from "@/lib/charts-config";
 import { ChartRow } from "@/components/chart-row";
+import { useState } from "react";
 
 export const Route = createFileRoute("/year-end/$chartId")({
   loader: async ({ params }) => {
@@ -20,30 +21,36 @@ export const Route = createFileRoute("/year-end/$chartId")({
 function YearEndChartPage() {
   const { data, chartId } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
+  const [selectedYear, setSelectedYear] = useState<string>(data.years[0] || "");
 
-  const navigate = useNavigate();
+  const entries = selectedYear ? data.entriesByYear[selectedYear] : [];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6">
       <Link to="/year-end" className="text-sm text-muted-foreground hover:text-[var(--accent)]"><i className="fas fa-arrow-left" /> Year-End</Link>
-      <h1 className="text-3xl md:text-4xl font-extrabold gold my-4"><i className={`fas ${cfg.icon} mr-2`} />{cfg.title}</h1>
-      <div className="mb-6">
-        <select
-          defaultValue=""
-          onChange={(e) => {
-            if (e.target.value) {
-              navigate({ to: "/year-end/$chartId/$year", params: { chartId, year: e.target.value } });
-            }
-          }}
-          className="bg-[var(--muted)] border border-[var(--border)] text-sm font-bold text-foreground px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-        >
-          <option value="" disabled>Select a year</option>
-          {data.years.map((y: string) => (
-            <option key={y} value={y}>{y}</option>
+      <h1 className="text-3xl md:text-4xl font-extrabold gold my-4"><i className={`fas ${cfg.icon} mr-2`} />{cfg.title} {selectedYear && `— ${selectedYear}`}</h1>
+      
+      {data.years.length > 0 && (
+        <div className="mb-6">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="bg-[var(--muted)] border border-[var(--border)] text-sm font-bold text-foreground px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+          >
+            {data.years.map((y: string) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {selectedYear && entries && (
+        <div className="space-y-2 md:space-y-3">
+          {entries.map((e: ChartEntry) => (
+            <ChartRow key={`${e.position}-${e.name}`} entry={e} kind={cfg.kind} chartId={chartId} showDiff={false} />
           ))}
-        </select>
-      </div>
-      <p className="text-sm text-muted-foreground">Select a year to view only that year&apos;s chart entries.</p>
+        </div>
+      )}
     </div>
   );
 }

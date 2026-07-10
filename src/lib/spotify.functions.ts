@@ -181,27 +181,43 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
     const token = await getAccessToken();
     if (!token) return null;
 
-    const url = new URL("https://api.spotify.com/v1/search");
-    url.searchParams.set("q", normalizeSpotifyQuery(artistName));
-    url.searchParams.set("type", "artist");
-    url.searchParams.set("limit", "1");
+    let artist: any = null;
 
-    try {
-      const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    if (/^ja[oã]$/i.test(artistName.trim())) {
+      // Hardcoded Spotify ID for Jão
+      try {
+        const response = await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          artist = await response.json();
+        }
+      } catch (e) {}
+    } else {
+      const url = new URL("https://api.spotify.com/v1/search");
+      url.searchParams.set("q", normalizeSpotifyQuery(artistName));
+      url.searchParams.set("type", "artist");
+      url.searchParams.set("limit", "1");
 
-      if (!response.ok) return null;
+      try {
+        const response = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      const resData = await response.json();
-      const artist = resData.artists?.items?.[0];
-      if (!artist) return null;
+        if (response.ok) {
+          const resData = await response.json();
+          artist = resData.artists?.items?.[0];
+        }
+      } catch (e) {}
+    }
 
-      const profile = {
-        imageUrl: artist.images?.[0]?.url || null,
-        followers: artist.followers?.total || 0,
-        genres: artist.genres || [],
-      };
+    if (!artist) return null;
+
+    const profile = {
+      imageUrl: artist.images?.[0]?.url || null,
+      followers: artist.followers?.total || 0,
+      genres: artist.genres || [],
+    };
 
       profileCache.set(artistName, profile);
       return profile;

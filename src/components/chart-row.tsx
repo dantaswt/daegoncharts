@@ -75,7 +75,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
-    if (entry.lastWeek) items.push({ label: "LW", value: entry.lastWeek });
     if (kind === "song" && entry.points) items.push({ label: "Points", value: entry.points });
     if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: entry.units });
     if (!isGoat && entry.sales) items.push({ label: "Sales", value: entry.sales });
@@ -167,6 +166,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           <div className="text-[11px] text-gray-500 whitespace-normal break-words">{entry.album}</div>
         )}
         <div className="mt-2 text-[11px] text-muted-foreground space-y-1">
+          {entry.lastWeek !== undefined && entry.lastWeek !== "" && <div>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></div>}
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
           {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}
           {(entry.weeksAt1 ?? 0) > 0 && (
