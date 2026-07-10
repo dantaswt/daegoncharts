@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ChartEntry } from "@/lib/charts.functions";
-import { slugifyArtist } from "@/lib/charts-config";
+import { slugifyArtist, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
@@ -71,17 +71,46 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
-    if (kind === "song" && entry.points) items.push({ label: "Points", value: entry.points });
-    if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: entry.units });
-    if (!isGoat && entry.sales) items.push({ label: "Sales", value: entry.sales });
-    if (!isGoat && entry.streams) items.push({ label: "Streaming", value: entry.streams });
-    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: entry.airplay });
-    if (entry.totalUnits) items.push({ label: "Total Units", value: entry.totalUnits });
+    const fmt = (v: string | number | undefined) => v ? Number(v).toLocaleString("en-US") : undefined;
+    if (kind === "song" && entry.points) items.push({ label: "Points", value: fmt(entry.points) });
+    if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: fmt(entry.units) });
+    if (!isGoat && entry.sales) items.push({ label: "Sales", value: fmt(entry.sales) });
+    if (!isGoat && entry.streams) items.push({ label: "Streaming", value: fmt(entry.streams) });
+    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: fmt(entry.airplay) });
+    if (entry.totalUnits) items.push({ label: "Total Units", value: fmt(entry.totalUnits) });
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
   }, [chartId, entry.airplay, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, isGoat, kind]);
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
+
+  const handleCopy = () => {
+    const cfg = chartId ? chartsConfig[chartId] : undefined;
+    const chartTitle = cfg ? cfg.title : "Chart";
+    const metricStr = metric ? Number(metric).toLocaleString("en-US") : "";
+    const totalLabel = kind === "song" ? "total points" : "total units";
+    const totalStr = entry.totalUnits ? `(${Number(entry.totalUnits).toLocaleString("en-US")} ${totalLabel})` : "";
+    const peakStr = (entry.weeksAt1 ?? 0) > 0 ? `*peak: #${entry.peak} for ${entry.weeksAt1} weeks*` : `*peak: #${entry.peak}*`;
+    
+    let chartDateStr = "";
+    if (date) {
+      const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      chartDateStr = `\n\nChart dated ${formattedDate}.`;
+    }
+
+    const parts = [
+      `Daegon's ${chartTitle}:`,
+      `#${entry.position}(${entry.diff})`,
+      `${entry.name},`,
+      entry.artist,
+      metricStr,
+      totalStr,
+      `[${entry.weeks} weeks].`,
+      peakStr
+    ].filter(Boolean).join(" ");
+
+    navigator.clipboard.writeText(`${parts}${chartDateStr}`);
+  };
 
   const runEntries = useMemo(() => {
     if (!chartDates || !chartEntriesByDate || !chartId || isGoat) return [];
@@ -138,8 +167,16 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       <div className="flex flex-col items-end gap-2 w-auto flex-shrink-0">
         <div className="flex items-center gap-2">
           {metric && (
-            <div className="text-right text-2xl font-bold text-foreground tracking-tight">{metric}</div>
+            <div className="text-right text-2xl font-bold text-foreground tracking-tight">{Number(metric).toLocaleString("en-US")}</div>
           )}
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200"
+            aria-label="Copy info"
+          >
+            <i className="fas fa-copy" />
+          </button>
           <button
             type="button"
             onClick={() => setShowDetails((value) => !value)}

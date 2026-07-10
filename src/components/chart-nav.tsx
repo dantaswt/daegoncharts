@@ -1,8 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import React from "react";
 import { chartsConfig, weeklyChartIds } from "@/lib/charts-config";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 
 export function ChartTypeNav({ activeId, date }: { activeId: string; date?: string }) {
   return (
@@ -57,53 +55,23 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
         <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
       )}
       <div className="text-center">
-        <div className="text-xs text-muted-foreground">Chart week</div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="flex items-center gap-2 font-bold text-sm md:text-base bg-transparent border-b border-gray-300 dark:border-gray-700 px-3 py-1 rounded-md cursor-pointer">
-              <i className="fas fa-calendar" /> {dateLabel}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="center">
-            <Calendar
-              mode="single"
-              defaultMonth={(() => {
-                try { return new Date(currentDate + "T00:00:00"); } catch { return new Date(); }
-              })()}
-              selected={(() => {
-                try {
-                  // normalize currentDate -> saturday of that week
-                  const d = new Date(currentDate + "T00:00:00");
-                  const diff = 6 - d.getDay();
-                  const sat = new Date(d);
-                  sat.setDate(d.getDate() + diff);
-                  return sat;
-                } catch { return new Date(currentDate + "T00:00:00"); }
-              })()}
-              onSelect={(d: any) => {
-                if (!d) return;
-                const date = new Date(d);
-                // compute upcoming Saturday for selected day
-                const diff = 6 - date.getDay();
-                const sat = new Date(date);
-                sat.setDate(date.getDate() + diff);
-                const iso = sat.toISOString().slice(0, 10);
-                if (datesSet.has(iso)) {
-                  navigate({ to: "/chart/$chartId/$date", params: { chartId, date: iso } });
-                }
-              }}
-              disabled={(day: Date) => {
-                // a day is enabled if its corresponding Saturday exists in the chart dates
-                const date = new Date(day);
-                const diff = 6 - date.getDay();
-                const sat = new Date(date);
-                sat.setDate(date.getDate() + diff);
-                const iso = sat.toISOString().slice(0, 10);
-                return !datesSet.has(iso);
-              }}
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="text-xs text-muted-foreground mb-1">Chart week</div>
+        <select
+          value={currentDate}
+          onChange={(e) => {
+            const iso = e.target.value;
+            if (datesSet.has(iso)) {
+              navigate({ to: "/chart/$chartId/$date", params: { chartId, date: iso } });
+            }
+          }}
+          className="bg-[var(--muted)] border border-[var(--border)] text-sm font-bold text-foreground px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+        >
+          {dates.map((d) => (
+            <option key={d} value={d}>
+              {formatDate(d)}
+            </option>
+          ))}
+        </select>
       </div>
       {next ? (
         <Link to="/chart/$chartId/$date" params={{ chartId, date: next }} className="btn-gold">
