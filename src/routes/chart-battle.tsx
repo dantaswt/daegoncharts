@@ -215,7 +215,7 @@ function ChartBattlePage() {
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-[var(--border)] shadow-xl mb-4">
                   <ArtistAvatar name={artist1!} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center">{artist1}</h2>
+                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-black">{artist1}</h2>
                 <div className="text-6xl font-black gold my-4">{p1}</div>
               </div>
 
@@ -247,7 +247,7 @@ function ChartBattlePage() {
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-[var(--border)] shadow-xl mb-4">
                   <ArtistAvatar name={artist2!} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center">{artist2}</h2>
+                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-black">{artist2}</h2>
                 <div className="text-6xl font-black gold my-4">{p2}</div>
               </div>
             </div>
