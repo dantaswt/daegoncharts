@@ -213,21 +213,21 @@ function ChartBeatSection({ chartBeat }: { chartBeat: any }) {
   return (
     <section className="mb-14">
       <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">Chart Beat</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-4">
         {blogs.map((b, i) => {
           const latest = b.posts[0];
           if (!latest) return null;
           return (
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={b.key}>
-              <Link to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all block group">
+              <Link to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32">
               {latest.artist && (
-                <div className="h-40 w-full">
-                  <SpotifyImg query={latest.artist} type="artist" />
+                <div className="w-24 sm:w-32 h-full shrink-0">
+                  <SpotifyImg query={latest.artist} type="artist" rounded={false} />
                 </div>
               )}
-              <div className="p-4">
-                <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{b.title}</div>
-                <div className="font-bold text-sm mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{latest.title}</div>
+              <div className="p-4 flex flex-col justify-center flex-1 min-w-0">
+                <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{b.title}</div>
+                <div className="font-bold text-sm sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{latest.title}</div>
                 <div className="text-xs text-muted-foreground">{latest.publicationDate}</div>
               </div>
               </Link>
@@ -366,9 +366,7 @@ function LandingPage() {
           <span className="text-[#3a3a3a]">|</span>
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
           <span className="text-[#3a3a3a]">|</span>
-          <Link to="/goat" className="hover:text-[var(--accent)] transition-colors font-semibold">GOAT</Link>
-          <span className="text-[#3a3a3a]">|</span>
-          <Link to="/year-end" className="hover:text-[var(--accent)] transition-colors font-semibold">Year-End</Link>
+          <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>
         </div>
       </div>
     </div>

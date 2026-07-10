@@ -143,35 +143,35 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       className="chart-card flex flex-col w-full"
     >
       <div className="flex items-center gap-4 w-full">
-        <div className="flex items-center gap-3 md:gap-4 w-auto">
-          <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-10 md:w-16 flex-shrink-0">
-            <div className="text-2xl md:text-3xl font-black">{entry.position}</div>
+        <div className="flex items-center gap-2 md:gap-4 w-auto">
+          <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-8 md:w-16 flex-shrink-0">
+            <div className="text-xl md:text-3xl font-black">{entry.position}</div>
             {showDiff && <DiffIndicator diff={entry.diff} />}
           </div>
-        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
+        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-14 h-14 md:w-24 md:h-24 flex-shrink-0">
           <SpotifyImage entry={entry} kind={kind} />
         </div>
       </div>
 
       <div className="flex-grow min-w-0">
-        <div className="font-bold text-sm md:text-base whitespace-normal break-words">{entry.name}</div>
+        <div className="font-bold text-sm md:text-base truncate md:whitespace-normal md:break-words">{entry.name}</div>
         <Link
           to="/artist/$slug"
           params={{ slug }}
-          className="text-xs md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block whitespace-normal break-words"
+          className="text-xs md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block truncate md:whitespace-normal md:break-words"
         >
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
         {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-          <div className="text-[11px] text-gray-500 whitespace-normal break-words">{entry.album}</div>
+          <div className="text-[11px] text-gray-500 truncate md:whitespace-normal md:break-words">{entry.album}</div>
         )}
-        <div className="mt-2 text-[11px] text-muted-foreground space-y-1">
+        <div className="mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-1">
           {entry.lastWeek !== undefined && entry.lastWeek !== "" && <div>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></div>}
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
           {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}
           {(entry.weeksAt1 ?? 0) > 0 && (
-            <div className="inline-flex items-center rounded-full bg-blue-500/10 px-3 py-1 text-[10px] font-semibold text-blue-500">
-              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Week" : "Weeks"} at 1
+            <div className="inline-flex items-center rounded-full bg-blue-500/10 px-2 md:px-3 py-0.5 md:py-1 text-[9px] md:text-[10px] font-semibold text-blue-500">
+              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
             </div>
           )}
         </div>
@@ -179,7 +179,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
       <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 ml-auto">
         {metric && (
-          <div className="text-right text-xl md:text-2xl font-bold text-foreground tracking-tight">{metric}</div>
+          <div className="text-right text-sm md:text-2xl font-bold text-foreground tracking-tight">{metric}</div>
         )}
         <div className="flex flex-col md:flex-row gap-1 md:gap-2">
           <button

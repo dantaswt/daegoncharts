@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllArtistStats } from "@/lib/charts.functions";
+import { getAllArtistStats, getGoatChart } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import React from "react";
@@ -10,11 +10,17 @@ export const Route = createFileRoute("/artist/$slug")({
     const match = Object.values(all).find((a) => slugifyArtist(a.name) === params.slug);
     
     let profile = null;
+    let goatData = null;
     if (match) {
       profile = await getSpotifyArtistProfile({ data: { artistName: match.name } });
+      const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } });
+      const foundInGoat = goatArtists.entries.find(e => e.name === match.name);
+      if (foundInGoat) {
+        goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
+      }
     }
     
-    return { artist: match ?? null, slug: params.slug, profile };
+    return { artist: match ?? null, slug: params.slug, profile, goatData };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.artist?.name ?? "Artist";
@@ -36,9 +42,25 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
   
   if (entries.length === 0) return null;
 
+  const no1s = entries.filter(e => e.peak === 1).length;
+  const top10s = entries.filter(e => e.peak >= 1 && e.peak <= 10).length;
+
   return (
     <section>
-      <h2 className="section-title">{displayChartName} <span className="text-sm text-muted-foreground font-normal">({entries.length})</span></h2>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-4">
+        <h2 className="section-title mb-0">{displayChartName}</h2>
+        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+          <span className="bg-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded">
+            #1's: <span className="text-white">{no1s}</span>
+          </span>
+          <span className="bg-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded">
+            Top 10: <span className="text-white">{top10s}</span>
+          </span>
+          <span className="bg-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded">
+            Entries: <span className="text-white">{entries.length}</span>
+          </span>
+        </div>
+      </div>
       <div className="bg-[var(--muted)] rounded-lg overflow-hidden">
         <div className="table-responsive">
           <table className="w-full text-sm min-w-[600px]">
@@ -84,7 +106,7 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
 }
 
 function ArtistPage() {
-  const { artist, profile } = Route.useLoaderData();
+  const { artist, profile, goatData } = Route.useLoaderData();
   
   if (!artist) {
     return (
@@ -96,6 +118,7 @@ function ArtistPage() {
   }
 
   const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
+  const totalUnitsAny = artist.chartsByKind["Top 50 Artists"]?.[0]?.totalUnits || artist.chartsByKind["Artists"]?.[0]?.totalUnits;
 
   const order = [
     "Hot 100 Songs",
@@ -125,7 +148,7 @@ function ArtistPage() {
           </div>
         )}
 
-        <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-0">
+        <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-0 w-full">
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-2">{artist.name}</h1>
 
           {profile && (
@@ -135,19 +158,31 @@ function ArtistPage() {
             </div>
           )}
 
-          {top50 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 inline-flex flex-wrap justify-center md:justify-start gap-3 bg-[var(--muted)] p-3 sm:p-4 rounded-xl border border-[var(--border)]">
-              <div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Top 50 Artists Peak</div>
-                <div className="text-xl sm:text-2xl font-black gold">#{top50.peak}</div>
-              </div>
-              <div className="w-px bg-[var(--border)] hidden sm:block"></div>
-              <div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Weeks on Chart</div>
-                <div className="text-xl sm:text-2xl font-black">{top50.weeks}</div>
-              </div>
+          <div className="grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center justify-center md:justify-start gap-3 bg-[var(--muted)] p-3 sm:p-4 rounded-xl border border-[var(--border)] w-full">
+            <div className="text-center sm:text-left">
+              <div className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">GOAT Position</div>
+              <div className="text-lg sm:text-2xl font-black gold">{goatData ? `#${goatData.position}` : "N/A"}</div>
             </div>
-          )}
+            <div className="w-px bg-[var(--border)] hidden sm:block"></div>
+            <div className="text-center sm:text-left">
+              <div className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Total Units</div>
+              <div className="text-lg sm:text-2xl font-black">{goatData?.totalUnits || totalUnitsAny || "—"}</div>
+            </div>
+            <div className="w-px bg-[var(--border)] hidden sm:block"></div>
+            {top50 && (
+              <>
+                <div className="text-center sm:text-left">
+                  <div className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Top 50 Peak</div>
+                  <div className="text-lg sm:text-2xl font-black">#{top50.peak}</div>
+                </div>
+                <div className="w-px bg-[var(--border)] hidden sm:block"></div>
+                <div className="text-center sm:text-left">
+                  <div className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Weeks on Chart</div>
+                  <div className="text-lg sm:text-2xl font-black">{top50.weeks}</div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
