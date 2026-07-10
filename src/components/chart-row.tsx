@@ -71,13 +71,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
-    const fmt = (v: string | number | undefined) => v ? Number(v).toLocaleString("en-US") : undefined;
-    if (kind === "song" && entry.points) items.push({ label: "Points", value: fmt(entry.points) });
-    if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: fmt(entry.units) });
-    if (!isGoat && entry.sales) items.push({ label: "Sales", value: fmt(entry.sales) });
-    if (!isGoat && entry.streams) items.push({ label: "Streaming", value: fmt(entry.streams) });
-    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: fmt(entry.airplay) });
-    if (entry.totalUnits) items.push({ label: "Total Units", value: fmt(entry.totalUnits) });
+    if (kind === "song" && entry.points) items.push({ label: "Points", value: entry.points });
+    if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: entry.units });
+    if (!isGoat && entry.sales) items.push({ label: "Sales", value: entry.sales });
+    if (!isGoat && entry.streams) items.push({ label: "Streaming", value: entry.streams });
+    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: entry.airplay });
+    if (entry.totalUnits) items.push({ label: "Total Units", value: entry.totalUnits });
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
   }, [chartId, entry.airplay, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, isGoat, kind]);
@@ -87,9 +86,11 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   const handleCopy = () => {
     const cfg = chartId ? chartsConfig[chartId] : undefined;
     const chartTitle = cfg ? cfg.title : "Chart";
-    const metricStr = metric ? Number(metric).toLocaleString("en-US") : "";
-    const totalLabel = kind === "song" ? "total points" : "total units";
-    const totalStr = entry.totalUnits ? `(${Number(entry.totalUnits).toLocaleString("en-US")} ${totalLabel})` : "";
+    const isAlbum = kind === "album";
+    
+    const metricStr = isAlbum && metric ? Number(metric).toLocaleString("en-US") : "";
+    const totalStr = isAlbum && entry.totalUnits ? `(${Number(entry.totalUnits).toLocaleString("en-US")} total units)` : "";
+    
     const peakStr = (entry.weeksAt1 ?? 0) > 0 ? `*peak: #${entry.peak} for ${entry.weeksAt1} weeks*` : `*peak: #${entry.peak}*`;
     
     let chartDateStr = "";
@@ -132,11 +133,11 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       className={`chart-card flex items-center gap-4 ${entry.position === 1 ? "rank-1" : ""}`}
     >
       <div className="flex items-start gap-3 md:gap-4 w-auto">
-        <div className="rank-num flex items-center justify-center gap-2">
-          <div className="text-3xl font-black">{entry.position}</div>
+        <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-10 md:w-16 flex-shrink-0">
+          <div className="text-2xl md:text-3xl font-black">{entry.position}</div>
           {showDiff && <DiffIndicator diff={entry.diff} />}
         </div>
-        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-20 h-20 md:w-24 md:h-24">
+        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
           <SpotifyImage entry={entry} kind={kind} />
         </div>
       </div>
@@ -164,15 +165,15 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-2 w-auto flex-shrink-0">
-        <div className="flex items-center gap-2">
-          {metric && (
-            <div className="text-right text-2xl font-bold text-foreground tracking-tight">{Number(metric).toLocaleString("en-US")}</div>
-          )}
+      <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 ml-auto">
+        {metric && (
+          <div className="text-right text-xl md:text-2xl font-bold text-foreground tracking-tight">{metric}</div>
+        )}
+        <div className="flex flex-col md:flex-row gap-1 md:gap-2">
           <button
             type="button"
             onClick={handleCopy}
-            className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200"
+            className="w-7 h-7 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200 flex items-center justify-center"
             aria-label="Copy info"
           >
             <i className="fas fa-copy" />
@@ -180,7 +181,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           <button
             type="button"
             onClick={() => setShowDetails((value) => !value)}
-            className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200"
+            className="w-7 h-7 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200 flex items-center justify-center"
             aria-label="Toggle details"
           >
             {showDetails ? "−" : "+"}
