@@ -23,9 +23,7 @@ import { Route as ChartBeatBlogRouteImport } from './routes/chart-beat.$blog'
 import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
 import { Route as AlbumSlugRouteImport } from './routes/album.$slug'
 import { Route as ChartChartIdIndexRouteImport } from './routes/chart.$chartId.index'
-import { Route as YearEndChartIdYearRouteImport } from './routes/year-end.$chartId.$year'
 import { Route as ChartChartIdDateRouteImport } from './routes/chart.$chartId.$date'
-import { Route as ChartBeatBlogPostIdRouteImport } from './routes/chart-beat.$blog.$postId'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -97,20 +95,10 @@ const ChartChartIdIndexRoute = ChartChartIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ChartChartIdRoute,
 } as any)
-const YearEndChartIdYearRoute = YearEndChartIdYearRouteImport.update({
-  id: '/$year',
-  path: '/$year',
-  getParentRoute: () => YearEndChartIdRoute,
-} as any)
 const ChartChartIdDateRoute = ChartChartIdDateRouteImport.update({
   id: '/$date',
   path: '/$date',
   getParentRoute: () => ChartChartIdRoute,
-} as any)
-const ChartBeatBlogPostIdRoute = ChartBeatBlogPostIdRouteImport.update({
-  id: '/$postId',
-  path: '/$postId',
-  getParentRoute: () => ChartBeatBlogRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -119,17 +107,15 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
-  '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
+  '/chart-beat/$blog': typeof ChartBeatBlogRoute
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
   '/stats/$category': typeof StatsCategoryRoute
-  '/year-end/$chartId': typeof YearEndChartIdRouteWithChildren
+  '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat/': typeof GoatIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/year-end/': typeof YearEndIndexRoute
-  '/chart-beat/$blog/$postId': typeof ChartBeatBlogPostIdRoute
   '/chart/$chartId/$date': typeof ChartChartIdDateRoute
-  '/year-end/$chartId/$year': typeof YearEndChartIdYearRoute
   '/chart/$chartId/': typeof ChartChartIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -138,16 +124,14 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
-  '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
+  '/chart-beat/$blog': typeof ChartBeatBlogRoute
   '/goat/$chartId': typeof GoatChartIdRoute
   '/stats/$category': typeof StatsCategoryRoute
-  '/year-end/$chartId': typeof YearEndChartIdRouteWithChildren
+  '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat': typeof GoatIndexRoute
   '/stats': typeof StatsIndexRoute
   '/year-end': typeof YearEndIndexRoute
-  '/chart-beat/$blog/$postId': typeof ChartBeatBlogPostIdRoute
   '/chart/$chartId/$date': typeof ChartChartIdDateRoute
-  '/year-end/$chartId/$year': typeof YearEndChartIdYearRoute
   '/chart/$chartId': typeof ChartChartIdIndexRoute
 }
 export interface FileRoutesById {
@@ -157,17 +141,15 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
-  '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
+  '/chart-beat/$blog': typeof ChartBeatBlogRoute
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
   '/stats/$category': typeof StatsCategoryRoute
-  '/year-end/$chartId': typeof YearEndChartIdRouteWithChildren
+  '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat/': typeof GoatIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/year-end/': typeof YearEndIndexRoute
-  '/chart-beat/$blog/$postId': typeof ChartBeatBlogPostIdRoute
   '/chart/$chartId/$date': typeof ChartChartIdDateRoute
-  '/year-end/$chartId/$year': typeof YearEndChartIdYearRoute
   '/chart/$chartId/': typeof ChartChartIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -186,9 +168,7 @@ export interface FileRouteTypes {
     | '/goat/'
     | '/stats/'
     | '/year-end/'
-    | '/chart-beat/$blog/$postId'
     | '/chart/$chartId/$date'
-    | '/year-end/$chartId/$year'
     | '/chart/$chartId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,9 +184,7 @@ export interface FileRouteTypes {
     | '/goat'
     | '/stats'
     | '/year-end'
-    | '/chart-beat/$blog/$postId'
     | '/chart/$chartId/$date'
-    | '/year-end/$chartId/$year'
     | '/chart/$chartId'
   id:
     | '__root__'
@@ -223,9 +201,7 @@ export interface FileRouteTypes {
     | '/goat/'
     | '/stats/'
     | '/year-end/'
-    | '/chart-beat/$blog/$postId'
     | '/chart/$chartId/$date'
-    | '/year-end/$chartId/$year'
     | '/chart/$chartId/'
   fileRoutesById: FileRoutesById
 }
@@ -235,11 +211,11 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AlbumSlugRoute: typeof AlbumSlugRoute
   ArtistSlugRoute: typeof ArtistSlugRoute
-  ChartBeatBlogRoute: typeof ChartBeatBlogRouteWithChildren
+  ChartBeatBlogRoute: typeof ChartBeatBlogRoute
   ChartChartIdRoute: typeof ChartChartIdRouteWithChildren
   GoatChartIdRoute: typeof GoatChartIdRoute
   StatsCategoryRoute: typeof StatsCategoryRoute
-  YearEndChartIdRoute: typeof YearEndChartIdRouteWithChildren
+  YearEndChartIdRoute: typeof YearEndChartIdRoute
   GoatIndexRoute: typeof GoatIndexRoute
   StatsIndexRoute: typeof StatsIndexRoute
   YearEndIndexRoute: typeof YearEndIndexRoute
@@ -345,13 +321,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChartChartIdIndexRouteImport
       parentRoute: typeof ChartChartIdRoute
     }
-    '/year-end/$chartId/$year': {
-      id: '/year-end/$chartId/$year'
-      path: '/$year'
-      fullPath: '/year-end/$chartId/$year'
-      preLoaderRoute: typeof YearEndChartIdYearRouteImport
-      parentRoute: typeof YearEndChartIdRoute
-    }
     '/chart/$chartId/$date': {
       id: '/chart/$chartId/$date'
       path: '/$date'
@@ -359,27 +328,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChartChartIdDateRouteImport
       parentRoute: typeof ChartChartIdRoute
     }
-    '/chart-beat/$blog/$postId': {
-      id: '/chart-beat/$blog/$postId'
-      path: '/$postId'
-      fullPath: '/chart-beat/$blog/$postId'
-      preLoaderRoute: typeof ChartBeatBlogPostIdRouteImport
-      parentRoute: typeof ChartBeatBlogRoute
-    }
   }
 }
-
-interface ChartBeatBlogRouteChildren {
-  ChartBeatBlogPostIdRoute: typeof ChartBeatBlogPostIdRoute
-}
-
-const ChartBeatBlogRouteChildren: ChartBeatBlogRouteChildren = {
-  ChartBeatBlogPostIdRoute: ChartBeatBlogPostIdRoute,
-}
-
-const ChartBeatBlogRouteWithChildren = ChartBeatBlogRoute._addFileChildren(
-  ChartBeatBlogRouteChildren,
-)
 
 interface ChartChartIdRouteChildren {
   ChartChartIdDateRoute: typeof ChartChartIdDateRoute
@@ -395,29 +345,17 @@ const ChartChartIdRouteWithChildren = ChartChartIdRoute._addFileChildren(
   ChartChartIdRouteChildren,
 )
 
-interface YearEndChartIdRouteChildren {
-  YearEndChartIdYearRoute: typeof YearEndChartIdYearRoute
-}
-
-const YearEndChartIdRouteChildren: YearEndChartIdRouteChildren = {
-  YearEndChartIdYearRoute: YearEndChartIdYearRoute,
-}
-
-const YearEndChartIdRouteWithChildren = YearEndChartIdRoute._addFileChildren(
-  YearEndChartIdRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArtistsRoute: ArtistsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AlbumSlugRoute: AlbumSlugRoute,
   ArtistSlugRoute: ArtistSlugRoute,
-  ChartBeatBlogRoute: ChartBeatBlogRouteWithChildren,
+  ChartBeatBlogRoute: ChartBeatBlogRoute,
   ChartChartIdRoute: ChartChartIdRouteWithChildren,
   GoatChartIdRoute: GoatChartIdRoute,
   StatsCategoryRoute: StatsCategoryRoute,
-  YearEndChartIdRoute: YearEndChartIdRouteWithChildren,
+  YearEndChartIdRoute: YearEndChartIdRoute,
   GoatIndexRoute: GoatIndexRoute,
   StatsIndexRoute: StatsIndexRoute,
   YearEndIndexRoute: YearEndIndexRoute,

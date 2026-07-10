@@ -219,9 +219,6 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
       genres: artist.genres || [],
     };
 
-      profileCache.set(artistName, profile);
-      return profile;
-    } catch (e) {
-      return null;
-    }
+    profileCache.set(artistName, profile);
+    return profile;
   });
