@@ -3,6 +3,7 @@ import type { ChartEntry } from "@/lib/charts.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
+import { motion } from "framer-motion";
 
 function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
@@ -31,7 +32,7 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
     const normalized = base.trim();
     if (/^ja[oã]$/i.test(normalized)) {
       // Use well-known album and song keywords for Jão to improve Spotify search accuracy
-      return "Jão Lobos PIRATA SUPER Idiota Pilantra cantor brasileiro";
+      return "Jão pirata";
     }
     if (/^anitta$/i.test(normalized)) {
       return `${normalized} cantora singer`;
@@ -93,7 +94,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   }, [chartDates, chartEntriesByDate, chartId, entry.artist, entry.name, isGoat]);
 
   return (
-    <div id={`entry-${entry.position}`} className={`chart-card flex items-center gap-4 ${entry.position === 1 ? "rank-1" : ""}`}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.3 }}
+      id={`entry-${entry.position}`}
+      className={`chart-card flex items-center gap-4 ${entry.position === 1 ? "rank-1" : ""}`}
+    >
       <div className="flex items-start gap-3 md:gap-4 w-auto">
         <div className="rank-num flex items-center justify-center gap-2">
           <div className="text-3xl font-black">{entry.position}</div>
@@ -105,16 +113,16 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       </div>
 
       <div className="flex-grow min-w-0">
-        <div className="font-bold text-sm md:text-base truncate">{entry.name}</div>
+        <div className="font-bold text-sm md:text-base whitespace-normal break-words">{entry.name}</div>
         <Link
           to="/artist/$slug"
           params={{ slug }}
-          className="text-xs md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block truncate"
+          className="text-xs md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block whitespace-normal break-words"
         >
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
         {kind === "song" && chartId !== "songs" && entry.album && (
-          <div className="text-[11px] text-gray-500 truncate">{entry.album}</div>
+          <div className="text-[11px] text-gray-500 whitespace-normal break-words">{entry.album}</div>
         )}
         <div className="mt-2 text-[11px] text-muted-foreground space-y-1">
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
@@ -183,6 +191,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

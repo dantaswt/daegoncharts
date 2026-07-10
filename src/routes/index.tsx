@@ -3,6 +3,7 @@ import { getWeeklyChart, getChartBeat, getAllArtistStats, type ChartEntry, type 
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { chartsConfig, weeklyChartIds, chartBeatConfig, slugifyArtist } from "@/lib/charts-config";
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -32,6 +33,20 @@ export const Route = createFileRoute("/")({
       .map((a) => ({ name: a.name, slug: slugifyArtist(a.name) }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
+    // First Timers for Artist 50
+    const artistsChartDates = artistsData.dates.slice().reverse(); // newest first
+    const firstTimers: Array<{ artist: string, position: number, date: string }> = [];
+    for (const date of artistsChartDates) {
+      const entries = artistsData.entriesByDate[date] || [];
+      for (const e of entries) {
+        if (e.diff === "NEW" && !firstTimers.find(ft => ft.artist === e.name)) {
+          firstTimers.push({ artist: e.name, position: e.position, date });
+          if (firstTimers.length >= 5) break;
+        }
+      }
+      if (firstTimers.length >= 5) break;
+    }
+
     return {
       charts: {
         songs: { data: songsData, latestDate: songsData.dates[songsData.dates.length - 1] },
@@ -44,6 +59,7 @@ export const Route = createFileRoute("/")({
         top100Albums: albumsBeat,
       },
       numberOnes,
+      firstTimers,
       artistList,
     };
   },
@@ -99,7 +115,7 @@ function TopChartsSection({ charts }: { charts: any }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {entries.map((e: ChartEntry, i: number) => (
-          <div key={i} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group">
             <div className="aspect-square relative">
               <SpotifyImg
                 query={cfg.kind === "album" ? `${e.name} ${e.artist}` : cfg.kind === "artist" ? e.name : e.artist}
@@ -109,10 +125,10 @@ function TopChartsSection({ charts }: { charts: any }) {
               <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-black px-2 py-1 rounded-md">#{e.position}</div>
             </div>
             <div className="p-3">
-              <div className="font-bold text-sm truncate group-hover:text-[var(--accent)] transition-colors">{e.name}</div>
-              {cfg.kind !== "artist" && <div className="text-xs text-muted-foreground truncate">{e.artist}</div>}
+              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">{e.name}</div>
+              {cfg.kind !== "artist" && <div className="text-xs text-muted-foreground whitespace-normal break-words">{e.artist}</div>}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
       <div className="mt-4 text-center">
@@ -130,10 +146,10 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
     <section className="mb-14">
       <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">No. 1 This Week</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {numberOnes.map((n) => {
+        {numberOnes.map((n, i) => {
           if (!n.entry) return null;
           return (
-            <div key={n.chartId} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all">
               <div className="flex items-center gap-3 p-4">
                 <div className="w-16 h-16 shrink-0">
                   <SpotifyImg
@@ -144,16 +160,43 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{n.title}</div>
-                  <div className="font-bold text-sm truncate">{n.entry.name}</div>
-                  {n.kind !== "artist" && <div className="text-xs text-muted-foreground truncate">{n.entry.artist}</div>}
+                  <div className="font-bold text-sm whitespace-normal break-words">{n.entry.name}</div>
+                  {n.kind !== "artist" && <div className="text-xs text-muted-foreground whitespace-normal break-words">{n.entry.artist}</div>}
                 </div>
               </div>
               <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(255,215,0,0.05)] transition-colors">
                 View Chart →
               </Link>
-            </div>
+            </motion.div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+/* ────── FIRST-TIMERS Section ────── */
+function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
+  if (!firstTimers || firstTimers.length === 0) return null;
+  return (
+    <section className="mb-14">
+      <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">First-Timers</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        {firstTimers.map((ft, i) => (
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group">
+            <div className="aspect-square relative">
+              <SpotifyImg query={ft.artist} type="artist" rounded={false} />
+              <div className="absolute top-2 right-2 bg-[var(--accent)] text-black text-xs font-black px-2 py-1 rounded-md">NEW</div>
+            </div>
+            <div className="p-3">
+              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">{ft.artist}</div>
+              <div className="text-xs text-muted-foreground mt-1">Debut: #{ft.position}</div>
+              <Link to="/chart/$chartId/$date" params={{ chartId: "artists", date: ft.date }} className="text-xs text-[var(--accent)] hover:underline block mt-1">
+                Week of {new Date(ft.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </Link>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );
@@ -171,11 +214,12 @@ function ChartBeatSection({ chartBeat }: { chartBeat: any }) {
     <section className="mb-14">
       <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">Chart Beat</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {blogs.map(b => {
+        {blogs.map((b, i) => {
           const latest = b.posts[0];
           if (!latest) return null;
           return (
-            <Link key={b.key} to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all block group">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={b.key}>
+              <Link to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all block group">
               {latest.artist && (
                 <div className="h-40 w-full">
                   <SpotifyImg query={latest.artist} type="artist" />
@@ -186,7 +230,8 @@ function ChartBeatSection({ chartBeat }: { chartBeat: any }) {
                 <div className="font-bold text-sm mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{latest.title}</div>
                 <div className="text-xs text-muted-foreground">{latest.publicationDate}</div>
               </div>
-            </Link>
+              </Link>
+            </motion.div>
           );
         })}
       </div>
@@ -223,7 +268,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
         {filteredArtists.length > 0 && (
           <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
             {filteredArtists.map(a => (
-              <Link key={a.slug} to="/artist/$slug" params={{ slug: a.slug }} className="block text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors truncate">
+              <Link key={a.slug} to="/artist/$slug" params={{ slug: a.slug }} className="block text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors whitespace-normal break-words">
                 {a.name}
               </Link>
             ))}
@@ -287,7 +332,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
 
 /* ────── LANDING PAGE ────── */
 function LandingPage() {
-  const { charts, chartBeat, numberOnes, artistList } = Route.useLoaderData();
+  const { charts, chartBeat, numberOnes, firstTimers, artistList } = Route.useLoaderData();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -307,6 +352,7 @@ function LandingPage() {
         <div className="flex-1 min-w-0">
           <TopChartsSection charts={charts} />
           <NumberOnesSection numberOnes={numberOnes} />
+          <FirstTimersSection firstTimers={firstTimers} />
           <ChartBeatSection chartBeat={chartBeat} />
         </div>
       </div>

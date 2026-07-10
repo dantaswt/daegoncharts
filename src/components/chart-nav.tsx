@@ -67,6 +67,9 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
           <PopoverContent align="center">
             <Calendar
               mode="single"
+              defaultMonth={(() => {
+                try { return new Date(currentDate + "T00:00:00"); } catch { return new Date(); }
+              })()}
               selected={(() => {
                 try {
                   // normalize currentDate -> saturday of that week

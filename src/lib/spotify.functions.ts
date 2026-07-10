@@ -52,13 +52,6 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
       return imageCache.get(cacheKey);
     }
 
-    // If the original query references 'Jão', always return the provided static image
-    const JAO_STATIC = 'https://tse3.mm.bing.net/th/id/OIP.fKVhVbuZUy9oJeZUfA2OWAHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3';
-    if (/\bja[oã]\b/i.test(query)) {
-      imageCache.set(cacheKey, JAO_STATIC);
-      return JAO_STATIC;
-    }
-
     const token = await getAccessToken();
     if (!token) return null;
 
