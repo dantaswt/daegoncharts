@@ -355,6 +355,19 @@ function LandingPage() {
           <NumberOnesSection numberOnes={numberOnes} />
           <FirstTimersSection firstTimers={firstTimers} />
           <ChartBeatSection chartBeat={chartBeat} />
+          
+          {/* Chart Battle Mobile Link */}
+          <div className="md:hidden mt-10">
+            <Link to="/chart-battle" className="block bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(234,179,8,0.3)] p-4 rounded-xl flex items-center justify-center gap-4 group">
+              <div className="bg-[var(--accent)] text-black w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-110 transition-transform">
+                VS
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
+                <div className="text-lg font-black uppercase">Play Chart Battle 🏆</div>
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
 

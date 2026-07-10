@@ -34,21 +34,21 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
   }, [search, options]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full text-left">
       <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{label}</label>
       {value ? (
-        <div className="flex items-center justify-between bg-[var(--muted)] border border-[var(--accent)] p-3 rounded-lg">
+        <div className="flex items-center justify-between bg-black text-white border border-[var(--accent)] p-3 rounded-lg">
           <span className="font-bold truncate">{value}</span>
-          <button onClick={() => onChange(null)} className="text-muted-foreground hover:text-white shrink-0 ml-2"><i className="fas fa-times" /></button>
+          <button onClick={() => onChange(null)} className="text-gray-400 hover:text-white shrink-0 ml-2"><i className="fas fa-times" /></button>
         </div>
       ) : (
         <div>
           <div className="relative">
-            <i className="fas fa-search absolute left-3 top-3.5 text-muted-foreground" />
+            <i className="fas fa-search absolute left-3 top-3.5 text-gray-500" />
             <input
               type="text"
               placeholder="Search artist..."
-              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-lg py-3 pl-9 pr-3 text-white focus:outline-none focus:border-[var(--accent)]"
+              className="w-full bg-black border border-[var(--border)] rounded-lg py-3 pl-9 pr-3 text-white focus:outline-none focus:border-[var(--accent)]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setOpen(true)}
@@ -56,11 +56,11 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
             />
           </div>
           {open && (
-            <div className="absolute z-10 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-1 bg-black text-white border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto">
               {filtered.map(opt => (
                 <div
                   key={opt}
-                  className="px-4 py-2 hover:bg-[var(--muted)] cursor-pointer text-sm"
+                  className="px-4 py-2 hover:bg-[var(--muted)] hover:text-white cursor-pointer text-sm"
                   onMouseDown={() => {
                     onChange(opt);
                     setSearch("");
