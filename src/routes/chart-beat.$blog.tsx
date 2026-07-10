@@ -25,7 +25,7 @@ export const Route = createFileRoute("/chart-beat/$blog")({
   component: ChartBeatPage,
 });
 
-function ChartBeatCard({ post }: { post: ChartBeatPost }) {
+function ChartBeatCard({ post, blog }: { post: ChartBeatPost; blog: string }) {
   const [imageUrl, setImageUrl] = useState<string | null>(post.image ?? null);
 
   useEffect(() => {
@@ -40,22 +40,24 @@ function ChartBeatCard({ post }: { post: ChartBeatPost }) {
     };
   }, [post.artist, post.image]);
 
+  const preview = post.fullText.length > 200 ? post.fullText.slice(0, 200) + "…" : post.fullText;
+
   return (
-    <article className="bg-[var(--muted)] border border-[var(--border)] rounded-lg overflow-hidden hover:border-[var(--accent)] transition-colors">
+    <Link
+      to="/chart-beat/$blog/$postId"
+      params={{ blog, postId: post.slug }}
+      className="bg-[var(--muted)] border border-[var(--border)] rounded-lg overflow-hidden hover:border-[var(--accent)] transition-colors block"
+    >
       {imageUrl ? (
         <img src={imageUrl} alt={post.title} className="w-full h-52 object-cover" />
       ) : null}
       <div className="p-5">
         <div className="text-xs text-muted-foreground mb-2">{post.publicationDate}</div>
         <h2 className="font-bold text-lg mb-2 gold">{post.title}</h2>
-        <p className="text-sm whitespace-pre-wrap">{post.fullText}</p>
-        {post.chartLink && (
-          <a href={post.chartLink} target="_blank" rel="noreferrer" className="text-xs mt-3 inline-block text-[var(--accent)] hover:underline">
-            Related chart →
-          </a>
-        )}
+        <p className="text-sm text-muted-foreground">{preview}</p>
+        <span className="text-xs mt-3 inline-block text-[var(--accent)]">Read more →</span>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -79,7 +81,7 @@ function ChartBeatPage() {
       <div className="space-y-4">
         {data.posts.length === 0 && <p className="text-muted-foreground">No posts yet.</p>}
         {data.posts.map((p: ChartBeatPost, i: number) => (
-          <ChartBeatCard key={i} post={p} />
+          <ChartBeatCard key={i} post={p} blog={blog} />
         ))}
       </div>
     </div>

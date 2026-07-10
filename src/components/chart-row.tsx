@@ -28,16 +28,20 @@ interface Props {
 function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "album" | "artist" }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const query = useMemo(() => {
-    const base = kind === "album" ? `${entry.name} ${entry.artist}` : kind === "artist" ? entry.name : entry.artist;
-    const normalized = base.trim();
-    if (/^ja[oã]$/i.test(normalized)) {
-      // Use well-known album and song keywords for Jão to improve Spotify search accuracy
-      return "Jão pirata";
+    if (kind === "album") {
+      return `album:"${entry.name}" artist:"${entry.artist}"`;
     }
-    if (/^anitta$/i.test(normalized)) {
-      return `${normalized} cantora singer`;
+    if (kind === "artist") {
+      const name = entry.name.trim();
+      if (/^ja[oã]$/i.test(name)) return 'artist:"Jão"';
+      if (/^anitta$/i.test(name)) return 'artist:"Anitta"';
+      return `artist:"${name}"`;
     }
-    return normalized;
+    // song: search for the artist image
+    const artistName = entry.artist.trim();
+    if (/^ja[oã]$/i.test(artistName)) return 'artist:"Jão"';
+    if (/^anitta$/i.test(artistName)) return 'artist:"Anitta"';
+    return `artist:"${artistName}"`;
   }, [entry.name, entry.artist, kind]);
   const type = kind === "album" ? "album" : "artist";
 
@@ -88,8 +92,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const chartTitle = cfg ? cfg.title : "Chart";
     const isAlbum = kind === "album";
     
-    const metricStr = isAlbum && metric ? Number(metric).toLocaleString("en-US") : "";
-    const totalStr = isAlbum && entry.totalUnits ? `(${Number(entry.totalUnits).toLocaleString("en-US")} total units)` : "";
+    // Convert diff symbols: ▲→+, ▼→-
+    let copyDiff = entry.diff;
+    if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
+    else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
+    
+    // Use raw values from CSV columns (no locale conversion)
+    const metricStr = isAlbum && entry.units ? entry.units : "";
+    const totalStr = isAlbum && entry.totalUnits ? `(${entry.totalUnits} total units)` : "";
     
     const peakStr = (entry.weeksAt1 ?? 0) > 0 ? `*peak: #${entry.peak} for ${entry.weeksAt1} weeks*` : `*peak: #${entry.peak}*`;
     
@@ -101,7 +111,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
     const parts = [
       `Daegon's ${chartTitle}:`,
-      `#${entry.position}(${entry.diff})`,
+      `#${entry.position}(${copyDiff})`,
       `${entry.name},`,
       entry.artist,
       metricStr,

@@ -74,6 +74,7 @@ export interface GoatChartData {
 }
 
 export interface ChartBeatPost {
+  slug: string;
   title: string;
   publicationDate: string;
   artist: string | null;
@@ -402,7 +403,8 @@ export const getChartBeat = createServerFn({ method: "GET" })
         link: findIdx(header, ["chartlink"]),
         image: findIdx(header, ["image", "imagem", "photo", "foto"]),
       };
-      const posts: ChartBeatPost[] = rows.slice(1).map((r) => ({
+      const posts: ChartBeatPost[] = rows.slice(1).map((r, i) => ({
+        slug: `${i + 1}-${slugify(r[idx.title] ?? "untitled")}`,
         title: r[idx.title] ?? "Untitled",
         publicationDate: r[idx.date] ?? "",
         artist: idx.artist >= 0 ? r[idx.artist] || null : null,
