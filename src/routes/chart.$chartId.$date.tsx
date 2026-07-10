@@ -3,6 +3,7 @@ import { getWeeklyChart } from "@/lib/charts.functions";
 import { chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 import { ChartTypeNav, WeekNavigator } from "@/components/chart-nav";
 import { ChartRow } from "@/components/chart-row";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/chart/$chartId/$date")({
   loader: async ({ params }) => {
@@ -63,7 +64,7 @@ function WeeklyChartPage() {
   const { data, date, chartId, originalRequestedDate } = loader;
   const cfg = chartsConfig[chartId];
   // if loader normalized the date, replace the URL so it always shows the Saturday
-  React.useEffect(() => {
+  useEffect(() => {
     if (originalRequestedDate && originalRequestedDate !== date) {
       // client-side replace
       try {
