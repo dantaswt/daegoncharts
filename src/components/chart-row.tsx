@@ -127,11 +127,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (!chartDates || !chartEntriesByDate || !chartId || isGoat) return [];
     const key = `${entry.name.toLowerCase()}|${entry.artist.toLowerCase()}`;
     return chartDates
-      .flatMap((date) => (chartEntriesByDate[date] || [])
+      .filter((d) => !date || d <= date)
+      .flatMap((d) => (chartEntriesByDate[d] || [])
         .filter((e) => `${e.name.toLowerCase()}|${e.artist.toLowerCase()}` === key)
-        .map((e) => ({ date, position: e.position, peak: e.peak, weeks: e.weeks, points: e.points, totalUnits: e.totalUnits }))
+        .map((e) => ({ date: d, position: e.position, peak: e.peak, weeks: e.weeks, points: e.points, totalUnits: e.totalUnits }))
       );
-  }, [chartDates, chartEntriesByDate, chartId, entry.artist, entry.name, isGoat]);
+  }, [chartDates, chartEntriesByDate, chartId, entry.artist, entry.name, isGoat, date]);
 
   return (
     <motion.div

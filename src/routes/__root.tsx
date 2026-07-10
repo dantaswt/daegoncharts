@@ -127,6 +127,8 @@ function SiteFooter() {
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
           <span className="text-[#3a3a3a]">|</span>
           <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>
+          <span className="text-[#3a3a3a]">|</span>
+          <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors font-semibold gold">Chart Battle</Link>
         </div>
         <div className="text-center text-muted-foreground text-xs">
           <p>Chart generated based on dantaswt's Last.fm data.</p>

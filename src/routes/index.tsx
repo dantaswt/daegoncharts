@@ -335,6 +335,7 @@ function LandingPage() {
   const { charts, chartBeat, numberOnes, firstTimers, artistList } = Route.useLoaderData();
 
   return (
+    <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       {/* Hero Title */}
       <div className="text-center py-10 md:py-16">
@@ -367,8 +368,24 @@ function LandingPage() {
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
           <span className="text-[#3a3a3a]">|</span>
           <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>
+          <span className="text-[#3a3a3a]">|</span>
+          <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors font-semibold gold">Chart Battle</Link>
         </div>
       </div>
     </div>
+      
+      {/* Chart Battle Floating Tooltip */}
+      <Link to="/chart-battle" className="fixed bottom-6 left-6 z-50 animate-bounce cursor-pointer group hidden md:block">
+        <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(234,179,8,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
+          <div className="bg-[var(--accent)] text-black w-10 h-10 rounded-full flex items-center justify-center font-black">
+            VS
+          </div>
+          <div>
+            <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
+            <div className="text-sm font-semibold">Play Chart Battle 🏆</div>
+          </div>
+        </div>
+      </Link>
+    </>
   );
 }

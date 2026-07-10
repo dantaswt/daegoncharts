@@ -118,7 +118,7 @@ function ArtistPage() {
   }
 
   const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
-  const totalUnitsAny = artist.chartsByKind["Top 50 Artists"]?.[0]?.totalUnits || artist.chartsByKind["Artists"]?.[0]?.totalUnits;
+  const totalUnitsAny = artist.chartsByKind["Top 50 Artists"]?.[0]?.unitsSold || artist.chartsByKind["Artists"]?.[0]?.unitsSold;
 
   const order = [
     "Hot 100 Songs",
@@ -166,7 +166,7 @@ function ArtistPage() {
             <div className="w-px bg-[var(--border)] hidden sm:block"></div>
             <div className="text-center sm:text-left">
               <div className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Total Units</div>
-              <div className="text-lg sm:text-2xl font-black">{goatData?.totalUnits || totalUnitsAny || "—"}</div>
+              <div className="text-lg sm:text-2xl font-black">{totalUnitsAny || goatData?.totalUnits || "—"}</div>
             </div>
             <div className="w-px bg-[var(--border)] hidden sm:block"></div>
             {top50 && (
