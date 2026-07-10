@@ -46,16 +46,15 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { query, type } = data;
     
-    if (type === "artist") {
-      const q = query.trim().replace(/^artist:"|"/g, '');
-      if (/^ja[oã]$/i.test(q)) {
-        return "https://i.scdn.co/image/7d6c097127ab57ce074878afcea8bdab483dac22";
-      }
-    }
-
     const normalizedQuery = normalizeSpotifyQuery(query);
     const cacheKey = `${type}:${normalizedQuery}`;
-    
+
+    if (/\bja[oã]\b/i.test(query.trim())) {
+      const JAO_IMAGE = "https://i.scdn.co/image/7d6c097127ab57ce074878afcea8bdab483dac22";
+      imageCache.set(cacheKey, JAO_IMAGE);
+      return JAO_IMAGE;
+    }
+
     if (imageCache.has(cacheKey)) {
       return imageCache.get(cacheKey);
     }
