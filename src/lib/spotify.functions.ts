@@ -45,6 +45,14 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
   .inputValidator((d: { query: string; type: "album" | "artist" }) => d)
   .handler(async ({ data }) => {
     const { query, type } = data;
+    
+    if (type === "artist") {
+      const q = query.trim().replace(/^artist:"|"/g, '');
+      if (/^ja[oã]$/i.test(q)) {
+        return "https://i.scdn.co/image/7d6c097127ab57ce074878afcea8bdab483dac22";
+      }
+    }
+
     const normalizedQuery = normalizeSpotifyQuery(query);
     const cacheKey = `${type}:${normalizedQuery}`;
     
@@ -124,6 +132,32 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         } catch (e) {
           // ignore fallback failure
         }
+      }
+
+      // Fallback for album without image: try to find the artist image
+      if (!imageUrl && type === "album") {
+         const artistMatch = query.match(/artist:"([^"]+)"/);
+         const fallbackArtist = artistMatch ? artistMatch[1] : query;
+         
+         if (/^ja[oã]$/i.test(fallbackArtist.trim())) {
+           imageUrl = "https://i.scdn.co/image/7d6c097127ab57ce074878afcea8bdab483dac22";
+         } else {
+           const fallbackUrl = new URL("https://api.spotify.com/v1/search");
+           fallbackUrl.searchParams.set("q", normalizeSpotifyQuery(fallbackArtist));
+           fallbackUrl.searchParams.set("type", "artist");
+           fallbackUrl.searchParams.set("limit", "1");
+           try {
+             const rFallback = await fetch(fallbackUrl.toString(), {
+               headers: { Authorization: `Bearer ${token}` }
+             });
+             if (rFallback.ok) {
+               const dFallback = await rFallback.json();
+               const artists = dFallback.artists?.items || [];
+               const nonJoao = artists.find((a: any) => !isJoaoGomes(a.name) && a.images?.[0]?.url);
+               if (nonJoao) imageUrl = nonJoao.images[0].url;
+             }
+           } catch (e) { }
+         }
       }
 
       imageCache.set(cacheKey, imageUrl);

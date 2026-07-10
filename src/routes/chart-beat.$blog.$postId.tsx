@@ -10,7 +10,7 @@ export const Route = createFileRoute("/chart-beat/$blog/$postId")({
   loader: async ({ params }) => {
     if (!(blogs as string[]).includes(params.blog)) throw notFound();
     const data = await getChartBeat({ data: { blog: params.blog as keyof typeof chartBeatConfig } });
-    const post = data.posts.find((p) => p.slug === params.postId);
+    const post = data.posts.find((p) => p.slug === params.postId || p.slug === decodeURIComponent(params.postId));
     if (!post) throw notFound();
     return { post, blog: params.blog, blogTitle: data.title };
   },

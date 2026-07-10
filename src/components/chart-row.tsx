@@ -75,6 +75,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
+    if (entry.lastWeek) items.push({ label: "LW", value: entry.lastWeek });
     if (kind === "song" && entry.points) items.push({ label: "Points", value: entry.points });
     if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: entry.units });
     if (!isGoat && entry.sales) items.push({ label: "Sales", value: entry.sales });
@@ -83,7 +84,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (entry.totalUnits) items.push({ label: "Total Units", value: entry.totalUnits });
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
-  }, [chartId, entry.airplay, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, isGoat, kind]);
+  }, [chartId, entry.airplay, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
 
@@ -140,13 +141,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       viewport={{ once: true }}
       transition={{ duration: 0.3 }}
       id={`entry-${entry.position}`}
-      className={`chart-card flex items-center gap-4 ${entry.position === 1 ? "rank-1" : ""}`}
+      className="chart-card flex flex-col w-full"
     >
-      <div className="flex items-start gap-3 md:gap-4 w-auto">
-        <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-10 md:w-16 flex-shrink-0">
-          <div className="text-2xl md:text-3xl font-black">{entry.position}</div>
-          {showDiff && <DiffIndicator diff={entry.diff} />}
-        </div>
+      <div className="flex items-center gap-4 w-full">
+        <div className="flex items-center gap-3 md:gap-4 w-auto">
+          <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-10 md:w-16 flex-shrink-0">
+            <div className="text-2xl md:text-3xl font-black">{entry.position}</div>
+            {showDiff && <DiffIndicator diff={entry.diff} />}
+          </div>
         <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
           <SpotifyImage entry={entry} kind={kind} />
         </div>
@@ -161,15 +163,15 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         >
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
-        {kind === "song" && chartId !== "songs" && entry.album && (
+        {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
           <div className="text-[11px] text-gray-500 whitespace-normal break-words">{entry.album}</div>
         )}
         <div className="mt-2 text-[11px] text-muted-foreground space-y-1">
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
           {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}
           {(entry.weeksAt1 ?? 0) > 0 && (
-            <div className="inline-flex items-center rounded-full bg-[var(--accent)]/10 px-3 py-1 text-[10px] font-semibold text-[var(--accent)]">
-              Weeks at 1: {entry.weeksAt1}
+            <div className="inline-flex items-center rounded-full bg-blue-500/10 px-3 py-1 text-[10px] font-semibold text-blue-500">
+              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Week" : "Weeks"} at 1
             </div>
           )}
         </div>
@@ -197,6 +199,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             {showDetails ? "−" : "+"}
           </button>
         </div>
+      </div>
       </div>
       {showDetails && (
         <div className="mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm text-muted-foreground animate-fade-in">

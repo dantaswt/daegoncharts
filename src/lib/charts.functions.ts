@@ -480,7 +480,14 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
         number: (r[numIdx] ?? "").trim(),
       });
     }
-    for (const list of Object.values(byCategory)) list.sort((a, b) => a.rank - b.rank);
+    for (const list of Object.values(byCategory)) {
+      list.sort((a, b) => {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+        const numA = parseFloat(a.number.replace(/[^\d.-]/g, '')) || 0;
+        const numB = parseFloat(b.number.replace(/[^\d.-]/g, '')) || 0;
+        return numB - numA;
+      });
+    }
     return { categories: Object.keys(byCategory), byCategory };
   });
 });

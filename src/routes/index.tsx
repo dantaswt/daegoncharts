@@ -149,8 +149,8 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
         {numberOnes.map((n, i) => {
           if (!n.entry) return null;
           return (
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all">
-              <div className="flex items-center gap-3 p-4">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex flex-col h-full">
+              <div className="flex items-center gap-3 p-4 flex-grow">
                 <div className="w-16 h-16 shrink-0">
                   <SpotifyImg
                     query={n.kind === "album" ? `${n.entry.name} ${n.entry.artist}` : n.kind === "artist" ? n.entry.name : n.entry.artist}
@@ -164,7 +164,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                   {n.kind !== "artist" && <div className="text-xs text-muted-foreground whitespace-normal break-words">{n.entry.artist}</div>}
                 </div>
               </div>
-              <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(255,215,0,0.05)] transition-colors">
+              <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(255,215,0,0.05)] transition-colors mt-auto">
                 View Chart →
               </Link>
             </motion.div>
