@@ -149,7 +149,7 @@ function ArtistPage() {
         )}
 
         <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-0 w-full">
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-2">{artist.name}</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-2 text-black">{artist.name}</h1>
 
           {profile && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground mb-4">

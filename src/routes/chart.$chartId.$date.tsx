@@ -75,6 +75,13 @@ function WeeklyChartPage() {
     }
   }, [originalRequestedDate, date]);
   const entries = data.entriesByDate[date];
+  const currentIndex = data.dates.indexOf(date);
+  const previousDate = currentIndex > 0 ? data.dates[currentIndex - 1] : null;
+  const dropouts = previousDate
+    ? (data.entriesByDate[previousDate] || []).filter((prevEntry: any) =>
+        !entries.some((curr: any) => curr.name === prevEntry.name && curr.artist === prevEntry.artist)
+      )
+    : [];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
@@ -103,6 +110,20 @@ function WeeklyChartPage() {
             />
           ))}
         </div>
+        {dropouts.length > 0 && (
+          <div className="mt-8 max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">DROP-OUTS</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {dropouts.map((out: any) => (
+                <div key={`${out.name}-${out.artist}`} className="rounded-3xl bg-[#111827] p-3">
+                  <div className="text-sm font-semibold text-white truncate">{out.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">{out.artist}</div>
+                  <div className="mt-2 text-xs text-white">Last week: #{out.position}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mt-8">
           <WeekNavigator chartId={chartId} dates={data.dates} currentDate={date} />
         </div>

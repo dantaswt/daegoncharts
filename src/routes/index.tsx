@@ -125,8 +125,22 @@ function TopChartsSection({ charts }: { charts: any }) {
               <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-black px-2 py-1 rounded-md">#{e.position}</div>
             </div>
             <div className="p-3">
-              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">{e.name}</div>
-              {cfg.kind !== "artist" && <div className="text-xs text-muted-foreground whitespace-normal break-words">{e.artist}</div>}
+              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
+                {cfg.kind === "artist" ? (
+                  <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
+                    {e.name}
+                  </Link>
+                ) : (
+                  e.name
+                )}
+              </div>
+              {cfg.kind !== "artist" && (
+                <div className="text-xs text-muted-foreground whitespace-normal break-words">
+                  <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">
+                    {e.artist}
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         ))}
@@ -161,7 +175,13 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{n.title}</div>
                   <div className="font-bold text-sm whitespace-normal break-words">{n.entry.name}</div>
-                  {n.kind !== "artist" && <div className="text-xs text-muted-foreground whitespace-normal break-words">{n.entry.artist}</div>}
+                  {n.kind !== "artist" && (
+                    <div className="text-xs text-muted-foreground whitespace-normal break-words">
+                      <Link to="/artist/$slug" params={{ slug: slugifyArtist(n.entry.artist) }} className="hover:text-[var(--accent)] hover:underline">
+                        {n.entry.artist}
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
               <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(255,215,0,0.05)] transition-colors mt-auto">
@@ -189,7 +209,11 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
               <div className="absolute top-2 right-2 bg-[var(--accent)] text-black text-xs font-black px-2 py-1 rounded-md">NEW</div>
             </div>
             <div className="p-3">
-              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">{ft.artist}</div>
+              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
+                <Link to="/artist/$slug" params={{ slug: slugifyArtist(ft.artist) }} className="hover:underline">
+                  {ft.artist}
+                </Link>
+              </div>
               <div className="text-xs text-muted-foreground mt-1">Debut: #{ft.position}</div>
               <Link to="/chart/$chartId/$date" params={{ chartId: "artists", date: ft.date }} className="text-xs text-[var(--accent)] hover:underline block mt-1">
                 Week of {new Date(ft.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -395,7 +419,7 @@ function LandingPage() {
           </div>
           <div>
             <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
-            <div className="text-sm font-semibold">Play Chart Battle 🏆</div>
+            <div className="text-sm font-semibold text-black">Play Chart Battle 🏆</div>
           </div>
         </div>
       </Link>

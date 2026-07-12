@@ -76,14 +76,34 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
     if (kind === "song" && entry.points) items.push({ label: "Points", value: entry.points });
-    if ((kind === "album" || kind === "artist") && entry.units) items.push({ label: "Units", value: entry.units });
-    if (!isGoat && entry.sales) items.push({ label: "Sales", value: entry.sales });
-    if (!isGoat && entry.streams) items.push({ label: "Streaming", value: entry.streams });
-    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: entry.airplay });
-    if (entry.totalUnits) items.push({ label: "Total Units", value: entry.totalUnits });
+    if (chartId === "songs" && entry.units) items.push({ label: "Units", value: entry.units });
+    if ((kind === "album" || kind === "artist") && entry.units && !["topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"].includes(chartId ?? "")) {
+      items.push({ label: "Units", value: entry.units });
+    }
+    if (!isGoat && entry.audience) items.push({ label: "Audience", value: entry.audience });
+    if (!isGoat && entry.sales) {
+      const label = chartId === "albums" ? "Pure Sales" : "Sales";
+      items.push({ label, value: entry.sales });
+    }
+    if (!isGoat && entry.streams && ["albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
+      let label = "Streaming";
+      if (chartId === "albums") label = "SEA";
+      if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") label = "Streams";
+      items.push({ label, value: entry.streams });
+    }
+    if (isGoat && kind === "album") {
+      if (entry.sales) items.push({ label: "Sales", value: entry.sales });
+      if (entry.streams) items.push({ label: "Streaming", value: entry.streams });
+    }
+    if (entry.totalUnits) {
+      let totalLabel = "Total Units";
+      if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") totalLabel = "Total Streams";
+      if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") totalLabel = "Total Sales";
+      items.push({ label: totalLabel, value: entry.totalUnits });
+    }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
-  }, [chartId, entry.airplay, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
+  }, [chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
 
@@ -143,7 +163,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       id={`entry-${entry.position}`}
       className="chart-card flex flex-col w-full"
     >
-      <div className="flex items-center gap-4 w-full">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
         <div className="flex items-center gap-2 md:gap-4 w-auto">
           <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-8 md:w-16 flex-shrink-0">
             <div className="text-xl md:text-3xl font-black">{entry.position}</div>

@@ -53,7 +53,7 @@ function ChartBeatCard({ post, onClick }: { post: ChartBeatPost; onClick: () => 
       <div className="p-5">
         <div className="text-xs text-muted-foreground mb-2">{post.publicationDate}</div>
         <h2 className="font-bold text-lg mb-2 gold">{post.title}</h2>
-        <p className="text-sm text-muted-foreground">{preview}</p>
+        <p className="text-sm text-muted-foreground text-justify">{preview}</p>
         <span className="text-xs mt-3 inline-block text-[var(--accent)]">Read more →</span>
       </div>
     </button>
@@ -112,7 +112,7 @@ function ChartBeatPage() {
                   <i className="fas fa-user mr-1" /> {selectedPost.artist}
                 </div>
               )}
-              <div className="prose prose-invert max-w-none text-sm md:text-base whitespace-pre-wrap leading-relaxed">
+              <div className="prose prose-invert max-w-none text-sm md:text-base whitespace-pre-wrap leading-relaxed text-justify">
                 {selectedPost.fullText}
               </div>
               {selectedPost.chartLink && (
