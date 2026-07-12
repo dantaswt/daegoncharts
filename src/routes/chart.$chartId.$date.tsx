@@ -1,9 +1,10 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getWeeklyChart } from "@/lib/charts.functions";
-import { chartsConfig, weeklyChartIds } from "@/lib/charts-config";
+import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
 import { ChartTypeNav, WeekNavigator } from "@/components/chart-nav";
 import { ChartRow } from "@/components/chart-row";
-import { useEffect } from "react";
+import { getSpotifyImage } from "@/lib/spotify.functions";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/chart/$chartId/$date")({
   loader: async ({ params }) => {
@@ -113,13 +114,9 @@ function WeeklyChartPage() {
         {dropouts.length > 0 && (
           <div className="mt-8 max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">DROP-OUTS</div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-wrap gap-3 items-center">
               {dropouts.map((out: any) => (
-                <div key={`${out.name}-${out.artist}`} className="rounded-3xl bg-[#111827] p-3">
-                  <div className="text-sm font-semibold text-white truncate">{out.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">{out.artist}</div>
-                  <div className="mt-2 text-xs text-white">Last week: #{out.position}</div>
-                </div>
+                <DropoutChip key={`${out.name}-${out.artist}`} dropout={out} chartKind={cfg.kind} />
               ))}
             </div>
           </div>
@@ -129,5 +126,44 @@ function WeeklyChartPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+function DropoutChip({ dropout, chartKind }: { dropout: any; chartKind: string }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const query = chartKind === "album"
+    ? `album:"${dropout.name}" artist:"${dropout.artist}"`
+    : `artist:"${dropout.artist}"`;
+  const type = chartKind === "album" ? "album" : "artist";
+
+  useEffect(() => {
+    let active = true;
+    getSpotifyImage({ data: { query, type } }).then((url) => {
+      if (active && url) setImageUrl(url);
+    });
+    return () => {
+      active = false;
+    };
+  }, [query, type]);
+
+  return (
+    <Link
+      to="/artist/$slug"
+      params={{ slug: slugifyArtist(dropout.artist) }}
+      className="inline-flex items-center gap-3 rounded-full border border-[var(--border)] bg-[#111827] px-3 py-2 text-xs text-muted-foreground transition hover:border-[var(--accent)]"
+    >
+      <div className="w-9 h-9 overflow-hidden rounded-full bg-slate-800 flex items-center justify-center">
+        {imageUrl ? (
+          <img src={imageUrl} alt={dropout.artist} className="w-full h-full object-cover" />
+        ) : (
+          <i className="fas fa-user text-sm text-gray-400" />
+        )}
+      </div>
+      <div className="min-w-0">
+        <div className="font-semibold text-white truncate">{dropout.name}</div>
+        <div className="text-[11px] text-gray-400 truncate">{dropout.artist}</div>
+      </div>
+      <span className="text-[11px] text-gray-400">#{dropout.position}</span>
+    </Link>
   );
 }

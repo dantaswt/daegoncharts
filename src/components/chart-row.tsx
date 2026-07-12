@@ -91,11 +91,13 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") label = "Streams";
       items.push({ label, value: entry.streams });
     }
-    if (isGoat && kind === "album") {
-      if (entry.sales) items.push({ label: "Sales", value: entry.sales });
-      if (entry.streams) items.push({ label: "Streaming", value: entry.streams });
+    if (!isGoat && entry.totalStreams) {
+      items.push({ label: "Total Streams", value: entry.totalStreams });
     }
-    if (entry.totalUnits) {
+    if (!isGoat && entry.totalSales) {
+      items.push({ label: "Total Sales", value: entry.totalSales });
+    }
+    if (entry.totalUnits && !entry.totalStreams && !entry.totalSales) {
       let totalLabel = "Total Units";
       if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") totalLabel = "Total Streams";
       if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") totalLabel = "Total Sales";
@@ -161,20 +163,20 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       viewport={{ once: true }}
       transition={{ duration: 0.3 }}
       id={`entry-${entry.position}`}
-      className="chart-card flex flex-col w-full"
-    >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+className="chart-card w-full"
+  >
+      <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 w-full">
         <div className="flex items-center gap-2 md:gap-4 w-auto">
-          <div className="rank-num flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-8 md:w-16 flex-shrink-0">
-            <div className="text-xl md:text-3xl font-black">{entry.position}</div>
+          <div className="rank-num flex items-center justify-center gap-2 w-12 md:w-16 flex-shrink-0">
+            <div className="text-lg md:text-3xl font-black">{entry.position}</div>
             {showDiff && <DiffIndicator diff={entry.diff} />}
           </div>
-        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-14 h-14 md:w-24 md:h-24 flex-shrink-0">
+        </div>
+        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-12 h-12 md:w-24 md:h-24 flex-shrink-0">
           <SpotifyImage entry={entry} kind={kind} />
         </div>
-      </div>
 
-      <div className="flex-grow min-w-0">
+      <div className="min-w-0">
         <div className="font-bold text-sm md:text-base truncate md:whitespace-normal md:break-words">{entry.name}</div>
         <Link
           to="/artist/$slug"
@@ -184,9 +186,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
         {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-          <div className="text-[11px] text-gray-500 truncate md:whitespace-normal md:break-words">{entry.album}</div>
+          <div className="hidden md:block text-[11px] text-gray-500 truncate md:whitespace-normal md:break-words">{entry.album}</div>
         )}
-        <div className="mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-1">
+        <div className="hidden md:flex mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex-wrap gap-x-2 gap-y-1">
           {entry.lastWeek !== undefined && entry.lastWeek !== "" && <div>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></div>}
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
           {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}
@@ -198,7 +200,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         </div>
       </div>
 
-      <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 ml-auto">
+      <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
         {metric && (
           <div className="text-right text-sm md:text-2xl font-bold text-foreground tracking-tight">{metric}</div>
         )}

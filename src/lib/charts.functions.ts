@@ -20,6 +20,8 @@ export interface ChartEntry {
   certification?: string;
   units?: string;
   totalUnits?: string;
+  totalStreams?: string;
+  totalSales?: string;
 }
 
 export interface WeeklyChartData {
@@ -155,13 +157,15 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     weeks: findIdx(header, ["weeks", "wks"]),
     weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "week at 1", "weeks at #1"]),
     points: findIdx(header, ["points"]),
-    sales: findIdx(header, ["sales", "sales/streams", "sales/streaming"]),
-    streams: findIdx(header, ["streams"]),
+    sales: findIdx(header, ["sales", "sales/streams", "sales/streaming", "pure sales"]),
+    streams: findIdx(header, ["streams", "sea"]),
     airplay: findIdx(header, ["airplay"]),
     audience: findIdx(header, ["audience"]),
     certification: findIdx(header, ["certification"]),
     units: findIdx(header, ["units", "spins", "sales", "streams", "audience"]),
     totalUnits: findIdx(header, ["total units", "total"]),
+    totalStreams: findIdx(header, ["total streams"]),
+    totalSales: findIdx(header, ["total sales"]),
   };
   if (cfg.id === "radioSongs") {
     const a = header.indexOf("audience");
@@ -190,6 +194,8 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
       certification: idx.certification >= 0 ? r[idx.certification] : undefined,
       units: idx.units >= 0 ? r[idx.units] : undefined,
       totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] : undefined,
+      totalStreams: idx.totalStreams >= 0 ? r[idx.totalStreams] : undefined,
+      totalSales: idx.totalSales >= 0 ? r[idx.totalSales] : undefined,
     };
     if (!entry.name || !entry.position) continue;
     (entriesByDate[date] ||= []).push(entry);
@@ -215,6 +221,8 @@ async function loadYearEnd(chartId: string): Promise<YearEndChartData> {
     points: findIdx(header, ["points"]),
     units: findIdx(header, ["units", "spins", "sales", "streams", "audience"]),
     totalUnits: findIdx(header, ["total units", "total"]),
+    totalStreams: findIdx(header, ["total streams"]),
+    totalSales: findIdx(header, ["total sales"]),
     certification: findIdx(header, ["certification"]),
   };
   const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
@@ -234,6 +242,8 @@ async function loadYearEnd(chartId: string): Promise<YearEndChartData> {
       units: idx.units >= 0 ? r[idx.units] : undefined,
       totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] : undefined,
       certification: idx.certification >= 0 ? r[idx.certification] : undefined,
+      totalStreams: idx.totalStreams >= 0 ? r[idx.totalStreams] : undefined,
+      totalSales: idx.totalSales >= 0 ? r[idx.totalSales] : undefined,
     };
     if (!entry.name || !entry.position) continue;
     (entriesByYear[year] ||= []).push(entry);
