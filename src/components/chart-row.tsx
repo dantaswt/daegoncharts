@@ -86,8 +86,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       const label = chartId === "albums" ? "Pure Sales" : "Sales";
       items.push({ label, value: entry.sales });
     }
-    if (!isGoat && entry.streams && ["albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
+    if (!isGoat && entry.streams && ["songs", "albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
       let label = "Streaming";
+      if (chartId === "songs") label = "Streams";
       if (chartId === "albums" || chartId === "topStreamingAlbums") label = "SEA";
       if (chartId === "streamingSongs") label = "Streams";
       items.push({ label, value: entry.streams });
@@ -95,12 +96,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       items.push({ label: "Total Streams", value: entry.totalStreams });
     }
     if (!isGoat && entry.totalSales) {
-      items.push({ label: "Total Sales", value: entry.totalSales });
+      const label = chartId === "albums" || chartId === "topStreamingAlbums" ? "" : "Total Sales";
+      if (label) items.push({ label, value: entry.totalSales });
     }
-    if (entry.totalUnits && !entry.totalStreams && !entry.totalSales) {
+    if (entry.totalUnits) {
       let totalLabel = "Total Units";
       if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") totalLabel = "Total Streams";
       if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") totalLabel = "Total Sales";
+      if (chartId === "albums" || chartId === "topStreamingAlbums") totalLabel = "Total Units";
       items.push({ label: totalLabel, value: entry.totalUnits });
     }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
@@ -198,7 +201,7 @@ className="chart-card w-full"
             </div>
           )}
         </div>
-        <div className="flex md:hidden w-full mt-2 text-[9px] text-muted-foreground gap-3 items-center">
+        <div className="flex md:hidden mt-1 text-[9px] text-muted-foreground gap-x-3 gap-y-1">
           {entry.lastWeek !== undefined && entry.lastWeek !== "" && <span>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></span>}
           {entry.peak > 0 && <span>Peak: <span className="font-semibold">#{entry.peak}</span></span>}
           {entry.weeks > 0 && <span>Weeks: <span className="font-semibold">{entry.weeks}</span></span>}

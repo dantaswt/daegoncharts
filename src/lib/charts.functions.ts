@@ -130,14 +130,11 @@ function computeDiffs(dates: string[], entriesByDate: Record<string, ChartEntry[
     for (const e of entriesByDate[date]) {
       const key = `${e.name.toLowerCase()}|${e.artist.toLowerCase()}`;
       const p = prevMap.get(key);
-      // Only calculate diff if it's not already set from spreadsheet
-      if (!e.diff || e.diff.trim() === "") {
-        if (p == null) {
-          e.diff = seenBefore.has(key) ? "RE" : "NEW";
-        } else {
-          const d = p - e.position;
-          e.diff = d > 0 ? `▲${d}` : d < 0 ? `▼${Math.abs(d)}` : "=";
-        }
+      if (p == null) {
+        e.diff = seenBefore.has(key) ? "RE" : "NEW";
+      } else {
+        const d = p - e.position;
+        e.diff = d > 0 ? `▲${d}` : d < 0 ? `▼${Math.abs(d)}` : "=";
       }
       if (!seenBefore.has(key)) seenBefore.set(key, date);
     }
