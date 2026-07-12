@@ -198,7 +198,7 @@ className="chart-card w-full"
             </div>
           )}
         </div>
-        <div className="flex md:hidden mt-1 text-[9px] text-muted-foreground gap-x-3 gap-y-1">
+        <div className="flex md:hidden w-full mt-2 text-[9px] text-muted-foreground gap-3 items-center">
           {entry.lastWeek !== undefined && entry.lastWeek !== "" && <span>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></span>}
           {entry.peak > 0 && <span>Peak: <span className="font-semibold">#{entry.peak}</span></span>}
           {entry.weeks > 0 && <span>Weeks: <span className="font-semibold">{entry.weeks}</span></span>}
