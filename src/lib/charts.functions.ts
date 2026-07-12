@@ -130,11 +130,14 @@ function computeDiffs(dates: string[], entriesByDate: Record<string, ChartEntry[
     for (const e of entriesByDate[date]) {
       const key = `${e.name.toLowerCase()}|${e.artist.toLowerCase()}`;
       const p = prevMap.get(key);
-      if (p == null) {
-        e.diff = seenBefore.has(key) ? "RE" : "NEW";
-      } else {
-        const d = p - e.position;
-        e.diff = d > 0 ? `▲${d}` : d < 0 ? `▼${Math.abs(d)}` : "=";
+      // Only calculate diff if it's not already set from spreadsheet
+      if (!e.diff || e.diff.trim() === "") {
+        if (p == null) {
+          e.diff = seenBefore.has(key) ? "RE" : "NEW";
+        } else {
+          const d = p - e.position;
+          e.diff = d > 0 ? `▲${d}` : d < 0 ? `▼${Math.abs(d)}` : "=";
+        }
       }
       if (!seenBefore.has(key)) seenBefore.set(key, date);
     }
@@ -158,7 +161,7 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "week at 1", "weeks at #1"]),
     points: findIdx(header, ["points"]),
     sales: findIdx(header, ["sales", "sales/streams", "sales/streaming", "pure sales"]),
-    streams: findIdx(header, ["streams", "sea"]),
+    streams: findIdx(header, ["streams", "sea", "streaming"]),
     airplay: findIdx(header, ["airplay"]),
     audience: findIdx(header, ["audience"]),
     certification: findIdx(header, ["certification"]),
