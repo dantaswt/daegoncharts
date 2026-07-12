@@ -186,9 +186,9 @@ className="chart-card w-full"
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
         {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-          <div className="hidden md:block text-[11px] text-gray-500 truncate md:whitespace-normal md:break-words">{entry.album}</div>
+          <div className="text-[11px] text-gray-500 truncate md:whitespace-normal md:break-words">{entry.album}</div>
         )}
-        <div className="hidden md:flex mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex-wrap gap-x-2 gap-y-1">
+        <div className="mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
           {entry.lastWeek !== undefined && entry.lastWeek !== "" && <div>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></div>}
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
           {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}

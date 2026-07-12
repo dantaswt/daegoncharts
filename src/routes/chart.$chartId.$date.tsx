@@ -114,7 +114,7 @@ function WeeklyChartPage() {
         {dropouts.length > 0 && (
           <div className="mt-8 max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">DROP-OUTS</div>
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="space-y-2">
               {dropouts.map((out: any) => (
                 <DropoutChip key={`${out.name}-${out.artist}`} dropout={out} chartKind={cfg.kind} />
               ))}
@@ -150,20 +150,24 @@ function DropoutChip({ dropout, chartKind }: { dropout: any; chartKind: string }
     <Link
       to="/artist/$slug"
       params={{ slug: slugifyArtist(dropout.artist) }}
-      className="inline-flex items-center gap-3 rounded-full border border-[var(--border)] bg-[#111827] px-3 py-2 text-xs text-muted-foreground transition hover:border-[var(--accent)]"
+      className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[#111827] p-3 text-xs text-muted-foreground transition hover:border-[var(--accent)] w-full"
     >
-      <div className="w-9 h-9 overflow-hidden rounded-full bg-slate-800 flex items-center justify-center">
+      <div className="w-14 h-14 overflow-hidden rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
         {imageUrl ? (
           <img src={imageUrl} alt={dropout.artist} className="w-full h-full object-cover" />
         ) : (
-          <i className="fas fa-user text-sm text-gray-400" />
+          <i className="fas fa-user text-xl text-gray-400" />
         )}
       </div>
-      <div className="min-w-0">
-        <div className="font-semibold text-white truncate">{dropout.name}</div>
-        <div className="text-[11px] text-gray-400 truncate">{dropout.artist}</div>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-white break-words">{dropout.name}</div>
+        <div className="text-[11px] text-gray-400 break-words">{dropout.artist}</div>
+        <div className="mt-1 text-[10px] text-gray-400 flex flex-wrap gap-x-2">
+          <span>LW: <span className="font-semibold">#{dropout.position}</span></span>
+          {dropout.peak && <span>Peak: <span className="font-semibold">#{dropout.peak}</span></span>}
+          {dropout.weeks && <span>Weeks: <span className="font-semibold">{dropout.weeks}</span></span>}
+        </div>
       </div>
-      <span className="text-[11px] text-gray-400">#{dropout.position}</span>
     </Link>
   );
 }

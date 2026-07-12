@@ -51,7 +51,7 @@ function ChartBeatCard({ post, onClick }: { post: ChartBeatPost; onClick: () => 
         <img src={imageUrl} alt={post.title} className="w-full h-52 object-cover" />
       ) : null}
       <div className="p-5">
-        <div className="text-xs text-muted-foreground mb-2">{post.publicationDate}</div>
+        <div className="text-xs mb-2 md:text-muted-foreground text-black/60">{post.publicationDate}</div>
         <h2 className="font-bold text-lg mb-2 gold">{post.title}</h2>
         <p className="text-sm text-muted-foreground text-justify">{preview}</p>
         <span className="text-xs mt-3 inline-block text-[var(--accent)]">Read more →</span>
