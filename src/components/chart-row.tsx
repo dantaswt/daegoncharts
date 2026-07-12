@@ -81,17 +81,17 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       items.push({ label: "Units", value: entry.units });
     }
     if (!isGoat && entry.audience) items.push({ label: "Audience", value: entry.audience });
+    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: entry.airplay });
     if (!isGoat && entry.sales) {
       const label = chartId === "albums" ? "Pure Sales" : "Sales";
       items.push({ label, value: entry.sales });
     }
     if (!isGoat && entry.streams && ["albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
       let label = "Streaming";
-      if (chartId === "albums") label = "SEA";
-      if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") label = "Streams";
+      if (chartId === "albums" || chartId === "topStreamingAlbums") label = "SEA";
+      if (chartId === "streamingSongs") label = "Streams";
       items.push({ label, value: entry.streams });
-    }
-    if (!isGoat && entry.totalStreams) {
+    }    if (!isGoat && entry.totalStreams) {
       items.push({ label: "Total Streams", value: entry.totalStreams });
     }
     if (!isGoat && entry.totalSales) {
@@ -165,7 +165,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       id={`entry-${entry.position}`}
 className="chart-card w-full"
   >
-      <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 w-full">
+      <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] md:gap-3 gap-2 w-full">
         <div className="flex items-center gap-2 md:gap-4 w-auto">
           <div className="rank-num flex items-center justify-center gap-2 w-12 md:w-16 flex-shrink-0">
             <div className="text-lg md:text-3xl font-black">{entry.position}</div>
@@ -176,19 +176,19 @@ className="chart-card w-full"
           <SpotifyImage entry={entry} kind={kind} />
         </div>
 
-      <div className="min-w-0">
-        <div className="font-bold text-sm md:text-base truncate md:whitespace-normal md:break-words">{entry.name}</div>
+      <div className="min-w-0 flex flex-col">
+        <div className="font-bold text-xs md:text-base break-words line-clamp-2">{entry.name}</div>
         <Link
           to="/artist/$slug"
           params={{ slug }}
-          className="text-xs md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block truncate md:whitespace-normal md:break-words"
+          className="text-[10px] md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block break-words line-clamp-2"
         >
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
         {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-          <div className="text-[11px] text-gray-500 truncate md:whitespace-normal md:break-words">{entry.album}</div>
+          <div className="text-[10px] text-gray-500 break-words truncate md:whitespace-normal md:break-words hidden md:block">{entry.album}</div>
         )}
-        <div className="mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+        <div className="hidden md:flex mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex-wrap gap-x-3 gap-y-1">
           {entry.lastWeek !== undefined && entry.lastWeek !== "" && <div>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></div>}
           {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
           {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}
@@ -197,6 +197,11 @@ className="chart-card w-full"
               {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
             </div>
           )}
+        </div>
+        <div className="flex md:hidden mt-1 text-[9px] text-muted-foreground gap-x-3 gap-y-1">
+          {entry.lastWeek !== undefined && entry.lastWeek !== "" && <span>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></span>}
+          {entry.peak > 0 && <span>Peak: <span className="font-semibold">#{entry.peak}</span></span>}
+          {entry.weeks > 0 && <span>Weeks: <span className="font-semibold">{entry.weeks}</span></span>}
         </div>
       </div>
 

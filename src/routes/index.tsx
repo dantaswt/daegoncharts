@@ -398,8 +398,8 @@ function LandingPage() {
                 VS
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
-                <div className="text-lg font-black uppercase">Play Chart Battle 🏆</div>
+                <div className="text-xs font-bold text-black uppercase tracking-widest">New Mini-Game!</div>
+                <div className="text-lg font-black uppercase text-black">Play Chart Battle 🏆</div>
               </div>
             </Link>
           </div>

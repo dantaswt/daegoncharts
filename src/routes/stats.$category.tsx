@@ -66,7 +66,7 @@ function StatsCategoryPage() {
           const rank = it.rank || i + 1;
           return (
             <div key={i} className="bg-[var(--muted)] rounded-3xl border border-[var(--border)] p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-3xl bg-[var(--card)] text-lg font-black text-[var(--accent)]">{rank}</div>
+              <div className="flex items-center justify-center w-12 h-12 rounded-3xl bg-[#111827] text-lg font-black text-[var(--accent)]">{rank}</div>
               <StatsItemImage query={parsed.subtext ?? parsed.title} />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold truncate">{parsed.title}</div>
