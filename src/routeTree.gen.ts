@@ -26,6 +26,7 @@ import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
 import { Route as AlbumSlugRouteImport } from './routes/album.$slug'
 import { Route as ChartChartIdIndexRouteImport } from './routes/chart.$chartId.index'
 import { Route as ChartChartIdDateRouteImport } from './routes/chart.$chartId.$date'
+import { Route as ChartBeatBlogSlugRouteImport } from './routes/chart-beat.$blog.$slug'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -112,6 +113,11 @@ const ChartChartIdDateRoute = ChartChartIdDateRouteImport.update({
   path: '/$date',
   getParentRoute: () => ChartChartIdRoute,
 } as any)
+const ChartBeatBlogSlugRoute = ChartBeatBlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ChartBeatBlogRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -121,7 +127,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
-  '/chart-beat/$blog': typeof ChartBeatBlogRoute
+  '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
   '/stats/$category': typeof StatsCategoryRoute
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/goat/': typeof GoatIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/year-end/': typeof YearEndIndexRoute
+  '/chart-beat/$blog/$slug': typeof ChartBeatBlogSlugRoute
   '/chart/$chartId/$date': typeof ChartChartIdDateRoute
   '/chart/$chartId/': typeof ChartChartIdIndexRoute
 }
@@ -140,13 +147,14 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
-  '/chart-beat/$blog': typeof ChartBeatBlogRoute
+  '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat': typeof GoatIndexRoute
   '/stats': typeof StatsIndexRoute
   '/year-end': typeof YearEndIndexRoute
+  '/chart-beat/$blog/$slug': typeof ChartBeatBlogSlugRoute
   '/chart/$chartId/$date': typeof ChartChartIdDateRoute
   '/chart/$chartId': typeof ChartChartIdIndexRoute
 }
@@ -159,7 +167,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
-  '/chart-beat/$blog': typeof ChartBeatBlogRoute
+  '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
   '/stats/$category': typeof StatsCategoryRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/goat/': typeof GoatIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/year-end/': typeof YearEndIndexRoute
+  '/chart-beat/$blog/$slug': typeof ChartBeatBlogSlugRoute
   '/chart/$chartId/$date': typeof ChartChartIdDateRoute
   '/chart/$chartId/': typeof ChartChartIdIndexRoute
 }
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/goat/'
     | '/stats/'
     | '/year-end/'
+    | '/chart-beat/$blog/$slug'
     | '/chart/$chartId/$date'
     | '/chart/$chartId/'
   fileRoutesByTo: FileRoutesByTo
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/goat'
     | '/stats'
     | '/year-end'
+    | '/chart-beat/$blog/$slug'
     | '/chart/$chartId/$date'
     | '/chart/$chartId'
   id:
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/goat/'
     | '/stats/'
     | '/year-end/'
+    | '/chart-beat/$blog/$slug'
     | '/chart/$chartId/$date'
     | '/chart/$chartId/'
   fileRoutesById: FileRoutesById
@@ -237,7 +249,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AlbumSlugRoute: typeof AlbumSlugRoute
   ArtistSlugRoute: typeof ArtistSlugRoute
-  ChartBeatBlogRoute: typeof ChartBeatBlogRoute
+  ChartBeatBlogRoute: typeof ChartBeatBlogRouteWithChildren
   ChartChartIdRoute: typeof ChartChartIdRouteWithChildren
   GoatChartIdRoute: typeof GoatChartIdRoute
   StatsCategoryRoute: typeof StatsCategoryRoute
@@ -368,8 +380,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChartChartIdDateRouteImport
       parentRoute: typeof ChartChartIdRoute
     }
+    '/chart-beat/$blog/$slug': {
+      id: '/chart-beat/$blog/$slug'
+      path: '/$slug'
+      fullPath: '/chart-beat/$blog/$slug'
+      preLoaderRoute: typeof ChartBeatBlogSlugRouteImport
+      parentRoute: typeof ChartBeatBlogRoute
+    }
   }
 }
+
+interface ChartBeatBlogRouteChildren {
+  ChartBeatBlogSlugRoute: typeof ChartBeatBlogSlugRoute
+}
+
+const ChartBeatBlogRouteChildren: ChartBeatBlogRouteChildren = {
+  ChartBeatBlogSlugRoute: ChartBeatBlogSlugRoute,
+}
+
+const ChartBeatBlogRouteWithChildren = ChartBeatBlogRoute._addFileChildren(
+  ChartBeatBlogRouteChildren,
+)
 
 interface ChartChartIdRouteChildren {
   ChartChartIdDateRoute: typeof ChartChartIdDateRoute
@@ -393,7 +424,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AlbumSlugRoute: AlbumSlugRoute,
   ArtistSlugRoute: ArtistSlugRoute,
-  ChartBeatBlogRoute: ChartBeatBlogRoute,
+  ChartBeatBlogRoute: ChartBeatBlogRouteWithChildren,
   ChartChartIdRoute: ChartChartIdRouteWithChildren,
   GoatChartIdRoute: GoatChartIdRoute,
   StatsCategoryRoute: StatsCategoryRoute,
