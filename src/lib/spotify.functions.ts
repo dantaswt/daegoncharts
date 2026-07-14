@@ -5,12 +5,10 @@ const SPOTIFY_CLIENT_SECRET = "24da1ad56cf34cd8b6731a2bda503fdb";
 
 let accessToken: string | null = null;
 let tokenExpiresAt = 0;
+const imageCache = new Map<string, string | null>();
 
 async function getAccessToken() {
-  if (accessToken && Date.now() < tokenExpiresAt) {
-    return accessToken;
-  }
-  
+  if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -19,150 +17,93 @@ async function getAccessToken() {
     },
     body: "grant_type=client_credentials",
   });
-  
-  if (!response.ok) {
-    console.error("Failed to fetch Spotify token", await response.text());
-    return null;
-  }
-  
+  if (!response.ok) return null;
   const data = await response.json();
   accessToken = data.access_token;
-  tokenExpiresAt = Date.now() + data.expires_in * 1000 - 60000; // buffer of 1 min
+  tokenExpiresAt = Date.now() + data.expires_in * 1000 - 60_000;
   return accessToken;
 }
 
-const imageCache = new Map<string, string | null>();
+function fieldValue(query: string, field: string) {
+  return query.match(new RegExp(`${field}:"([^"]+)"`, "i"))?.[1]?.trim() ?? "";
+}
 
-function normalizeSpotifyQuery(query: string) {
-  const normalized = query.trim();
-  if (/^ja[oã]$/i.test(normalized) || /^anitta$/i.test(normalized)) {
-    return `${normalized} cantora singer`;
-  }
-  return normalized;
+function comparable(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function isDeluxeEdition(value: string) {
+  return /\b(deluxe|expanded|anniversary|anniversario|edition|edicao|version|versao|bonus)\b/i.test(value);
+}
+
+function scoreAlbum(album: any, albumName: string, artistName: string) {
+  const expectedAlbum = comparable(albumName);
+  const expectedArtist = comparable(artistName);
+  const actualAlbum = comparable(album.name ?? "");
+  const artists = (album.artists ?? []).map((artist: any) => comparable(artist.name ?? ""));
+  let score = actualAlbum === expectedAlbum ? 100 : actualAlbum.includes(expectedAlbum) || expectedAlbum.includes(actualAlbum) ? 25 : 0;
+  score += artists.some((name: string) => name === expectedArtist) ? 80 : artists.some((name: string) => name.includes(expectedArtist) || expectedArtist.includes(name)) ? 20 : 0;
+  if (!isDeluxeEdition(albumName) && isDeluxeEdition(album.name ?? "")) score -= 60;
+  if (album.album_type === "album") score += 5;
+  return score;
+}
+
+async function spotifySearch(token: string, query: string, type: "album" | "artist" | "track", limit = 10) {
+  const url = new URL("https://api.spotify.com/v1/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("type", type);
+  url.searchParams.set("limit", String(limit));
+  const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  return response.ok ? response.json() : null;
 }
 
 export const getSpotifyImage = createServerFn({ method: "GET" })
   .inputValidator((d: { query: string; type: "album" | "artist" }) => d)
   .handler(async ({ data }) => {
-    const { query, type } = data;
-    
-    const normalizedQuery = normalizeSpotifyQuery(query);
-    const cacheKey = `${type}:${normalizedQuery}`;
-
-    if (/\bja[oã]\b/i.test(query.trim())) {
-      const JAO_IMAGE = "https://i.scdn.co/image/7d6c097127ab57ce074878afcea8bdab483dac22";
-      imageCache.set(cacheKey, JAO_IMAGE);
-      return JAO_IMAGE;
-    }
-
-    if (imageCache.has(cacheKey)) {
-      return imageCache.get(cacheKey);
-    }
-
+    const cacheKey = `${data.type}:${data.query.trim()}`;
+    if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
     const token = await getAccessToken();
     if (!token) return null;
 
-    const url = new URL("https://api.spotify.com/v1/search");
-    url.searchParams.set("q", normalizedQuery);
-    url.searchParams.set("type", type);
-    url.searchParams.set("limit", "1");
-
     try {
-      const response = await fetch(url.toString(), {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-         if (response.status === 429) {
-           console.warn("Spotify rate limit exceeded");
-         }
-         return null;
-      }
-
-      const resData = await response.json();
-
-      // Helper to detect João Gomes false positives
-      const isJoaoGomes = (name: string | undefined) => /joã?o\s+gomes/i.test(name || "");
-
       let imageUrl: string | null = null;
-
-      if (type === "album") {
-        const albums = resData.albums?.items || [];
-        // pick first album whose first artist is NOT João Gomes
-        const nonJoaoAlbum = albums.find((al: any) => !isJoaoGomes(al.artists?.[0]?.name) && al.images?.[0]?.url);
-        if (nonJoaoAlbum) {
-          imageUrl = nonJoaoAlbum.images[0].url;
+      if (data.type === "album") {
+        const albumName = fieldValue(data.query, "album") || data.query;
+        const artistName = fieldValue(data.query, "artist");
+        const query = artistName ? `album:"${albumName}" artist:"${artistName}"` : `album:"${albumName}"`;
+        const result = await spotifySearch(token, query, "album");
+        const albums = (result?.albums?.items ?? [])
+          .filter((album: any) => album.images?.[0]?.url)
+          .sort((a: any, b: any) => scoreAlbum(b, albumName, artistName) - scoreAlbum(a, albumName, artistName));
+        imageUrl = albums[0]?.images?.[0]?.url ?? null;
+      } else {
+        const artistName = fieldValue(data.query, "artist") || data.query;
+        const title = fieldValue(data.query, "track") || fieldValue(data.query, "album");
+        if (comparable(artistName) === "jao" && !title) {
+          const response = await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } });
+          if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
         }
-      } else if (type === "artist") {
-        const artists = resData.artists?.items || [];
-        // choose a non-João Gomes artist if present; DO NOT fall back to João Gomes
-        const nonJoao = artists.find((a: any) => !isJoaoGomes(a.name) && a.images?.[0]?.url);
-        if (nonJoao) {
-          imageUrl = nonJoao.images[0].url;
-        }
-      }
-
-      // If we detected João Gomes or no suitable image, and the original query was Jão,
-      // try a more specific fallback search including albums/tracks to disambiguate.
-      const originalIsJao = /\bja[oã]\b/i.test(normalizedQuery);
-      if (!imageUrl && originalIsJao) {
-        const fallbackQ = 'artist:"Jão" OR album:Lobos OR album:PIRATA OR album:SUPER OR track:Idiota OR track:Pilantra';
-        const retryUrl = new URL("https://api.spotify.com/v1/search");
-        retryUrl.searchParams.set("q", fallbackQ);
-        retryUrl.searchParams.set("type", type);
-        retryUrl.searchParams.set("limit", "3");
-
-        try {
-          const r2 = await fetch(retryUrl.toString(), {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (r2.ok) {
-            const d2 = await r2.json();
-            if (type === "album" && d2.albums?.items?.length) {
-              const album = d2.albums.items.find((al: any) => !isJoaoGomes(al.artists?.[0]?.name) && al.images?.[0]?.url);
-              imageUrl = album?.images?.[0]?.url || null;
-            } else if (type === "artist" && d2.artists?.items?.length) {
-              const artist = d2.artists.items.find((a: any) => !isJoaoGomes(a.name) && a.images?.[0]?.url);
-              imageUrl = artist?.images?.[0]?.url || null;
-            }
+        if (title) {
+          const tracks = (await spotifySearch(token, `track:"${title}" artist:"${artistName}"`, "track"))?.tracks?.items ?? [];
+          const track = tracks.find((item: any) => item.artists?.some((artist: any) => comparable(artist.name) === comparable(artistName)));
+          const artist = track?.artists?.find((item: any) => comparable(item.name) === comparable(artistName));
+          if (artist?.id) {
+            const response = await fetch(`https://api.spotify.com/v1/artists/${artist.id}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
           }
-        } catch (e) {
-          // ignore fallback failure
+        }
+        if (!imageUrl) {
+          const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
+          const artists = (result?.artists?.items ?? [])
+            .filter((artist: any) => artist.images?.[0]?.url)
+            .sort((a: any, b: any) => Number(comparable(b.name) === comparable(artistName)) - Number(comparable(a.name) === comparable(artistName)));
+          imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
       }
-
-      // Fallback for album without image: try to find the artist image
-      if (!imageUrl && type === "album") {
-         const artistMatch = query.match(/artist:"([^"]+)"/);
-         const fallbackArtist = artistMatch ? artistMatch[1] : query;
-         
-         if (/^ja[oã]$/i.test(fallbackArtist.trim())) {
-           imageUrl = "https://i.scdn.co/image/7d6c097127ab57ce074878afcea8bdab483dac22";
-         } else {
-           const fallbackUrl = new URL("https://api.spotify.com/v1/search");
-           fallbackUrl.searchParams.set("q", normalizeSpotifyQuery(fallbackArtist));
-           fallbackUrl.searchParams.set("type", "artist");
-           fallbackUrl.searchParams.set("limit", "1");
-           try {
-             const rFallback = await fetch(fallbackUrl.toString(), {
-               headers: { Authorization: `Bearer ${token}` }
-             });
-             if (rFallback.ok) {
-               const dFallback = await rFallback.json();
-               const artists = dFallback.artists?.items || [];
-               const nonJoao = artists.find((a: any) => !isJoaoGomes(a.name) && a.images?.[0]?.url);
-               if (nonJoao) imageUrl = nonJoao.images[0].url;
-             }
-           } catch (e) { }
-         }
-      }
-
       imageCache.set(cacheKey, imageUrl);
       return imageUrl;
-    } catch (e) {
-      console.error("Spotify search error", e);
+    } catch (error) {
+      console.error("Spotify image search failed", error);
       return null;
     }
   });
@@ -172,52 +113,18 @@ const profileCache = new Map<string, { imageUrl: string | null; followers: numbe
 export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
   .validator((d: { artistName: string }) => d)
   .handler(async ({ data }) => {
-    const { artistName } = data;
-    if (profileCache.has(artistName)) {
-      return profileCache.get(artistName);
-    }
-
+    if (profileCache.has(data.artistName)) return profileCache.get(data.artistName);
     const token = await getAccessToken();
     if (!token) return null;
-
-    let artist: any = null;
-
-    if (/^ja[oã]$/i.test(artistName.trim())) {
-      // Hardcoded Spotify ID for Jão
-      try {
-        const response = await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          artist = await response.json();
-        }
-      } catch (e) {}
-    } else {
-      const url = new URL("https://api.spotify.com/v1/search");
-      url.searchParams.set("q", normalizeSpotifyQuery(artistName));
-      url.searchParams.set("type", "artist");
-      url.searchParams.set("limit", "1");
-
-      try {
-        const response = await fetch(url.toString(), {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (response.ok) {
-          const resData = await response.json();
-          artist = resData.artists?.items?.[0];
-        }
-      } catch (e) {}
+    try {
+      const artist = comparable(data.artistName) === "jao"
+        ? await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
+        : (await spotifySearch(token, `artist:"${data.artistName}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(comparable(b.name) === comparable(data.artistName)) - Number(comparable(a.name) === comparable(data.artistName)))[0];
+      if (!artist) return null;
+      const profile = { imageUrl: artist.images?.[0]?.url ?? null, followers: artist.followers?.total ?? 0, genres: artist.genres ?? [] };
+      profileCache.set(data.artistName, profile);
+      return profile;
+    } catch {
+      return null;
     }
-
-    if (!artist) return null;
-
-    const profile = {
-      imageUrl: artist.images?.[0]?.url || null,
-      followers: artist.followers?.total || 0,
-      genres: artist.genres || [],
-    };
-
-    profileCache.set(artistName, profile);
-    return profile;
   });

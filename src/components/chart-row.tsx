@@ -37,11 +37,11 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
       if (/^anitta$/i.test(name)) return 'artist:"Anitta"';
       return `artist:"${name}"`;
     }
-    // song: search for the artist image
+    // Resolve artists from the charted song first, avoiding similarly named artists.
     const artistName = entry.artist.trim();
     if (/^ja[oã]$/i.test(artistName)) return 'artist:"Jão"';
     if (/^anitta$/i.test(artistName)) return 'artist:"Anitta"';
-    return `artist:"${artistName}"`;
+    return `artist:"${artistName}" track:"${entry.name}"`;
   }, [entry.name, entry.artist, kind]);
   const type = kind === "album" ? "album" : "artist";
 
@@ -66,6 +66,20 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
   }
 
   return <i className={`fas ${kind === "artist" ? "fa-user" : kind === "album" ? "fa-compact-disc" : "fa-music"} text-2xl opacity-50`} />;
+}
+
+function ChartMetrics({ entry }: { entry: ChartEntry }) {
+  const lastWeek = entry.lastWeek !== undefined && entry.lastWeek.trim() !== "" ? (entry.lastWeek === "0" ? "-" : entry.lastWeek) : "-";
+  const peak = entry.peak > 0 ? `#${entry.peak}` : "-";
+  const weeks = entry.weeks > 0 ? String(entry.weeks) : "-";
+
+  return (
+    <div className="mt-1 md:mt-2 flex flex-nowrap gap-x-3 text-[10px] md:text-[11px] text-muted-foreground whitespace-nowrap">
+      <span>LW: <span className="font-semibold">{lastWeek}</span></span>
+      <span>Peak: <span className="font-semibold">{peak}</span></span>
+      <span>Weeks: <span className="font-semibold">{weeks}</span></span>
+    </div>
+  );
 }
 
 export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesByDate, showDiff = true }: Props) {
@@ -191,21 +205,15 @@ className="chart-card w-full"
         {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
           <div className="text-[10px] text-gray-500 break-words truncate md:whitespace-normal md:break-words hidden md:block">{entry.album}</div>
         )}
-        <div className="hidden md:flex mt-1 md:mt-2 text-[10px] md:text-[11px] text-muted-foreground flex-wrap gap-x-3 gap-y-1">
-          {entry.lastWeek !== undefined && entry.lastWeek !== "" && <div>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></div>}
-          {entry.peak > 0 && <div>Peak: <span className="font-semibold">#{entry.peak}</span></div>}
-          {entry.weeks > 0 && <div>Weeks: <span className="font-semibold">{entry.weeks}</span></div>}
+        <div className="hidden md:block">
+          <ChartMetrics entry={entry} />
           {(entry.weeksAt1 ?? 0) > 0 && (
             <div className="inline-flex items-center rounded-full bg-blue-500/10 px-2 md:px-3 py-0.5 md:py-1 text-[9px] md:text-[10px] font-semibold text-blue-500">
               {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
             </div>
           )}
         </div>
-        <div className="flex md:hidden mt-1 text-[9px] text-muted-foreground gap-x-3 gap-y-1">
-          {entry.lastWeek !== undefined && entry.lastWeek !== "" && <span>LW: <span className="font-semibold">{entry.lastWeek === "0" ? "-" : entry.lastWeek}</span></span>}
-          {entry.peak > 0 && <span>Peak: <span className="font-semibold">#{entry.peak}</span></span>}
-          {entry.weeks > 0 && <span>Weeks: <span className="font-semibold">{entry.weeks}</span></span>}
-        </div>
+        <div className="md:hidden"><ChartMetrics entry={entry} /></div>
       </div>
 
       <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">

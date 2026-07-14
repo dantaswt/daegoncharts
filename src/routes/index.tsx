@@ -118,7 +118,7 @@ function TopChartsSection({ charts }: { charts: any }) {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group">
             <div className="aspect-square relative">
               <SpotifyImg
-                query={cfg.kind === "album" ? `${e.name} ${e.artist}` : cfg.kind === "artist" ? e.name : e.artist}
+                query={cfg.kind === "album" ? `album:"${e.name}" artist:"${e.artist}"` : cfg.kind === "artist" ? `artist:"${e.name}"` : `artist:"${e.artist}" track:"${e.name}"`}
                 type={cfg.kind === "album" ? "album" : "artist"}
                 rounded={false}
               />
@@ -167,7 +167,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
               <div className="flex items-center gap-3 p-4 flex-grow">
                 <div className="w-16 h-16 shrink-0">
                   <SpotifyImg
-                    query={n.kind === "album" ? `${n.entry.name} ${n.entry.artist}` : n.kind === "artist" ? n.entry.name : n.entry.artist}
+                    query={n.kind === "album" ? `album:"${n.entry.name}" artist:"${n.entry.artist}"` : n.kind === "artist" ? `artist:"${n.entry.name}"` : `artist:"${n.entry.artist}" track:"${n.entry.name}"`}
                     type={n.kind === "album" ? "album" : "artist"}
                     rounded={false}
                   />
