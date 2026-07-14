@@ -133,6 +133,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     
     // Convert diff symbols: ▲→+, ▼→-
     let copyDiff = entry.diff;
+    if (copyDiff === "NEW" || copyDiff === "RE") copyDiff = copyDiff.toLowerCase();
     if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
     else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
     

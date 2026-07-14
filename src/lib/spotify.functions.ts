@@ -72,10 +72,21 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const artistName = fieldValue(data.query, "artist");
         const query = artistName ? `album:"${albumName}" artist:"${artistName}"` : `album:"${albumName}"`;
         const result = await spotifySearch(token, query, "album");
-        const albums = (result?.albums?.items ?? [])
+        let albums = (result?.albums?.items ?? [])
           .filter((album: any) => album.images?.[0]?.url)
           .sort((a: any, b: any) => scoreAlbum(b, albumName, artistName) - scoreAlbum(a, albumName, artistName));
+        if (!albums.length) {
+          const fallback = await spotifySearch(token, `album:"${albumName}"`, "album");
+          albums = (fallback?.albums?.items ?? [])
+            .filter((album: any) => album.images?.[0]?.url)
+            .sort((a: any, b: any) => scoreAlbum(b, albumName, artistName) - scoreAlbum(a, albumName, artistName));
+        }
         imageUrl = albums[0]?.images?.[0]?.url ?? null;
+        if (!imageUrl && artistName) {
+          const artists = (await spotifySearch(token, `artist:"${artistName}"`, "artist"))?.artists?.items ?? [];
+          const artist = artists.find((item: any) => comparable(item.name) === comparable(artistName) && item.images?.[0]?.url) ?? artists.find((item: any) => item.images?.[0]?.url);
+          imageUrl = artist?.images?.[0]?.url ?? null;
+        }
       } else {
         const artistName = fieldValue(data.query, "artist") || data.query;
         const title = fieldValue(data.query, "track") || fieldValue(data.query, "album");
