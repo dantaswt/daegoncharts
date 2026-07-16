@@ -23,9 +23,11 @@ export const chartsConfig: Record<string, ChartConfig> = {
   yearEndSongs: { id: "yearEndSongs", url: SHEET + "530686468", title: "Year-End Songs", icon: "fa-calendar", kind: "song", group: "yearEnd" },
   yearEndArtists: { id: "yearEndArtists", url: SHEET + "1597569311", title: "Year-End Artists", icon: "fa-calendar", kind: "artist", group: "yearEnd" },
   yearEndAlbums: { id: "yearEndAlbums", url: SHEET + "897935603", title: "Year-End Albums", icon: "fa-calendar", kind: "album", group: "yearEnd" },
+  yearEndRadio: { id: "yearEndRadio", url: SHEET + "982271206", title: "Year-End Radio", icon: "fa-broadcast-tower", kind: "song", group: "yearEnd" },
   goatSongs: { id: "goatSongs", url: SHEET + "1157278896", title: "GOAT Songs", icon: "fa-trophy", kind: "song", group: "goat" },
   goatArtists: { id: "goatArtists", url: SHEET + "222299678", title: "GOAT Artists", icon: "fa-trophy", kind: "artist", group: "goat" },
   goatAlbums: { id: "goatAlbums", url: SHEET + "1548244755", title: "GOAT Albums", icon: "fa-trophy", kind: "album", group: "goat" },
+  goatRadio: { id: "goatRadio", url: SHEET + "1447340097", title: "GOAT Radio", icon: "fa-broadcast-tower", kind: "song", group: "goat" },
   artistStats: { id: "artistStats", url: SHEET + "1519606558", title: "Artist Statistics", icon: "fa-chart-bar", kind: "artist", group: "weekly" },
   statsData: { id: "statsData", url: SHEET + "193788146", title: "Stats", icon: "fa-chart-line", kind: "artist", group: "weekly" },
 };
@@ -37,8 +39,8 @@ export const chartBeatConfig = {
 } as const;
 
 export const weeklyChartIds = ["songs", "artists", "albums", "radioSongs", "topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"];
-export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums"];
-export const goatChartIds = ["goatSongs", "goatArtists", "goatAlbums"];
+export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yearEndRadio"];
+export const goatChartIds = ["goatSongs", "goatArtists", "goatAlbums", "goatRadio"];
 
 export function slugify(text: string): string {
   return text

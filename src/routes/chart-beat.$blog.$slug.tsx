@@ -1,7 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getAllArtistStats, getChartBeat, getWeeklyChart } from "@/lib/charts.functions";
 import { chartBeatConfig, slugifyArtist } from "@/lib/charts-config";
-import { getSpotifyImage } from "@/lib/spotify.functions";
 
 const chartForBlog: Record<keyof typeof chartBeatConfig, string> = { hot100: "songs", artists: "artists", top100Albums: "albums" };
 function escapeRegex(value: string) { return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
@@ -16,8 +15,7 @@ export const Route = createFileRoute("/chart-beat/$blog/$slug")({
     if (!post) throw notFound();
     const target = timestamp(post.publicationDate);
     const date = chart.dates.reduce((best, item) => Math.abs(new Date(`${item}T00:00:00`).getTime() - target) < Math.abs(new Date(`${best}T00:00:00`).getTime() - target) ? item : best, chart.dates[chart.dates.length - 1]);
-    const image = post.image ?? (post.artist ? await getSpotifyImage({ data: { query: `artist:"${post.artist}"`, type: "artist" } }) : null);
-    return { post: { ...post, image }, blog, chartId: chartForBlog[blog], date, artists: Object.values(stats).map((artist) => artist.name) };
+    return { post, blog, chartId: chartForBlog[blog], date, artists: Object.values(stats).map((artist) => artist.name) };
   },
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.post.title ?? "Chart Beat"} | daegon charts` }, { name: "description", content: loaderData?.post.fullText.slice(0, 160) ?? "Chart Beat article" }, ...(loaderData?.post.image ? [{ property: "og:image", content: loaderData.post.image }, { name: "twitter:card", content: "summary_large_image" }] : [])] }),
   component: ArticlePage,

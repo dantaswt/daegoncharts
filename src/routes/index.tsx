@@ -338,6 +338,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
             <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-music text-xs text-gray-500 w-4" /> Songs</Link>
             <Link to="/goat/$chartId" params={{ chartId: "goatArtists" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-user text-xs text-gray-500 w-4" /> Artists</Link>
             <Link to="/goat/$chartId" params={{ chartId: "goatAlbums" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-compact-disc text-xs text-gray-500 w-4" /> Albums</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatRadio" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-broadcast-tower text-xs text-gray-500 w-4" /> Radio</Link>
           </div>
         )}
       </div>
@@ -353,6 +354,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
             <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-music text-xs text-gray-500 w-4" /> Songs</Link>
             <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-user text-xs text-gray-500 w-4" /> Artists</Link>
             <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-compact-disc text-xs text-gray-500 w-4" /> Albums</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-broadcast-tower text-xs text-gray-500 w-4" /> Radio</Link>
           </div>
         )}
       </div>

@@ -219,8 +219,8 @@ async function loadYearEnd(chartId: string): Promise<YearEndChartData> {
     peak: findIdx(header, ["peak"]),
     weeks: findIdx(header, ["weeks", "wks"]),
     points: findIdx(header, ["points"]),
-    units: findIdx(header, ["units", "spins", "sales", "streams", "audience"]),
-    totalUnits: findIdx(header, ["total units", "total"]),
+    units: findIdx(header, ["units", "spins", "sales", "streams", "audience", "total audience"]),
+    totalUnits: findIdx(header, ["total units", "total", "total audience"]),
     totalStreams: findIdx(header, ["total streams"]),
     totalSales: findIdx(header, ["total sales"]),
     certification: findIdx(header, ["certification"]),
@@ -258,13 +258,13 @@ async function loadGoat(chartId: string): Promise<GoatChartData> {
   const rows = await fetchCsv(cfg.url);
   const header = rows[0].map((h) => h.toLowerCase().trim());
   const idx = {
-    position: findIdx(header, ["position", "rank", "pos"]),
+    position: findIdx(header, ["position", "rank", "pos", "all-time rank"]),
     song: findIdx(header, ["song", "title", "track"]),
     album: findIdx(header, ["album"]),
     artist: findIdx(header, ["artist", "artists"]),
     peak: findIdx(header, ["peak"]),
-    weeks: findIdx(header, ["weeks", "wks"]),
-    totalUnits: findIdx(header, ["total units", "total"]),
+    weeks: findIdx(header, ["weeks", "wks", "total weeks"]),
+    totalUnits: findIdx(header, ["total units", "total", "total audience"]),
   };
   const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
   const entries: ChartEntry[] = [];

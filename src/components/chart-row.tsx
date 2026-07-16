@@ -68,14 +68,14 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
   return <i className={`fas ${kind === "artist" ? "fa-user" : kind === "album" ? "fa-compact-disc" : "fa-music"} text-2xl opacity-50`} />;
 }
 
-function ChartMetrics({ entry }: { entry: ChartEntry }) {
+function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boolean }) {
   const lastWeek = entry.lastWeek !== undefined && entry.lastWeek.trim() !== "" ? (entry.lastWeek === "0" ? "-" : entry.lastWeek) : "-";
   const peak = entry.peak > 0 ? `#${entry.peak}` : "-";
   const weeks = entry.weeks > 0 ? String(entry.weeks) : "-";
 
   return (
     <div className="mt-1 md:mt-2 flex flex-nowrap gap-x-3 text-[10px] md:text-[11px] text-muted-foreground whitespace-nowrap">
-      <span>LW: <span className="font-semibold">{lastWeek}</span></span>
+      {showDiff && <span>LW: <span className="font-semibold">{lastWeek}</span></span>}
       <span>Peak: <span className="font-semibold">{peak}</span></span>
       <span>Weeks: <span className="font-semibold">{weeks}</span></span>
     </div>
@@ -93,6 +93,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (chartId === "songs" && entry.units) items.push({ label: "Units", value: entry.units });
     if ((kind === "album" || kind === "artist") && entry.units && !["topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"].includes(chartId ?? "")) {
       items.push({ label: "Units", value: entry.units });
+    }
+    if (chartId === "yearEndRadio" || chartId === "goatRadio") {
+      if (entry.units) items.push({ label: "Total Audience", value: entry.units });
     }
     if (!isGoat && entry.audience) items.push({ label: "Audience", value: entry.audience });
     if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: entry.airplay });
@@ -113,11 +116,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       const label = chartId === "albums" || chartId === "topStreamingAlbums" ? "" : "Total Sales";
       if (label) items.push({ label, value: entry.totalSales });
     }
-    if (entry.totalUnits) {
+    if (entry.totalUnits && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
       let totalLabel = "Total Units";
       if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") totalLabel = "Total Streams";
       if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") totalLabel = "Total Sales";
       if (chartId === "albums" || chartId === "topStreamingAlbums") totalLabel = "Total Units";
+      if (chartId === "yearEndRadio" || chartId === "goatRadio") totalLabel = "Total Audience";
       items.push({ label: totalLabel, value: entry.totalUnits });
     }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
@@ -207,14 +211,14 @@ className="chart-card w-full"
           <div className="text-[10px] text-gray-500 break-words truncate md:whitespace-normal md:break-words hidden md:block">{entry.album}</div>
         )}
         <div className="hidden md:block">
-          <ChartMetrics entry={entry} />
+          <ChartMetrics entry={entry} showDiff={showDiff} />
           {(entry.weeksAt1 ?? 0) > 0 && (
             <div className="inline-flex items-center rounded-full bg-blue-500/10 px-2 md:px-3 py-0.5 md:py-1 text-[9px] md:text-[10px] font-semibold text-blue-500">
               {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
             </div>
           )}
         </div>
-        <div className="md:hidden"><ChartMetrics entry={entry} /></div>
+        <div className="md:hidden"><ChartMetrics entry={entry} showDiff={showDiff} /></div>
       </div>
 
       <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
