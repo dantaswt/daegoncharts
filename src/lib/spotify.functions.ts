@@ -59,7 +59,7 @@ function artistMatch(album: any, expectedArtist: string): boolean {
   if (!expectedArtist) return true;
   const artists = (album.artists ?? []).map((a: any) => comparable(a.name ?? ""));
   const expected = comparable(expectedArtist);
-  return artists.some((n) => n === expected);
+  return artists.some((n: string) => n === expected);
 }
 
 async function fetchJson(url: string, init?: RequestInit): Promise<any> {
@@ -75,7 +75,7 @@ async function fetchJson(url: string, init?: RequestInit): Promise<any> {
   }
 }
 
-async function spotifySearch(token: string, query: string, type: "album" | "artist" | "track", limit = 10) {
+async function spotifySearch(token: string, query: string, type: "album" | "artist" | "track" | "playlist", limit = 10) {
   const url = new URL("https://api.spotify.com/v1/search");
   url.searchParams.set("q", query);
   url.searchParams.set("type", type);
@@ -148,7 +148,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
                 `${albumName} (${artistName} álbüm)`,
                 `${albumName} (álbum)`,
                 `${albumName} (${year} album)`,
-                `${albumName.replace(year, "").trim()} (${year} album)`,
+                year ? `${albumName.replace(year, "").trim()} (${year} album)` : null,
                 `${albumName} album`,
                 `${albumName}`,
               ].filter(Boolean) as string[]
@@ -157,6 +157,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
                 year ? `${albumName} (${year} album)` : null,
                 year ? `${albumName.replace(year, "").trim()} (${year} album)` : null,
                 `${albumName} (álbum)`,
+                `${albumName} álbüm`,
                 `${albumName} album`,
                 `${albumName}`,
               ].filter(Boolean) as string[];

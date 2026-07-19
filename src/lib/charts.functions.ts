@@ -473,6 +473,397 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
   });
 });
 
+export interface Stats2Record {
+  name: string;
+  artist: string;
+  value: number;
+  valueLabel: string;
+  peak?: number;
+  firstDate?: string;
+  chartId?: string;
+  details?: string;
+  metricLabel?: string;
+}
+
+export interface Stats2Category {
+  id: string;
+  title: string;
+  icon: string;
+  description: string;
+  records: Stats2Record[];
+}
+
+export interface Stats2Data {
+  chartStats: Record<string, Stats2Category[]>;
+  availableYears: string[];
+  chartIds: string[];
+}
+
+export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("stats2", async () => {
+    const chartIds = ["songs", "streamingSongs", "radioSongs", "digitalSongsSales", "albums", "topStreamingAlbums", "topAlbumSales", "artists"];
+    const allData = await Promise.all(
+      chartIds.map(async (id) => {
+        const cfg = chartsConfig[id];
+        const rows = await fetchCsv(cfg.url);
+        const header = rows[0].map((h) => h.toLowerCase().trim());
+        const idx = {
+          date: findIdx(header, ["date", "chart date"]),
+          position: findIdx(header, ["position", "rank", "pos"]),
+          song: findIdx(header, ["song", "title", "track"]),
+          album: findIdx(header, ["album"]),
+          artist: findIdx(header, ["artist", "artists"]),
+          diff: findIdx(header, ["dif", "diff", "▲▼"]),
+          peak: findIdx(header, ["peak"]),
+          weeks: findIdx(header, ["weeks", "wks"]),
+          units: findIdx(header, ["units"]),
+          sales: findIdx(header, ["sales", "pure sales", "sales/streams", "sales/streaming"]),
+          streams: findIdx(header, ["streams", "sea", "streaming"]),
+          audience: findIdx(header, ["audience"]),
+        };
+        if (cfg.id === "radioSongs") {
+          const a = header.indexOf("audience");
+          if (a !== -1) idx.units = a;
+        }
+        const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
+        const entriesByDate: Record<string, { position: number; name: string; artist: string; diff: string; peak: number; weeks: number; metric: number; metricLabel: string }[]> = {};
+        for (const r of rows.slice(1)) {
+          const date = normalizeDate(r[idx.date]);
+          if (!date) continue;
+          const position = toInt(r[idx.position]);
+          const name = (r[nameIdx] ?? "").trim();
+          const artist = (r[idx.artist] ?? "").trim();
+          if (!name || !position) continue;
+          const metricValue = toInt(r[idx.units]) || toInt(r[idx.sales]) || toInt(r[idx.streams]) || toInt(r[idx.audience]);
+          let metricLabel = "units";
+          if (idx.units >= 0 && r[idx.units]) metricLabel = "units";
+          else if (idx.sales >= 0 && r[idx.sales]) metricLabel = "sales";
+          else if (idx.streams >= 0 && r[idx.streams]) metricLabel = "streams";
+          else if (idx.audience >= 0 && r[idx.audience]) metricLabel = "audience";
+          (entriesByDate[date] ||= []).push({
+            position,
+            name,
+            artist,
+            diff: idx.diff >= 0 ? (r[idx.diff] ?? "") : "",
+            peak: toInt(r[idx.peak]),
+            weeks: toInt(r[idx.weeks]),
+            metric: metricValue,
+            metricLabel,
+          });
+        }
+        const dates = Object.keys(entriesByDate).sort();
+        for (const d of dates) entriesByDate[d].sort((a, b) => a.position - b.position);
+        return { id, title: cfg.title, kind: cfg.kind, dates, entriesByDate, metricLabel: entriesByDate[Object.keys(entriesByDate)[0]]?.[0]?.metricLabel ?? "units" };
+      })
+    );
+
+    const allYears = new Set<string>();
+    for (const chart of allData) {
+      for (const date of chart.dates) allYears.add(date.slice(0, 4));
+    }
+    const availableYears = [...allYears].sort().reverse();
+
+    const chartStats: Record<string, Stats2Category[]> = {};
+
+    for (const chart of allData) {
+      const categories: Stats2Category[] = [];
+
+      // 1. Biggest Debuts (entries with diff=NEW, ranked by metric value — highest metric = biggest debut)
+      const debutMap = new Map<string, Stats2Record>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.diff === "NEW") {
+            const key = `${e.name}||${e.artist}`;
+            const existing = debutMap.get(key);
+            if (!existing || e.metric > existing.value) {
+              debutMap.set(key, {
+                name: e.name,
+                artist: e.artist,
+                value: e.metric,
+                valueLabel: e.metric > 0 ? `${e.metric.toLocaleString()} ${e.metricLabel}` : `#${e.position} debut`,
+                peak: e.peak,
+                firstDate: date,
+                chartId: chart.id,
+                details: `#${e.position} debut · ${e.metric > 0 ? `${e.metric.toLocaleString()} ${e.metricLabel}` : "N/A"} on ${new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "debuts",
+        title: "Biggest Debuts",
+        icon: "fa-rocket",
+        description: "Debuts ranked by metric volume",
+        records: [...debutMap.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 2. Most Weeks at #1
+      const weeksAt1Map = new Map<string, Stats2Record>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position === 1) {
+            const key = `${e.name}||${e.artist}`;
+            const existing = weeksAt1Map.get(key);
+            if (existing) {
+              existing.value++;
+              existing.valueLabel = `${existing.value} weeks`;
+            } else {
+              weeksAt1Map.set(key, {
+                name: e.name,
+                artist: e.artist,
+                value: 1,
+                valueLabel: "1 week",
+                peak: 1,
+                firstDate: date,
+                chartId: chart.id,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "weeksAt1",
+        title: "Most Weeks at #1",
+        icon: "fa-crown",
+        description: "Longest reigns at the top",
+        records: [...weeksAt1Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 3. Most Weeks in Top 5
+      const top5Map = new Map<string, Stats2Record>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position <= 5) {
+            const key = `${e.name}||${e.artist}`;
+            const existing = top5Map.get(key);
+            if (existing) {
+              existing.value++;
+              existing.valueLabel = `${existing.value} weeks`;
+            } else {
+              top5Map.set(key, {
+                name: e.name,
+                artist: e.artist,
+                value: 1,
+                valueLabel: "1 week",
+                peak: e.peak || e.position,
+                firstDate: date,
+                chartId: chart.id,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "top5",
+        title: "Most Weeks in Top 5",
+        icon: "fa-star",
+        description: "Longest runs in the top 5",
+        records: [...top5Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 4. Most Weeks in Top 10
+      const top10Map = new Map<string, Stats2Record>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position <= 10) {
+            const key = `${e.name}||${e.artist}`;
+            const existing = top10Map.get(key);
+            if (existing) {
+              existing.value++;
+              existing.valueLabel = `${existing.value} weeks`;
+            } else {
+              top10Map.set(key, {
+                name: e.name,
+                artist: e.artist,
+                value: 1,
+                valueLabel: "1 week",
+                peak: e.peak || e.position,
+                firstDate: date,
+                chartId: chart.id,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "top10",
+        title: "Most Weeks in Top 10",
+        icon: "fa-arrow-up",
+        description: "Longest runs in the top 10",
+        records: [...top10Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 5. Most Weeks in Top 50
+      const top50Map = new Map<string, Stats2Record>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position <= 50) {
+            const key = `${e.name}||${e.artist}`;
+            const existing = top50Map.get(key);
+            if (existing) {
+              existing.value++;
+              existing.valueLabel = `${existing.value} weeks`;
+            } else {
+              top50Map.set(key, {
+                name: e.name,
+                artist: e.artist,
+                value: 1,
+                valueLabel: "1 week",
+                peak: e.peak || e.position,
+                firstDate: date,
+                chartId: chart.id,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "top50",
+        title: "Most Weeks in Top 50",
+        icon: "fa-chart-line",
+        description: "Longest runs in the top 50",
+        records: [...top50Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 6. Most Weeks on Chart (Top 100)
+      const totalWeeksMap = new Map<string, Stats2Record>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          const key = `${e.name}||${e.artist}`;
+          const existing = totalWeeksMap.get(key);
+          if (existing) {
+            existing.value++;
+            existing.valueLabel = `${existing.value} weeks`;
+          } else {
+            totalWeeksMap.set(key, {
+              name: e.name,
+              artist: e.artist,
+              value: 1,
+              valueLabel: "1 week",
+              peak: e.peak || e.position,
+              firstDate: date,
+              chartId: chart.id,
+            });
+          }
+        }
+      }
+      categories.push({
+        id: "totalWeeks",
+        title: "Most Weeks on Chart",
+        icon: "fa-calendar-check",
+        description: "Longest chart presence",
+        records: [...totalWeeksMap.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 7. Most Simultaneous Entries (artist with most entries on a single week)
+      const maxSimulMap = new Map<string, { count: number; date: string; names: string[] }>();
+      for (const date of chart.dates) {
+        const artistCount = new Map<string, string[]>();
+        for (const e of chart.entriesByDate[date]) {
+          const list = artistCount.get(e.artist) || [];
+          list.push(e.name);
+          artistCount.set(e.artist, list);
+        }
+        for (const [artist, names] of artistCount) {
+          if (names.length >= 2) {
+            const existing = maxSimulMap.get(artist);
+            if (!existing || names.length > existing.count) {
+              maxSimulMap.set(artist, { count: names.length, date, names });
+            }
+          }
+        }
+      }
+      const simulRecords: Stats2Record[] = [];
+      for (const [artist, info] of maxSimulMap) {
+        simulRecords.push({
+          name: info.names.join(", "),
+          artist,
+          value: info.count,
+          valueLabel: `${info.count} entries`,
+          firstDate: info.date,
+          chartId: chart.id,
+          details: `Peak simultaneous: ${info.count} entries on ${new Date(info.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+        });
+      }
+      categories.push({
+        id: "simultaneous",
+        title: "Most Simultaneous Entries",
+        icon: "fa-layer-group",
+        description: "Artists with most concurrent chart entries",
+        records: simulRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 8. Artists with Most Total Entries (unique items)
+      const artistEntriesMap = new Map<string, Set<string>>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          const set = artistEntriesMap.get(e.artist) || new Set();
+          set.add(e.name);
+          artistEntriesMap.set(e.artist, set);
+        }
+      }
+      const artistEntryRecords: Stats2Record[] = [];
+      for (const [artist, items] of artistEntriesMap) {
+        artistEntryRecords.push({
+          name: artist,
+          artist,
+          value: items.size,
+          valueLabel: `${items.size} entries`,
+          chartId: chart.id,
+          details: [...items].slice(0, 5).join(", ") + (items.size > 5 ? ` +${items.size - 5} more` : ""),
+        });
+      }
+      categories.push({
+        id: "artistEntries",
+        title: "Artists with Most Entries",
+        icon: "fa-users",
+        description: "Artists with the most different chart entries",
+        records: artistEntryRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 9. Biggest Drops (position fell the most in one week)
+      const dropRecords: Stats2Record[] = [];
+      for (let di = 1; di < chart.dates.length; di++) {
+        const prevDate = chart.dates[di - 1];
+        const currDate = chart.dates[di];
+        const prevMap = new Map<string, number>();
+        for (const e of chart.entriesByDate[prevDate]) prevMap.set(`${e.name}||${e.artist}`, e.position);
+        for (const e of chart.entriesByDate[currDate]) {
+          const key = `${e.name}||${e.artist}`;
+          const prevPos = prevMap.get(key);
+          if (prevPos != null && e.position > prevPos) {
+            const drop = e.position - prevPos;
+            if (drop >= 5) {
+              dropRecords.push({
+                name: e.name,
+                artist: e.artist,
+                value: drop,
+                valueLabel: `▼${drop}`,
+                peak: e.peak,
+                firstDate: currDate,
+                chartId: chart.id,
+                details: `Dropped ${drop} spots: #${prevPos} → #${e.position} on ${new Date(currDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "biggestDrops",
+        title: "Biggest Drops",
+        icon: "fa-arrow-down",
+        description: "Largest single-week drops",
+        records: dropRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      chartStats[chart.id] = categories;
+    }
+
+    return { chartStats, availableYears, chartIds };
+  });
+});
+
 export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   return cached("stats", async () => {
     const cfg = chartsConfig.statsData;

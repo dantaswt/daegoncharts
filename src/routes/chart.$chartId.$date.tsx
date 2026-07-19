@@ -92,7 +92,7 @@ function WeeklyChartPage() {
       </aside>
       <main>
         <div className="text-center mb-2 md:text-left">
-          <h1 className="text-2xl md:text-4xl font-extrabold gold inline-flex items-center gap-2 justify-center md:justify-start">
+          <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
             <i className={`fas ${cfg.icon}`} /> {cfg.title}
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">Chart week of {dateLabel}</p>
@@ -150,9 +150,9 @@ function DropoutChip({ dropout, chartKind }: { dropout: any; chartKind: string }
     <Link
       to="/artist/$slug"
       params={{ slug: slugifyArtist(dropout.artist) }}
-      className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[#111827] p-3 text-xs text-muted-foreground transition hover:border-[var(--accent)] w-full"
+      className="flex items-start gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--muted)] p-3 text-xs text-muted-foreground transition hover:border-[var(--accent)] w-full"
     >
-      <div className="w-14 h-14 overflow-hidden rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+      <div className="w-14 h-14 overflow-hidden rounded-lg bg-[#222] flex items-center justify-center flex-shrink-0">
         {imageUrl ? (
           <img src={imageUrl} alt={dropout.artist} className="w-full h-full object-cover" />
         ) : (

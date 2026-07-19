@@ -35,7 +35,7 @@ function YearEndChartPage() {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-[var(--muted)] border border-[var(--border)] text-sm font-bold text-foreground px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+            className="bg-[var(--card)] border border-[var(--border)] text-sm font-bold text-[var(--foreground)] px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
           >
             {data.years.map((y: string) => (
               <option key={y} value={y}>{y}</option>

@@ -107,7 +107,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function SiteHeader() {
   return (
-    <header className="bg-black border-b border-[var(--border)] sticky top-0 z-20">
+    <header className="bg-[var(--muted)] border-b border-[var(--border)] sticky top-0 z-20">
       <div className="container mx-auto px-4 py-3 md:py-4 flex justify-center items-center">
         <Link to="/" className="text-xl md:text-2xl font-extrabold gold">daegon charts</Link>
       </div>
@@ -117,17 +117,17 @@ function SiteHeader() {
 
 function SiteFooter() {
   return (
-    <footer className="bg-black mt-10 py-8 border-t border-[var(--border)]">
+    <footer className="bg-[var(--muted)] mt-10 py-8 border-t border-[var(--border)]">
       <div className="container mx-auto px-4">
         <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground mb-6">
           <Link to="/artists" className="hover:text-[var(--accent)] transition-colors font-semibold">Artists</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-gray-600">|</span>
           <Link to="/chart-beat/$blog" params={{ blog: "hot100" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-gray-600">|</span>
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-gray-600">|</span>
           <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-gray-600">|</span>
           <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors font-semibold gold">Chart Battle</Link>
         </div>
         <div className="text-center text-muted-foreground text-xs">

@@ -37,7 +37,7 @@ function ArtistThumbnail({ name }: { name: string }) {
   }, [name]);
 
   return (
-    <div className="w-14 h-14 rounded-full overflow-hidden bg-[var(--muted)] flex items-center justify-center text-sm font-semibold text-white/80 uppercase border border-[var(--border)]">
+    <div className="w-14 h-14 rounded-full overflow-hidden bg-[var(--card)] flex items-center justify-center text-sm font-semibold text-[var(--foreground)] uppercase border border-[var(--border)]">
       {imageUrl ? (
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
       ) : (
@@ -100,7 +100,7 @@ function AllArtistsPage() {
             placeholder="Search artists"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="w-full sm:w-72 bg-black border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
+            className="w-full sm:w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ function AllArtistsPage() {
                   key={artist.slug}
                   to="/artist/$slug"
                   params={{ slug: artist.slug }}
-                  className="group bg-[var(--muted)] border border-[var(--border)] rounded-3xl p-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors"
+                  className="group bg-[var(--card)] border border-[var(--border)] rounded-3xl p-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors shadow-sm"
                 >
                   <ArtistThumbnail name={artist.name} />
                   <div className="min-w-0">

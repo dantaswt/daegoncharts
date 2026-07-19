@@ -80,7 +80,7 @@ function SpotifyImg({ query, type, rounded }: { query: string; type: "artist" | 
     getSpotifyImage({ data: { query, type } }).then((u) => { if (active && u) setUrl(u); });
     return () => { active = false; };
   }, [query, type]);
-  if (!url) return <div className={`w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center text-gray-600 ${rounded ? 'rounded-full' : 'rounded-lg'}`}><i className="fas fa-music text-lg" /></div>;
+  if (!url) return <div className={`w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center text-muted-foreground ${rounded ? 'rounded-full' : 'rounded-lg'}`}><i className="fas fa-music text-lg" /></div>;
   return <img src={url} alt={query} className={`w-full h-full object-cover ${rounded ? 'rounded-full' : 'rounded-lg'}`} />;
 }
 
@@ -99,30 +99,31 @@ function TopChartsSection({ charts }: { charts: any }) {
 
   return (
     <section className="mb-14">
-      <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">Top Charts</h2>
+      <div className="section-banner">
+        <span>Top Charts</span>
+        <Link to="/chart/$chartId/$date" params={{ chartId: active, date: latestDate }} className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
+          View Chart <i className="fas fa-arrow-right ml-1" />
+        </Link>
+      </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {labels.map(l => (
           <button
             key={l.key}
             onClick={() => setActive(l.key)}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
-              active === l.key
-                ? "bg-[var(--accent)] text-black"
-                : "bg-[var(--muted)] text-muted-foreground hover:text-white border border-[var(--border)]"
-            }`}
+            className={`tab-pill ${active === l.key ? "active" : ""}`}
           >{l.label}</button>
         ))}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {entries.map((e: ChartEntry, i: number) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm">
             <div className="aspect-square relative">
               <SpotifyImg
                 query={cfg.kind === "album" ? `album:"${e.name}" artist:"${e.artist}"` : cfg.kind === "artist" ? `artist:"${e.name}"` : `artist:"${e.artist}" track:"${e.name}"`}
                 type={cfg.kind === "album" ? "album" : "artist"}
                 rounded={false}
               />
-              <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-black px-2 py-1 rounded-md">#{e.position}</div>
+              <div className="rank-badge">{e.position}</div>
             </div>
             <div className="p-3">
               <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
@@ -145,11 +146,6 @@ function TopChartsSection({ charts }: { charts: any }) {
           </motion.div>
         ))}
       </div>
-      <div className="mt-4 text-center">
-        <Link to="/chart/$chartId/$date" params={{ chartId: active, date: latestDate }} className="btn-gold">
-          View Chart <i className="fas fa-arrow-right ml-1" />
-        </Link>
-      </div>
     </section>
   );
 }
@@ -163,7 +159,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
         {numberOnes.map((n, i) => {
           if (!n.entry) return null;
           return (
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex flex-col h-full">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex flex-col h-full shadow-sm">
               <div className="flex items-center gap-3 p-4 flex-grow">
                 <div className="w-16 h-16 shrink-0">
                   <SpotifyImg
@@ -195,7 +191,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                   )}
                 </div>
               </div>
-              <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(255,215,0,0.05)] transition-colors mt-auto">
+              <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(0,230,118,0.05)] transition-colors mt-auto">
                 View Chart →
               </Link>
             </motion.div>
@@ -214,7 +210,7 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
       <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">First-Timers</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {firstTimers.map((ft, i) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm">
             <div className="aspect-square relative">
               <SpotifyImg query={ft.artist} type="artist" rounded={false} />
               <div className="absolute top-2 right-2 bg-[var(--accent)] text-black text-xs font-black px-2 py-1 rounded-md">NEW</div>
@@ -254,7 +250,7 @@ function ChartBeatSection({ chartBeat }: { chartBeat: any }) {
           if (!latest) return null;
           return (
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={b.key}>
-              <Link to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--muted)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32">
+              <Link to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32 shadow-sm">
               {latest.artist && (
                 <div className="w-24 sm:w-32 h-full shrink-0">
                   <SpotifyImg query={latest.artist} type="artist" rounded={false} />
@@ -286,24 +282,24 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
     : [];
 
   return (
-    <aside className="space-y-6">
+    <aside className="space-y-4">
       {/* Search Artists */}
-      <div className="bg-[var(--muted)] rounded-xl border border-[var(--border)] p-4">
+      <div className="sidebar-section">
         <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Search Artists</div>
         <div className="relative">
           <input
             type="text"
-            placeholder="Type an artist name..."
+            placeholder="Search Artists"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-black border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[var(--accent)] transition-colors"
+            className="sidebar-search"
           />
-          <i className="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs" />
+          <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
         </div>
         {filteredArtists.length > 0 && (
           <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
             {filteredArtists.map(a => (
-              <Link key={a.slug} to="/artist/$slug" params={{ slug: a.slug }} className="block text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors whitespace-normal break-words">
+              <Link key={a.slug} to="/artist/$slug" params={{ slug: a.slug }} className="sidebar-link whitespace-normal break-words">
                 {a.name}
               </Link>
             ))}
@@ -312,14 +308,14 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
       </div>
 
       {/* Weekly Charts */}
-      <div className="bg-[var(--muted)] rounded-xl border border-[var(--border)] p-4">
+      <div className="sidebar-section">
         <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Weekly Charts</div>
         <div className="space-y-1">
           {weeklyChartIds.map(id => {
             const cfg = chartsConfig[id];
             return (
-              <Link key={id} to="/chart/$chartId" params={{ chartId: id }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors">
-                <i className={`fas ${cfg.icon} text-xs text-gray-500 w-4`} />
+              <Link key={id} to="/chart/$chartId" params={{ chartId: id }} className="sidebar-link">
+                <i className={`fas ${cfg.icon} text-xs text-muted-foreground w-4`} />
                 {cfg.title}
               </Link>
             );
@@ -328,39 +324,39 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
       </div>
 
       {/* GOAT */}
-      <div className="bg-[var(--muted)] rounded-xl border border-[var(--border)] p-4">
+      <div className="sidebar-section">
         <button onClick={() => setGoatOpen(!goatOpen)} className="flex items-center justify-between w-full cursor-pointer">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Greatest of All Time</div>
-          <i className={`fas fa-chevron-${goatOpen ? 'up' : 'down'} text-xs text-gray-500`} />
+          <i className={`fas fa-chevron-${goatOpen ? 'up' : 'down'} text-xs text-muted-foreground`} />
         </button>
         {goatOpen && (
           <div className="mt-3 space-y-1">
-            <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-music text-xs text-gray-500 w-4" /> Songs</Link>
-            <Link to="/goat/$chartId" params={{ chartId: "goatArtists" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-user text-xs text-gray-500 w-4" /> Artists</Link>
-            <Link to="/goat/$chartId" params={{ chartId: "goatAlbums" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-compact-disc text-xs text-gray-500 w-4" /> Albums</Link>
-            <Link to="/goat/$chartId" params={{ chartId: "goatRadio" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-broadcast-tower text-xs text-gray-500 w-4" /> Radio</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="sidebar-link"><i className="fas fa-music text-xs text-muted-foreground w-4" /> Songs</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatArtists" }} className="sidebar-link"><i className="fas fa-user text-xs text-muted-foreground w-4" /> Artists</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatAlbums" }} className="sidebar-link"><i className="fas fa-compact-disc text-xs text-muted-foreground w-4" /> Albums</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatRadio" }} className="sidebar-link"><i className="fas fa-broadcast-tower text-xs text-muted-foreground w-4" /> Radio</Link>
           </div>
         )}
       </div>
 
       {/* Year-End */}
-      <div className="bg-[var(--muted)] rounded-xl border border-[var(--border)] p-4">
+      <div className="sidebar-section">
         <button onClick={() => setYeOpen(!yeOpen)} className="flex items-center justify-between w-full cursor-pointer">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Year-End Charts</div>
-          <i className={`fas fa-chevron-${yeOpen ? 'up' : 'down'} text-xs text-gray-500`} />
+          <i className={`fas fa-chevron-${yeOpen ? 'up' : 'down'} text-xs text-muted-foreground`} />
         </button>
         {yeOpen && (
           <div className="mt-3 space-y-1">
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-music text-xs text-gray-500 w-4" /> Songs</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-user text-xs text-gray-500 w-4" /> Artists</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-compact-disc text-xs text-gray-500 w-4" /> Albums</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-[rgba(255,215,0,0.1)] hover:text-[var(--accent)] transition-colors"><i className="fas fa-broadcast-tower text-xs text-gray-500 w-4" /> Radio</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="sidebar-link"><i className="fas fa-music text-xs text-muted-foreground w-4" /> Songs</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="sidebar-link"><i className="fas fa-user text-xs text-muted-foreground w-4" /> Artists</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="sidebar-link"><i className="fas fa-compact-disc text-xs text-muted-foreground w-4" /> Albums</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="sidebar-link"><i className="fas fa-broadcast-tower text-xs text-muted-foreground w-4" /> Radio</Link>
           </div>
         )}
       </div>
 
       {/* Stats */}
-      <Link to="/stats" className="bg-[var(--muted)] rounded-xl border border-[var(--border)] p-4 block hover:border-[var(--accent)] transition-all">
+      <Link to="/stats" className="sidebar-section block hover:border-[var(--accent)] transition-all">
         <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest"><i className="fas fa-chart-line mr-2" />Stats</div>
       </Link>
     </aside>
@@ -375,9 +371,12 @@ function LandingPage() {
     <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       {/* Hero Title */}
-      <div className="text-center py-10 md:py-16">
-        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black gold tracking-tight">daegon charts</h1>
-        <p className="text-muted-foreground text-sm md:text-base mt-3">Weekly music charts, year-end rankings & GOAT lists</p>
+      <div className="text-center py-10 md:py-16 relative overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-[8rem] md:text-[14rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">Charts</span>
+        </div>
+        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black gold tracking-tight relative z-10">daegon charts</h1>
+        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & GOAT lists</p>
       </div>
 
       {/* Main Layout */}
@@ -395,13 +394,13 @@ function LandingPage() {
           
           {/* Chart Battle Mobile Link */}
           <div className="md:hidden mt-10">
-            <Link to="/chart-battle" className="block bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(234,179,8,0.3)] p-4 rounded-xl flex items-center justify-center gap-4 group">
-              <div className="bg-[var(--accent)] text-black w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-110 transition-transform">
+            <Link to="/chart-battle" className="block bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(0,230,118,0.3)] p-4 rounded-xl flex items-center justify-center gap-4 group">
+              <div className="bg-[var(--accent)] text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-110 transition-transform">
                 VS
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-black uppercase tracking-widest">New Mini-Game!</div>
-                <div className="text-lg font-black uppercase text-black">Play Chart Battle 🏆</div>
+                <div className="text-xs font-bold text-[var(--card-foreground)] uppercase tracking-widest">New Mini-Game!</div>
+                <div className="text-lg font-black uppercase text-[var(--card-foreground)]">Play Chart Battle 🏆</div>
               </div>
             </Link>
           </div>
@@ -412,13 +411,13 @@ function LandingPage() {
       <div className="mt-14 border-t border-[var(--border)] pt-8 pb-4">
         <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
           <Link to="/artists" className="hover:text-[var(--accent)] transition-colors font-semibold">Artists</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-muted-foreground">|</span>
           <Link to="/chart-beat/$blog" params={{ blog: "hot100" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-muted-foreground">|</span>
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-muted-foreground">|</span>
           <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>
-          <span className="text-[#3a3a3a]">|</span>
+          <span className="text-muted-foreground">|</span>
           <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors font-semibold gold">Chart Battle</Link>
         </div>
       </div>
@@ -426,13 +425,13 @@ function LandingPage() {
       
       {/* Chart Battle Floating Tooltip */}
       <Link to="/chart-battle" className="fixed bottom-6 left-6 z-50 animate-bounce cursor-pointer group hidden md:block">
-        <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(234,179,8,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
-          <div className="bg-[var(--accent)] text-black w-10 h-10 rounded-full flex items-center justify-center font-black">
+        <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(0,230,118,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
+          <div className="bg-[var(--accent)] text-white w-10 h-10 rounded-full flex items-center justify-center font-black">
             VS
           </div>
           <div>
             <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
-            <div className="text-sm font-semibold text-black">Play Chart Battle 🏆</div>
+            <div className="text-sm font-semibold text-[var(--card-foreground)]">Play Chart Battle 🏆</div>
           </div>
         </div>
       </Link>

@@ -69,11 +69,7 @@ function NumberOnesPage() {
             <button
               key={id}
               onClick={() => setActiveChartId(id)}
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
-                activeChartId === id
-                  ? "bg-[var(--accent)] text-black"
-                  : "bg-[var(--muted)] text-muted-foreground hover:text-white border border-[var(--border)]"
-              }`}
+              className={`tab-pill ${activeChartId === id ? "active" : ""}`}
             >
               <i className={`fas ${c.icon} mr-2`} />
               {c.title}

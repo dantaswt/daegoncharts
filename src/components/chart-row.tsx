@@ -7,8 +7,8 @@ import { motion } from "framer-motion";
 
 function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
-  if (diff === "NEW") return <span className="diff-new text-xs">NEW</span>;
-  if (diff === "RE") return <span className="diff-new text-xs">RE</span>;
+  if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
+  if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
   if (diff === "=") return <span className="diff-steady text-xs">=</span>;
   if (diff.startsWith("▲")) return <span className="diff-up text-xs">{diff}</span>;
   if (diff.startsWith("▼")) return <span className="diff-down text-xs">{diff}</span>;
@@ -203,7 +203,7 @@ className="chart-card w-full"
         <Link
           to="/artist/$slug"
           params={{ slug }}
-          className="text-[10px] md:text-sm text-gray-500 hover:text-[var(--accent-foreground)] hover:underline block break-words line-clamp-2"
+          className="text-[10px] md:text-sm text-gray-500 hover:text-[var(--accent)] hover:underline block break-words line-clamp-2"
         >
           {kind === "artist" ? "View Artist Page" : entry.artist}
         </Link>
@@ -218,12 +218,19 @@ className="chart-card w-full"
             </div>
           )}
         </div>
-        <div className="md:hidden"><ChartMetrics entry={entry} showDiff={showDiff} /></div>
+        <div className="md:hidden">
+          <ChartMetrics entry={entry} showDiff={showDiff} />
+          {(entry.weeksAt1 ?? 0) > 0 && (
+            <div className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-semibold text-blue-500 mt-1">
+              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
         {metric && (
-          <div className="text-right text-sm md:text-2xl font-bold text-foreground tracking-tight">{metric}</div>
+          <div className="text-right text-sm md:text-2xl font-bold text-white tracking-tight">{metric}</div>
         )}
         <div className="flex flex-col md:flex-row gap-1 md:gap-2">
           <button
@@ -250,7 +257,7 @@ className="chart-card w-full"
           {detailFields.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               {detailFields.map((item) => (
-                <div key={item.label} className="rounded-3xl bg-[#111827] p-4">
+                <div key={item.label} className="rounded-3xl bg-[var(--muted)] p-4">
                   <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">{item.label}</div>
                   <div className="mt-2 text-sm font-semibold text-white">{item.value}</div>
                 </div>
@@ -265,7 +272,7 @@ className="chart-card w-full"
                   <a
                     key={`${run.date}-${run.position}`}
                     href={`/chart/${chartId}/${run.date}`}
-                    className="block rounded-3xl border border-[var(--border)] bg-[#111827] p-3 transition hover:border-[var(--accent)] hover:bg-[rgba(255,255,255,0.03)]"
+                    className="block rounded-3xl border border-[var(--border-dark)] bg-[var(--muted)] p-3 transition hover:border-[var(--accent)] hover:bg-[rgba(255,255,255,0.03)]"
                   >
                     <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
                       <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>

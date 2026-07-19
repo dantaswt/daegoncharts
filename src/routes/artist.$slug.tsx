@@ -62,18 +62,18 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-4">
         <h2 className="section-title mb-0">{displayChartName}</h2>
         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-          <span className="bg-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded">
-            #1's: <span className="text-white">{no1s}</span>
+          <span className="bg-[var(--card)] border border-[var(--border)] px-2 py-1 rounded">
+            #1's: <span className="text-[var(--foreground)]">{no1s}</span>
           </span>
-          <span className="bg-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded">
-            Top 10: <span className="text-white">{top10s}</span>
+          <span className="bg-[var(--card)] border border-[var(--border)] px-2 py-1 rounded">
+            Top 10: <span className="text-[var(--foreground)]">{top10s}</span>
           </span>
-          <span className="bg-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded">
-            Entries: <span className="text-white">{entries.length}</span>
+          <span className="bg-[var(--card)] border border-[var(--border)] px-2 py-1 rounded">
+            Entries: <span className="text-[var(--foreground)]">{entries.length}</span>
           </span>
         </div>
       </div>
-      <div className="bg-[var(--muted)] rounded-lg overflow-hidden">
+      <div className="bg-[var(--card)] rounded-lg overflow-hidden border border-[var(--border)]">
         <div className="table-responsive">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
@@ -159,16 +159,16 @@ function ArtistPage() {
         )}
 
         <div className="flex-1 text-center md:text-left flex flex-col justify-center h-full min-h-0 w-full">
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-2 text-black">{artist.name}</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-2 text-[var(--card-foreground)]">{artist.name}</h1>
 
           {profile && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground mb-4">
-               {profile.followers > 0 && <span className="bg-[var(--muted)] px-2 py-1 rounded-full border border-[var(--border)]"><i className="fas fa-users mr-2 text-gray-400"></i> {profile.followers.toLocaleString()} Followers</span>}
-               {profile.genres.length > 0 && <span className="bg-[var(--muted)] px-2 py-1 rounded-full border border-[var(--border)] capitalize"><i className="fas fa-music mr-2 text-gray-400"></i> {profile.genres.slice(0,3).join(", ")}</span>}
+               {profile.followers > 0 && <span className="bg-[var(--card)] px-2 py-1 rounded-full border border-[var(--border)]"><i className="fas fa-users mr-2 text-muted-foreground"></i> {profile.followers.toLocaleString()} Followers</span>}
+               {profile.genres.length > 0 && <span className="bg-[var(--card)] px-2 py-1 rounded-full border border-[var(--border)] capitalize"><i className="fas fa-music mr-2 text-muted-foreground"></i> {profile.genres.slice(0,3).join(", ")}</span>}
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center justify-center md:justify-start gap-3 bg-[var(--muted)] p-3 sm:p-4 rounded-xl border border-[var(--border)] w-full">
+          <div className="grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center justify-center md:justify-start gap-3 bg-[var(--card)] p-3 sm:p-4 rounded-xl border border-[var(--border)] w-full">
             <div className="text-center sm:text-left">
               <div className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">GOAT Position</div>
               <div className="text-lg sm:text-2xl font-black gold">{goatData ? `#${goatData.position}` : "N/A"}</div>

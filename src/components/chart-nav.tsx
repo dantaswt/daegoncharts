@@ -64,7 +64,7 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
               navigate({ to: "/chart/$chartId/$date", params: { chartId, date: iso } });
             }
           }}
-          className="bg-[var(--muted)] border border-[var(--border)] text-sm font-bold text-foreground px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+          className="bg-[var(--card)] border border-[var(--border)] text-sm font-bold text-[var(--foreground)] px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
         >
           {dates.map((d) => (
             <option key={d} value={d}>

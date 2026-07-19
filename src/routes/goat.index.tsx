@@ -14,7 +14,7 @@ export const Route = createFileRoute("/goat/")({
               key={id}
               to="/goat/$chartId"
               params={{ chartId: id }}
-              className="bg-[var(--muted)] hover:border-[var(--accent)] border border-transparent rounded-lg p-6 text-center transition-all"
+              className="bg-[var(--card)] hover:border-[var(--accent)] border border-[var(--border)] rounded-lg p-6 text-center transition-all shadow-sm"
             >
               <i className={`fas ${cfg.icon} gold text-3xl mb-2`} />
               <div className="font-bold">{cfg.title}</div>

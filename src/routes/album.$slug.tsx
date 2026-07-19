@@ -39,7 +39,7 @@ function AlbumPage() {
           {imageUrl ? (
             <img src={imageUrl} alt={album.name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">
+            <div className="w-full h-full flex items-center justify-center text-4xl text-muted-foreground">
               <i className="fas fa-compact-disc" />
             </div>
           )}
@@ -83,12 +83,12 @@ function AlbumPage() {
                 <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
               </div>
               <div className="mt-3 flex flex-wrap gap-3 items-center">
-                <div className="rounded-2xl bg-black/70 px-3 py-2 text-sm font-semibold">This week #{run.position}</div>
-                <div className="rounded-2xl bg-black/70 px-3 py-2 text-sm">Peak #{run.peak}</div>
-                <div className="rounded-2xl bg-black/70 px-3 py-2 text-sm">{run.weeks} weeks</div>
-                {run.points && <div className="rounded-2xl bg-black/70 px-3 py-2 text-sm">Points {run.points}</div>}
-                {run.totalUnits && <div className="rounded-2xl bg-black/70 px-3 py-2 text-sm">Total {run.totalUnits}</div>}
-                {run.certification && <div className="rounded-2xl bg-black/70 px-3 py-2 text-sm">Cert {run.certification}</div>}
+                <div className="rounded-2xl bg-[var(--muted)] px-3 py-2 text-sm font-semibold text-white">This week #{run.position}</div>
+                <div className="rounded-2xl bg-[var(--muted)] px-3 py-2 text-sm text-white">Peak #{run.peak}</div>
+                <div className="rounded-2xl bg-[var(--muted)] px-3 py-2 text-sm text-white">{run.weeks} weeks</div>
+                {run.points && <div className="rounded-2xl bg-[var(--muted)] px-3 py-2 text-sm text-white">Points {run.points}</div>}
+                {run.totalUnits && <div className="rounded-2xl bg-[var(--muted)] px-3 py-2 text-sm text-white">Total {run.totalUnits}</div>}
+                {run.certification && <div className="rounded-2xl bg-[var(--muted)] px-3 py-2 text-sm text-white">Cert {run.certification}</div>}
               </div>
             </div>
           ))}
@@ -106,9 +106,9 @@ function AlbumPage() {
                 <div className="font-semibold">{song.name}</div>
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-1">{song.artist}</div>
                 <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  <div className="rounded-full bg-black/70 px-3 py-1">Peak #{song.peak}</div>
-                  <div className="rounded-full bg-black/70 px-3 py-1">{song.weeks} weeks</div>
-                  {song.points && <div className="rounded-full bg-black/70 px-3 py-1">Points {song.points}</div>}
+                  <div className="rounded-full bg-[var(--muted)] px-3 py-1 text-white">Peak #{song.peak}</div>
+                  <div className="rounded-full bg-[var(--muted)] px-3 py-1 text-white">{song.weeks} weeks</div>
+                  {song.points && <div className="rounded-full bg-[var(--muted)] px-3 py-1 text-white">Points {song.points}</div>}
                 </div>
               </div>
             ))}

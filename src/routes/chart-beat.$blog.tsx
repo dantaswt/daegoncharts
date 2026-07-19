@@ -60,7 +60,7 @@ function ArticleImage({ post }: { post: ArticlePost }) {
   useEffect(() => {
     if (post.image || !post.artist) return;
     let active = true;
-    getSpotifyImage({ data: { query: `artist:"${post.artist}"`, type: "artist" } }).then((url) => { if (active) setImageUrl(url); });
+    getSpotifyImage({ data: { query: `artist:"${post.artist}"`, type: "artist" } }).then((url) => { if (active) setImageUrl(url ?? null); });
     return () => { active = false; };
   }, [post.artist, post.image]);
   return imageUrl ? <img src={imageUrl} alt="" className="w-full h-52 md:h-72 object-cover rounded-xl border border-[var(--border)] mb-5" /> : null;
@@ -107,9 +107,9 @@ function ChartBeatPage() {
       <h1 className="section-title">Chart Beat</h1>
       <div className="flex gap-2 mb-8 flex-wrap">{blogs.map((item) => <Link key={item} to="/chart-beat/$blog" params={{ blog: item }} className={`btn-nav ${item === blog ? "active" : ""}`}>{chartBeatConfig[item].title}</Link>)}</div>
       <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-24 lg:self-start bg-[var(--muted)] border border-[var(--border)] rounded-xl p-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
+        <aside className="lg:sticky lg:top-24 lg:self-start bg-[var(--muted)] border border-[var(--border-dark)] rounded-xl p-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Archive</div>
-          <button onClick={() => setExpandedYears(new Set())} className={`block w-full text-left px-2 py-1.5 rounded text-sm ${expandedYears.size === 0 ? "text-[var(--accent)] font-bold bg-black/20" : "hover:text-[var(--accent)]"}`}>All articles</button>
+          <button onClick={() => setExpandedYears(new Set())} className={`block w-full text-left px-2 py-1.5 rounded text-sm ${expandedYears.size === 0 ? "text-[var(--accent)] font-bold bg-[rgba(0,230,118,0.1)]" : "hover:text-[var(--accent)]"}`}>All articles</button>
           {yearsData.map(([year, months]) => (
             <div key={year}>
               <button onClick={() => toggleYear(year)} className="flex items-center justify-between w-full text-left px-2 py-1.5 rounded text-sm hover:text-[var(--accent)]">
@@ -136,7 +136,7 @@ function ChartBeatPage() {
             const date = timestamp ? new Date(timestamp) : null;
             const monthKey = date ? `${date.getFullYear()}|${date.toLocaleDateString("en-US", { month: "long" })}` : "Other|Other";
             return (
-              <article key={post.slug} id={`month-${monthKey}`} className="bg-[var(--muted)] border border-[var(--border)] rounded-xl p-5 md:p-7">
+              <article key={post.slug} id={`month-${monthKey}`} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 md:p-7 shadow-sm">
                 <ArticleImage post={post} />
                 <div className="text-xs text-muted-foreground mb-2">{post.publicationDate}</div>
                 <h2 className="text-xl md:text-2xl font-extrabold gold mb-3">{post.title}</h2>
