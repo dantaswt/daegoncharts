@@ -191,15 +191,17 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const cfg = chartId ? chartsConfig[chartId] : undefined;
     const chartTitle = cfg ? cfg.title : "Chart";
     const isAlbum = kind === "album";
-    const isNew = entry.diff === "NEW" || entry.diff === "RE";
+    const isNew = entry.diff === "NEW";
+    const isReEntry = entry.diff === "RE";
     const isUp = entry.diff?.startsWith("▲");
     const atPeak = entry.position === entry.peak;
     const w1 = entry.weeksAt1 ?? 0;
 
     // Diff symbols: ▲→+, ▼→-
     let copyDiff = entry.diff;
-    if (copyDiff === "NEW" || copyDiff === "RE") copyDiff = copyDiff.toLowerCase();
-    if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
+    if (copyDiff === "NEW") copyDiff = "new";
+    else if (copyDiff === "RE") copyDiff = "re-entry";
+    else if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
     else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
 
     // Position part
@@ -208,17 +210,20 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     // Metrics
     const metricsPart = isAlbum && entry.units ? formatValue(entry.units, chartId) : "";
 
-    // Album new entry format: streams first, then sales
+    // Album new entry format: units first, then streams/sales in bracket
     let entryDetail = "";
     if (isAlbum && isNew) {
+      const unitsRaw = parseEuropeanNumber(entry.units);
+      const unitsStr = unitsRaw > 0 ? unitsRaw.toLocaleString("en-US") : "";
       const streamsRaw = parseEuropeanNumber(entry.streams);
       const salesRaw = parseEuropeanNumber(entry.sales);
       const streamsStr = streamsRaw > 0 ? `${streamsRaw.toLocaleString("en-US")} million on-demand streams` : "";
       const salesStr = salesRaw > 0 ? `${salesRaw.toLocaleString("en-US")} pure sales` : "";
-      const parts = [];
-      if (streamsStr) parts.push(streamsStr);
-      if (salesStr) parts.push(salesStr);
-      entryDetail = parts.length > 0 ? ` [${parts.join(" | ")}].` : "";
+      const bracketParts = [];
+      if (streamsStr) bracketParts.push(streamsStr);
+      if (salesStr) bracketParts.push(salesStr);
+      const bracket = bracketParts.length > 0 ? ` [${bracketParts.join(" | ")}].` : ".";
+      entryDetail = unitsStr ? ` ${unitsStr}${bracket}` : bracket;
     } else {
       entryDetail = metricsPart ? ` ${metricsPart}.` : "";
     }
