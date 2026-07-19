@@ -102,74 +102,63 @@ function ChartSelector({ active, onChange }: { active: string; onChange: (id: st
     { label: "Artists", ids: ["artists"] },
   ];
   return (
-    <div className="flex flex-wrap gap-2">
+    <select
+      value={active}
+      onChange={(e) => onChange(e.target.value)}
+      className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent)] transition-colors cursor-pointer"
+    >
       {chartGroups.map((group) => (
-        group.ids.map((id) => {
-          const cfg = chartsConfig[id];
-          return (
-            <button
-              key={id}
-              onClick={() => onChange(id)}
-              className={`tab-pill text-xs ${active === id ? "active" : ""}`}
-            >
-              <i className={`fas ${cfg.icon} mr-1`} />
-              {cfg.title}
-            </button>
-          );
-        })
+        <optgroup key={group.label} label={group.label}>
+          {group.ids.map((id) => {
+            const cfg = chartsConfig[id];
+            return (
+              <option key={id} value={id}>{cfg.title}</option>
+            );
+          })}
+        </optgroup>
       ))}
-    </div>
+    </select>
   );
 }
 
 /* ── Stat type tabs ── */
 function StatTypeTabs({ categories, active, onChange }: { categories: Stats2Category[]; active: string; onChange: (id: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <select
+      value={active}
+      onChange={(e) => onChange(e.target.value)}
+      className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent)] transition-colors cursor-pointer"
+    >
       {categories.map((cat) => (
-        <button
-          key={cat.id}
-          onClick={() => onChange(cat.id)}
-          className={`tab-pill text-xs ${active === cat.id ? "active" : ""}`}
-        >
-          <i className={`fas ${cat.icon} mr-1`} />
-          {cat.title}
-        </button>
+        <option key={cat.id} value={cat.id}>{cat.title}</option>
       ))}
-    </div>
+    </select>
   );
 }
 
 /* ── Year filter ── */
 function YearFilter({ years, active, onChange }: { years: string[]; active: string; onChange: (y: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        onClick={() => onChange("all")}
-        className={`tab-pill text-xs ${active === "all" ? "active" : ""}`}
-      >
-        All Years
-      </button>
+    <select
+      value={active}
+      onChange={(e) => onChange(e.target.value)}
+      className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent)] transition-colors cursor-pointer"
+    >
+      <option value="all">All Years</option>
       {years.map((y) => (
-        <button
-          key={y}
-          onClick={() => onChange(y)}
-          className={`tab-pill text-xs ${active === y ? "active" : ""}`}
-        >
-          {y}
-        </button>
+        <option key={y} value={y}>{y}</option>
       ))}
-    </div>
+    </select>
   );
 }
 
 /* ── Search filter ── */
-function SearchFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function SearchFilter({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div className="relative">
       <input
         type="text"
-        placeholder="Search records..."
+        placeholder={placeholder || "Search records..."}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="sidebar-search pr-8"
@@ -212,6 +201,7 @@ function Stats2Page() {
   const [selectedStat, setSelectedStat] = useState("debuts");
   const [selectedYear, setSelectedYear] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [artistFilter, setArtistFilter] = useState("");
   const [sortBy, setSortBy] = useState("auto");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 50;
@@ -228,6 +218,12 @@ function Stats2Page() {
     // Year filter
     if (selectedYear !== "all") {
       records = records.filter((r) => r.firstDate?.startsWith(selectedYear));
+    }
+
+    // Artist filter
+    if (artistFilter.trim()) {
+      const q = artistFilter.toLowerCase();
+      records = records.filter((r) => r.artist.toLowerCase().includes(q));
     }
 
     // Search filter
@@ -256,7 +252,7 @@ function Stats2Page() {
     }
 
     return records;
-  }, [activeCategory, selectedYear, searchQuery, sortBy, isLowerBetter]);
+  }, [activeCategory, selectedYear, artistFilter, searchQuery, sortBy, isLowerBetter]);
 
   const totalPages = Math.ceil(filteredRecords.length / PAGE_SIZE);
   const displayedRecords = filteredRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -265,12 +261,13 @@ function Stats2Page() {
   useEffect(() => {
     setSelectedStat(categories[0]?.id ?? "debuts");
     setSearchQuery("");
+    setArtistFilter("");
     setCurrentPage(1);
   }, [selectedChart]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStat, selectedYear, searchQuery, sortBy]);
+  }, [selectedStat, selectedYear, artistFilter, searchQuery, sortBy]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
@@ -283,16 +280,22 @@ function Stats2Page() {
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Records, milestones & chart history across every chart</p>
       </div>
 
-      {/* Chart Selector */}
-      <section className="mb-6">
-        <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Select Chart</div>
-        <ChartSelector active={selectedChart} onChange={setSelectedChart} />
-      </section>
-
-      {/* Year Filter */}
-      <section className="mb-6">
-        <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Filter by Year</div>
-        <YearFilter years={availableYears} active={selectedYear} onChange={setSelectedYear} />
+      {/* Filters */}
+      <section className="mb-6 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <ChartSelector active={selectedChart} onChange={setSelectedChart} />
+          <StatTypeTabs categories={categories} active={selectedStat} onChange={setSelectedStat} />
+          <YearFilter years={availableYears} active={selectedYear} onChange={setSelectedYear} />
+          <SortSelector value={sortBy} onChange={setSortBy} isLowerBetter={isLowerBetter} />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="flex-1 min-w-0">
+            <SearchFilter value={searchQuery} onChange={setSearchQuery} placeholder="Search by name..." />
+          </div>
+          <div className="flex-1 min-w-0">
+            <SearchFilter value={artistFilter} onChange={setArtistFilter} placeholder="Filter by artist..." />
+          </div>
+        </div>
       </section>
 
       {/* Summary Cards */}
@@ -303,24 +306,11 @@ function Stats2Page() {
         </section>
       )}
 
-      {/* Stat Type Tabs */}
-      <section className="mb-6">
-        <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Category</div>
-        <StatTypeTabs categories={categories} active={selectedStat} onChange={setSelectedStat} />
-      </section>
-
-      {/* Filters Row */}
-      <section className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center">
-        <div className="flex-1">
-          <SearchFilter value={searchQuery} onChange={setSearchQuery} />
-        </div>
-        <SortSelector value={sortBy} onChange={setSortBy} isLowerBetter={isLowerBetter} />
-      </section>
-
       {/* Results count */}
       <div className="text-xs text-muted-foreground mb-3">
         {filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""} found
         {selectedYear !== "all" && ` in ${selectedYear}`}
+        {artistFilter && ` by "${artistFilter}"`}
         {searchQuery && ` matching "${searchQuery}"`}
       </div>
 
