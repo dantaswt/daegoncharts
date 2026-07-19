@@ -200,7 +200,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     // Diff symbols: ▲→+, ▼→-
     let copyDiff = entry.diff;
     if (copyDiff === "NEW") copyDiff = "new";
-    else if (copyDiff === "RE") copyDiff = "re-entry";
+    else if (copyDiff === "RE") copyDiff = "re";
     else if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
     else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
 
@@ -225,7 +225,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       const bracket = bracketParts.length > 0 ? ` [${bracketParts.join(" | ")}].` : ".";
       entryDetail = unitsStr ? ` ${unitsStr}${bracket}` : bracket;
     } else {
-      entryDetail = metricsPart ? ` ${metricsPart}.` : "";
+      entryDetail = metricsPart ? ` ${metricsPart}` : "";
     }
 
     // Annotations at end (replaces peak annotation)
