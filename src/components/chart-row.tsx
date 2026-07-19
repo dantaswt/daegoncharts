@@ -36,6 +36,12 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
+function wordOrdinal(n: number): string {
+  const words = ["zeroth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth", "twentieth"];
+  if (n >= 0 && n <= 20) return words[n];
+  return ordinal(n);
+}
+
 function formatValue(v: string | undefined, chartId?: string, isStream?: boolean): string {
   if (!v || v.trim() === "" || v.trim() === "-") return "-";
   if (isStream && chartId && streamsMBCharts.has(chartId)) {
@@ -187,7 +193,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const isAlbum = kind === "album";
     const isNew = entry.diff === "NEW" || entry.diff === "RE";
     const isUp = entry.diff?.startsWith("▲");
-    const isDown = entry.diff?.startsWith("▼");
     const atPeak = entry.position === entry.peak;
     const w1 = entry.weeksAt1 ?? 0;
 
@@ -198,43 +203,40 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
 
     // Position part
-    let posPart = `#${entry.position}(${copyDiff})`;
-    if (isNew) {
-      posPart = `#${entry.position}(new)`;
-    }
-
-    // New peak: position equals peak AND moved up (not new entry, not #1 with weeks)
-    if (atPeak && isUp && !isNew && entry.position !== 1) {
-      posPart += " *new peak*";
-    }
-
-    // Weeks at peak / re-peak
-    if (atPeak && w1 > 1 && entry.position === 1) {
-      if (isDown || (!isNew && entry.weeks > 1)) {
-        posPart += ` *re-peak; ${ordinal(w1)} week at #1*`;
-      } else {
-        posPart += ` *${ordinal(w1)} week at #1*`;
-      }
-    }
+    const posPart = isNew ? `#${entry.position}(new)` : `#${entry.position}(${copyDiff})`;
 
     // Metrics
     const metricsPart = isAlbum && entry.units ? formatValue(entry.units, chartId) : "";
-    const streamsPart = isAlbum && entry.streams ? formatValue(entry.streams, chartId, true) : "";
-    const salesPart = isAlbum && entry.sales ? formatValue(entry.sales, chartId) : "";
 
-    // Album new entry format: #1(new) Name, Artist Sales [Streams | Pure Sales].
+    // Album new entry format: streams first, then sales
     let entryDetail = "";
     if (isAlbum && isNew) {
+      const streamsRaw = parseEuropeanNumber(entry.streams);
+      const salesRaw = parseEuropeanNumber(entry.sales);
+      const streamsStr = streamsRaw > 0 ? `${streamsRaw.toLocaleString("en-US")} million on-demand streams` : "";
+      const salesStr = salesRaw > 0 ? `${salesRaw.toLocaleString("en-US")} pure sales` : "";
       const parts = [];
-      if (salesPart) parts.push(salesPart);
-      if (streamsPart) parts.push(streamsPart);
+      if (streamsStr) parts.push(streamsStr);
+      if (salesStr) parts.push(salesStr);
       entryDetail = parts.length > 0 ? ` [${parts.join(" | ")}].` : ".";
     } else {
       entryDetail = metricsPart ? ` ${metricsPart}.` : ".";
     }
 
-    // Peak annotation
-    const peakStr = w1 > 0 ? `*peak: #${entry.peak} for ${w1} weeks*` : `*peak: #${entry.peak}*`;
+    // Annotations at end (replaces peak annotation)
+    let annotation = "";
+    const isRePeak = atPeak && isUp && !isNew && entry.position === 1 && w1 > 1;
+    const isWeeksAt1 = entry.position === 1 && w1 > 1 && !isRePeak;
+
+    if (isRePeak) {
+      annotation = `*re-peak; ${wordOrdinal(w1)} week at #1*`;
+    } else if (isWeeksAt1) {
+      annotation = `*${wordOrdinal(w1)} week at #1*`;
+    } else if (atPeak && isUp && !isNew) {
+      annotation = `*new peak*`;
+    } else {
+      annotation = w1 > 0 ? `*peak: #${entry.peak} for ${w1} weeks*` : `*peak: #${entry.peak}*`;
+    }
 
     // Chart date
     let chartDateStr = "";
@@ -250,7 +252,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       entry.artist,
       entryDetail,
       `[${entry.weeks} weeks].`,
-      peakStr
+      annotation
     ].filter(Boolean).join(" ");
 
     navigator.clipboard.writeText(`${parts}${chartDateStr}`);
