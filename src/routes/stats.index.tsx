@@ -213,7 +213,8 @@ function Stats2Page() {
   const [selectedYear, setSelectedYear] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("auto");
-  const [showCount, setShowCount] = useState(9999);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
 
   const categories = chartStats[selectedChart] ?? [];
   const activeCategory = categories.find((c) => c.id === selectedStat) ?? categories[0];
@@ -257,15 +258,19 @@ function Stats2Page() {
     return records;
   }, [activeCategory, selectedYear, searchQuery, sortBy, isLowerBetter]);
 
-  const displayedRecords = filteredRecords.slice(0, showCount);
-  const hasMore = filteredRecords.length > showCount;
+  const totalPages = Math.ceil(filteredRecords.length / PAGE_SIZE);
+  const displayedRecords = filteredRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // Reset state when chart changes
   useEffect(() => {
     setSelectedStat(categories[0]?.id ?? "debuts");
     setSearchQuery("");
-    setShowCount(9999);
+    setCurrentPage(1);
   }, [selectedChart]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStat, selectedYear, searchQuery, sortBy]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
@@ -340,14 +345,35 @@ function Stats2Page() {
           )}
       </section>
 
-      {/* Load More */}
-      {hasMore && (
-        <div className="text-center mt-8">
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
           <button
-            onClick={() => setShowCount((c) => c + 20)}
-            className="btn-gold"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="btn-gold disabled:opacity-30"
           >
-            <i className="fas fa-plus" /> Load More ({filteredRecords.length - showCount} remaining)
+            <i className="fas fa-chevron-left" />
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-9 h-9 rounded-lg font-bold text-xs transition-all ${
+                currentPage === page
+                  ? "bg-[var(--accent)] text-black"
+                  : "bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="btn-gold disabled:opacity-30"
+          >
+            <i className="fas fa-chevron-right" />
           </button>
         </div>
       )}

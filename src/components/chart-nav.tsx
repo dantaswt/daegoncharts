@@ -4,7 +4,7 @@ import { chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 
 export function ChartTypeNav({ activeId, date }: { activeId: string; date?: string }) {
   return (
-    <div className="flex flex-wrap md:flex-col gap-2 justify-center md:justify-start mb-6">
+    <div className="flex flex-wrap gap-2 justify-center mb-6">
       {weeklyChartIds.map((id) => {
         const cfg = chartsConfig[id];
         return (

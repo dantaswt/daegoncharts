@@ -653,7 +653,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Biggest Debuts",
         icon: "fa-rocket",
         description: "Debuts ranked by metric volume",
-        records: [...debutMap.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+        records: [...debutMap.values()].sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 2. Most Weeks at #1
@@ -685,7 +685,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Most Weeks at #1",
         icon: "fa-crown",
         description: "Longest reigns at the top",
-        records: [...weeksAt1Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+        records: [...weeksAt1Map.values()].sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 3. Most Weeks in Top 5
@@ -717,7 +717,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Most Weeks in Top 5",
         icon: "fa-star",
         description: "Longest runs in the top 5",
-        records: [...top5Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+        records: [...top5Map.values()].sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 4. Most Weeks in Top 10
@@ -749,7 +749,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Most Weeks in Top 10",
         icon: "fa-arrow-up",
         description: "Longest runs in the top 10",
-        records: [...top10Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+        records: [...top10Map.values()].sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 5. Most Weeks in Top 50
@@ -781,7 +781,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Most Weeks in Top 50",
         icon: "fa-chart-line",
         description: "Longest runs in the top 50",
-        records: [...top50Map.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+        records: [...top50Map.values()].sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 6. Most Weeks on Chart (Top 100)
@@ -811,7 +811,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Most Weeks on Chart",
         icon: "fa-calendar-check",
         description: "Longest chart presence",
-        records: [...totalWeeksMap.values()].sort((a, b) => b.value - a.value).slice(0, 50),
+        records: [...totalWeeksMap.values()].sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 7. Most Simultaneous Entries (artist with most entries on a single week)
@@ -849,7 +849,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Most Simultaneous Entries",
         icon: "fa-layer-group",
         description: "Artists with most concurrent chart entries",
-        records: simulRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+        records: simulRecords.sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 8. Artists with Most Total Entries (unique items)
@@ -877,7 +877,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Artists with Most Entries",
         icon: "fa-users",
         description: "Artists with the most different chart entries",
-        records: artistEntryRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+        records: artistEntryRecords.sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 9. Biggest Drops (position fell the most in one week)
@@ -912,7 +912,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Biggest Drops",
         icon: "fa-arrow-down",
         description: "Largest single-week drops",
-        records: dropRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+        records: dropRecords.sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       // 10. Biggest Gainers (position rose the most in one week)
@@ -947,7 +947,7 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         title: "Biggest Gainers",
         icon: "fa-arrow-up",
         description: "Largest single-week gains",
-        records: gainerRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+        records: gainerRecords.sort((a, b) => b.value - a.value).slice(0, 500),
       });
 
       chartStats[chart.id] = categories;
