@@ -151,18 +151,27 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (chartId === "yearEndRadio" || chartId === "goatRadio") {
       if (entry.units) items.push({ label: "Total Audience", value: formatValue(entry.units, chartId) });
     }
-    if (!isGoat && entry.audience) items.push({ label: "Audience", value: formatValue(entry.audience, chartId) });
+    if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.audience !== undefined) {
+      const audVal = parseEuropeanNumber(entry.audience);
+      items.push({ label: "Audience", value: audVal > 0 ? formatValue(entry.audience, chartId) : "N/A" });
+    } else if (!isGoat && entry.audience) {
+      items.push({ label: "Audience", value: formatValue(entry.audience, chartId) });
+    }
     if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: formatValue(entry.airplay, chartId) });
-    if (!isGoat && entry.sales) {
+    if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.sales !== undefined) {
+      const salesVal = parseEuropeanNumber(entry.sales);
+      const label = chartId === "albums" ? "Pure Sales" : "Sales";
+      items.push({ label, value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
+    } else if (!isGoat && entry.sales) {
       const label = chartId === "albums" ? "Pure Sales" : "Sales";
       items.push({ label, value: formatValue(entry.sales, chartId) });
     }
-    if (!isGoat && entry.streams && ["songs", "albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
-      let label = "Streaming";
-      if (chartId === "songs") label = "Streams";
-      if (chartId === "albums") label = "SEA";
-      if (chartId === "topStreamingAlbums") label = "Streams";
-      if (chartId === "streamingSongs") label = "Streams";
+    if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.streams !== undefined) {
+      const streamsVal = parseEuropeanNumber(entry.streams);
+      let label = chartId === "songs" ? "Streams" : "SEA";
+      items.push({ label, value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
+    } else if (!isGoat && entry.streams && ["topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
+      let label = "Streams";
       items.push({ label, value: formatValue(entry.streams, chartId, true) });
     }    if (!isGoat && entry.totalStreams) {
       let totalStreamsLabel = "Total Streams";
@@ -240,7 +249,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       annotation = `*re-peak; ${wordOrdinal(w1)} week at #1*`;
     } else if (isWeeksAt1) {
       annotation = `*${wordOrdinal(w1)} week at #1*`;
-    } else if (atPeak && isUp && !isNew) {
+    } else if (atPeak && (isUp || isReEntry) && !isNew) {
       annotation = `*new peak*`;
     } else {
       annotation = w1 > 0 ? `*peak: #${entry.peak} for ${w1} weeks*` : `*peak: #${entry.peak}*`;
