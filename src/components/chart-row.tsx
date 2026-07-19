@@ -223,9 +223,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       if (streamsStr) bracketParts.push(streamsStr);
       if (salesStr) bracketParts.push(salesStr);
       const bracket = bracketParts.length > 0 ? ` [${bracketParts.join(" | ")}].` : ".";
-      entryDetail = unitsStr ? ` ${unitsStr}${bracket}` : bracket;
+      entryDetail = unitsStr ? `${unitsStr}${bracket}` : bracket;
     } else {
-      entryDetail = metricsPart ? ` ${metricsPart}` : "";
+      const unitsStr = metricsPart || "";
+      const totalUnitsRaw = parseEuropeanNumber(entry.totalUnits);
+      const totalStr = totalUnitsRaw > 0 ? ` (${totalUnitsRaw.toLocaleString("en-US")} units since release)` : "";
+      entryDetail = unitsStr ? `${unitsStr}${totalStr}` : "";
     }
 
     // Annotations at end (replaces peak annotation)
