@@ -29,6 +29,13 @@ function formatMB(v: string | undefined): string {
   return String(num);
 }
 
+function ordinal(n: number): string {
+  if (n <= 0) return String(n);
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 function formatValue(v: string | undefined, chartId?: string, isStream?: boolean): string {
   if (!v || v.trim() === "" || v.trim() === "-") return "-";
   if (isStream && chartId && streamsMBCharts.has(chartId)) {
@@ -178,18 +185,58 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const cfg = chartId ? chartsConfig[chartId] : undefined;
     const chartTitle = cfg ? cfg.title : "Chart";
     const isAlbum = kind === "album";
-    
-    // Convert diff symbols: ▲→+, ▼→-
+    const isNew = entry.diff === "NEW" || entry.diff === "RE";
+    const isUp = entry.diff?.startsWith("▲");
+    const isDown = entry.diff?.startsWith("▼");
+    const atPeak = entry.position === entry.peak;
+    const w1 = entry.weeksAt1 ?? 0;
+
+    // Diff symbols: ▲→+, ▼→-
     let copyDiff = entry.diff;
     if (copyDiff === "NEW" || copyDiff === "RE") copyDiff = copyDiff.toLowerCase();
     if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
     else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
-    
-    const metricStr = isAlbum && entry.units ? formatValue(entry.units, chartId) : "";
-    const totalStr = isAlbum && entry.totalUnits ? `(${formatValue(entry.totalUnits, chartId)} total units)` : "";
-    
-    const peakStr = (entry.weeksAt1 ?? 0) > 0 ? `*peak: #${entry.peak} for ${entry.weeksAt1} weeks*` : `*peak: #${entry.peak}*`;
-    
+
+    // Position part
+    let posPart = `#${entry.position}(${copyDiff})`;
+    if (isNew) {
+      posPart = `#${entry.position}(new)`;
+    }
+
+    // New peak: position equals peak AND moved up (not new entry, not #1 with weeks)
+    if (atPeak && isUp && !isNew && entry.position !== 1) {
+      posPart += " *new peak*";
+    }
+
+    // Weeks at peak / re-peak
+    if (atPeak && w1 > 1 && entry.position === 1) {
+      if (isDown || (!isNew && entry.weeks > 1)) {
+        posPart += ` *re-peak; ${ordinal(w1)} week at #1*`;
+      } else {
+        posPart += ` *${ordinal(w1)} week at #1*`;
+      }
+    }
+
+    // Metrics
+    const metricsPart = isAlbum && entry.units ? formatValue(entry.units, chartId) : "";
+    const streamsPart = isAlbum && entry.streams ? formatValue(entry.streams, chartId, true) : "";
+    const salesPart = isAlbum && entry.sales ? formatValue(entry.sales, chartId) : "";
+
+    // Album new entry format: #1(new) Name, Artist Sales [Streams | Pure Sales].
+    let entryDetail = "";
+    if (isAlbum && isNew) {
+      const parts = [];
+      if (salesPart) parts.push(salesPart);
+      if (streamsPart) parts.push(streamsPart);
+      entryDetail = parts.length > 0 ? ` [${parts.join(" | ")}].` : ".";
+    } else {
+      entryDetail = metricsPart ? ` ${metricsPart}.` : ".";
+    }
+
+    // Peak annotation
+    const peakStr = w1 > 0 ? `*peak: #${entry.peak} for ${w1} weeks*` : `*peak: #${entry.peak}*`;
+
+    // Chart date
     let chartDateStr = "";
     if (date) {
       const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -198,11 +245,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
     const parts = [
       `Daegon's ${chartTitle}:`,
-      `#${entry.position}(${copyDiff})`,
+      posPart,
       `${entry.name},`,
       entry.artist,
-      metricStr,
-      totalStr,
+      entryDetail,
       `[${entry.weeks} weeks].`,
       peakStr
     ].filter(Boolean).join(" ");

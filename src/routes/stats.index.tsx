@@ -49,9 +49,9 @@ function RecordRow({ record, rank, kind, chartId }: { record: Stats2Record; rank
       </div>
       <ItemImage name={record.name} artist={record.artist} kind={actualKind} />
       <div className="min-w-0 flex-1">
-        <div className="font-bold text-sm truncate group-hover:text-[var(--accent)] transition-colors">{record.name}</div>
-        <div className="text-xs text-muted-foreground truncate">{record.artist}</div>
-        {record.details && <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{record.details}</div>}
+        <div className="font-bold text-sm group-hover:text-[var(--accent)] transition-colors">{record.name}</div>
+        <div className="text-xs text-muted-foreground">{record.artist}</div>
+        {record.details && <div className="text-[11px] text-muted-foreground mt-0.5 break-words">{record.details}</div>}
       </div>
       <div className="text-right shrink-0">
         <div className="font-black text-base sm:text-lg gold">{record.valueLabel}</div>
@@ -331,7 +331,7 @@ function Stats2Page() {
               <RecordRow
                 key={`${record.name}||${record.artist}||${i}`}
                 record={record}
-                rank={i + 1}
+                rank={(currentPage - 1) * PAGE_SIZE + i + 1}
                 kind={chartsConfig[selectedChart]?.kind ?? "song"}
                 chartId={selectedChart}
               />
