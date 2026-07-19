@@ -9,9 +9,15 @@ function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
   if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
-  if (diff === "=") return <span className="diff-steady text-xs">=</span>;
-  if (diff.startsWith("▲")) return <span className="diff-up text-xs">{diff}</span>;
-  if (diff.startsWith("▼")) return <span className="diff-down text-xs">{diff}</span>;
+  if (diff === "=") return <span className="diff-steady flex flex-col items-center leading-none"><span className="text-sm">&#8594;</span></span>;
+  if (diff.startsWith("▲")) {
+    const num = diff.slice(1);
+    return <span className="diff-up flex flex-col items-center leading-none"><span className="text-sm">&#9650;</span><span className="text-[10px] font-bold">{num}</span></span>;
+  }
+  if (diff.startsWith("▼")) {
+    const num = diff.slice(1);
+    return <span className="diff-down flex flex-col items-center leading-none"><span className="text-sm">&#9660;</span><span className="text-[10px] font-bold">{num}</span></span>;
+  }
   return <span className="text-xs">{diff}</span>;
 }
 
@@ -187,15 +193,15 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       id={`entry-${entry.position}`}
 className="chart-card w-full"
   >
-      <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] md:gap-3 gap-2 w-full">
-        <div className="flex items-center gap-2 md:gap-4 w-auto">
-          <div className="rank-num flex items-center justify-center gap-2 w-12 md:w-16 flex-shrink-0">
-            <div className="text-lg md:text-3xl font-black">{entry.position}</div>
-            {showDiff && <DiffIndicator diff={entry.diff} />}
-          </div>
+      <div className="grid grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] md:gap-3 gap-2 w-full">
+        <div className="flex items-center justify-center w-12 md:w-16 flex-shrink-0">
+          <div className="rank-num text-lg md:text-3xl font-black">{entry.position}</div>
         </div>
         <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-12 h-12 md:w-24 md:h-24 flex-shrink-0">
           <SpotifyImage entry={entry} kind={kind} />
+        </div>
+        <div className="flex items-center justify-center w-6 md:w-8 flex-shrink-0">
+          {showDiff && <DiffIndicator diff={entry.diff} />}
         </div>
 
       <div className="min-w-0 flex flex-col">

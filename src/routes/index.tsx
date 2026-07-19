@@ -375,7 +375,7 @@ function LandingPage() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <span className="text-[8rem] md:text-[14rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">Charts</span>
         </div>
-        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black gold tracking-tight relative z-10">daegon charts</h1>
+        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-[var(--foreground)] tracking-tight relative z-10">daegon charts</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & GOAT lists</p>
       </div>
 

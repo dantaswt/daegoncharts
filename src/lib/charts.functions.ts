@@ -121,6 +121,24 @@ function toInt(v: string | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
+const kCharts = new Set(["songs", "digitalSongsSales", "topAlbumSales", "albums", "artists"]);
+const mCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
+
+function formatMetric(value: number, chartId: string): string {
+  if (value <= 0) return "0";
+  if (kCharts.has(chartId)) {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
+    return String(value);
+  }
+  if (mCharts.has(chartId)) {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+    return String(value);
+  }
+  return value.toLocaleString("en-US");
+}
+
 function computeDiffs(dates: string[], entriesByDate: Record<string, ChartEntry[]>) {
   const seenBefore = new Map<string, string>(); // key -> first date
   for (const date of dates) {
@@ -444,7 +462,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       weeks: findIdx(header, ["weeks", "wks"]),
       weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "weeks at #1"]),
       unitsSold: findIdx(header, ["units sold", "sales", "total sales", "units/sales"]),
-      totalUnits: findIdx(header, ["total units", "total"]),
+      totalUnits: findIdx(header, ["total units", "total", "units"]),
       firstEntry: findIdx(header, ["first entry"]),
       peakDate: findIdx(header, ["peak date"]),
     };
@@ -459,12 +477,12 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
         weeks: toInt(r[idx.weeks]),
         weeksAt1: idx.weeksAt1 >= 0 ? toInt(r[idx.weeksAt1]) : undefined,
         unitsSold: idx.unitsSold >= 0 ? r[idx.unitsSold] || null : null,
-        totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] || null : null,
-        firstEntry: idx.firstEntry >= 0 ? r[idx.firstEntry] || null : null,
-        peakDate: idx.peakDate >= 0 ? r[idx.peakDate] || null : null,
-      };
-      (map[artist] ||= { name: artist, chartsByKind: {} });
-      (map[artist].chartsByKind[chart] ||= []).push(entry);
+      totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] || null : null,
+      firstEntry: idx.firstEntry >= 0 ? r[idx.firstEntry] || null : null,
+      peakDate: idx.peakDate >= 0 ? r[idx.peakDate] || null : null,
+    };
+    (map[artist] ||= { name: artist, chartsByKind: {} });
+    (map[artist].chartsByKind[chart] ||= []).push(entry);
     }
     for (const a of Object.values(map)) {
       for (const list of Object.values(a.chartsByKind)) list.sort((x, y) => x.peak - y.peak || y.weeks - x.weeks);
@@ -580,11 +598,11 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
                 name: e.name,
                 artist: e.artist,
                 value: e.metric,
-                valueLabel: e.metric > 0 ? `${e.metric.toLocaleString()} ${e.metricLabel}` : `#${e.position} debut`,
+                valueLabel: e.metric > 0 ? `${formatMetric(e.metric, chart.id)} ${e.metricLabel}` : `#${e.position} debut`,
                 peak: e.peak,
                 firstDate: date,
                 chartId: chart.id,
-                details: `#${e.position} debut · ${e.metric > 0 ? `${e.metric.toLocaleString()} ${e.metricLabel}` : "N/A"} on ${new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+                details: `#${e.position} debut · ${e.metric > 0 ? `${formatMetric(e.metric, chart.id)} ${e.metricLabel}` : "N/A"} on ${new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
               });
             }
           }

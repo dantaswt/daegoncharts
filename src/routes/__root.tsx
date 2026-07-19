@@ -109,7 +109,7 @@ function SiteHeader() {
   return (
     <header className="bg-[var(--muted)] border-b border-[var(--border)] sticky top-0 z-20">
       <div className="container mx-auto px-4 py-3 md:py-4 flex justify-center items-center">
-        <Link to="/" className="text-xl md:text-2xl font-extrabold gold">daegon charts</Link>
+        <Link to="/" className="text-xl md:text-2xl font-extrabold text-white">daegon charts</Link>
       </div>
     </header>
   );

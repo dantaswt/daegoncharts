@@ -83,7 +83,7 @@
   .diff-up { color: var(--run-up); }
   .diff-down { color: var(--run-down); }
   .diff-new { color: #FFD600; font-weight: 700; }
-  .diff-steady { color: var(--run-steady); }
+  .diff-steady { color: var(--muted-foreground); }
 
   .diff-badge {
     display: inline-flex;

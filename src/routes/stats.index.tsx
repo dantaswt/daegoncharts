@@ -9,7 +9,7 @@ export const Route = createFileRoute("/stats/")({
   loader: async () => await getStats2(),
   head: () => ({
     meta: [
-      { title: "Stats 2.0 | daegon charts" },
+      { title: "Stats | daegon charts" },
       { name: "description", content: "Comprehensive chart statistics, records and milestones." },
     ],
   }),
@@ -274,7 +274,7 @@ function Stats2Page() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">STATS</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">Stats 2.0</h1>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">Stats</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Records, milestones & chart history across every chart</p>
       </div>
 
