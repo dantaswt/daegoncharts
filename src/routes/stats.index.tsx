@@ -44,7 +44,7 @@ function RecordRow({ record, rank, kind, chartId }: { record: Stats2Record; rank
       transition={{ duration: 0.2, delay: Math.min(rank * 0.02, 0.4) }}
       className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group"
     >
-      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${rank <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-[var(--foreground)]"}`}>
+      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${rank <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
         {rank}
       </div>
       <ItemImage name={record.name} artist={record.artist} kind={actualKind} />
@@ -213,12 +213,12 @@ function Stats2Page() {
   const [selectedYear, setSelectedYear] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("auto");
-  const [showCount, setShowCount] = useState(20);
+  const [showCount, setShowCount] = useState(9999);
 
   const categories = chartStats[selectedChart] ?? [];
   const activeCategory = categories.find((c) => c.id === selectedStat) ?? categories[0];
 
-  const isLowerBetter = selectedStat === "biggestDrops";
+  const isLowerBetter = false;
 
   const filteredRecords = useMemo(() => {
     if (!activeCategory) return [];
@@ -264,7 +264,7 @@ function Stats2Page() {
   useEffect(() => {
     setSelectedStat(categories[0]?.id ?? "debuts");
     setSearchQuery("");
-    setShowCount(20);
+    setShowCount(9999);
   }, [selectedChart]);
 
   return (

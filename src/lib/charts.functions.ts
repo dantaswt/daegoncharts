@@ -136,19 +136,14 @@ function toInt(v: string | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
-const kCharts = new Set(["songs", "digitalSongsSales", "topAlbumSales", "albums", "artists"]);
-const mCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
+const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
+const usFormatCharts = new Set(["songs", "digitalSongsSales", "topAlbumSales", "albums", "artists"]);
 
 function formatMetric(value: number, chartId: string): string {
   if (value <= 0) return "0";
-  if (kCharts.has(chartId)) {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-    if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
-    return String(value);
-  }
-  if (mCharts.has(chartId)) {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  if (mbCharts.has(chartId)) {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+    if (value >= 1_000) return `${Math.round(value / 1_000)}M`;
     return String(value);
   }
   return value.toLocaleString("en-US");
@@ -918,6 +913,41 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         icon: "fa-arrow-down",
         description: "Largest single-week drops",
         records: dropRecords.sort((a, b) => b.value - a.value).slice(0, 50),
+      });
+
+      // 10. Biggest Gainers (position rose the most in one week)
+      const gainerRecords: Stats2Record[] = [];
+      for (let di = 1; di < chart.dates.length; di++) {
+        const prevDate = chart.dates[di - 1];
+        const currDate = chart.dates[di];
+        const prevMap = new Map<string, number>();
+        for (const e of chart.entriesByDate[prevDate]) prevMap.set(`${e.name}||${e.artist}`, e.position);
+        for (const e of chart.entriesByDate[currDate]) {
+          const key = `${e.name}||${e.artist}`;
+          const prevPos = prevMap.get(key);
+          if (prevPos != null && e.position < prevPos) {
+            const gain = prevPos - e.position;
+            if (gain >= 5) {
+              gainerRecords.push({
+                name: e.name,
+                artist: e.artist,
+                value: gain,
+                valueLabel: `▲${gain}`,
+                peak: e.peak,
+                firstDate: currDate,
+                chartId: chart.id,
+                details: `Gained ${gain} spots: #${prevPos} → #${e.position} on ${new Date(currDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+              });
+            }
+          }
+        }
+      }
+      categories.push({
+        id: "biggestGainers",
+        title: "Biggest Gainers",
+        icon: "fa-arrow-up",
+        description: "Largest single-week gains",
+        records: gainerRecords.sort((a, b) => b.value - a.value).slice(0, 50),
       });
 
       chartStats[chart.id] = categories;

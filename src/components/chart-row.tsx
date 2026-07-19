@@ -5,6 +5,43 @@ import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
 
+const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
+const streamsMBCharts = new Set(["songs", "albums"]);
+
+function parseEuropeanNumber(v: string | undefined): number {
+  let s = (v ?? "").trim();
+  if (!s || s === "-") return 0;
+  s = s.replace(/[^0-9.,\-]/g, "");
+  if (!s) return 0;
+  if (s.includes(".") && ((s.match(/\./g) || []).length > 1 || /^\d+\.\d{3}$/.test(s))) {
+    s = s.replace(/\./g, "");
+  }
+  s = s.replace(/,/g, "");
+  const n = parseInt(s, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatMB(v: string | undefined): string {
+  const num = parseEuropeanNumber(v);
+  if (num === 0) return v ?? "-";
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+  if (num >= 1_000) return `${Math.round(num / 1_000)}M`;
+  return String(num);
+}
+
+function formatValue(v: string | undefined, chartId?: string, isStream?: boolean): string {
+  if (!v || v.trim() === "" || v.trim() === "-") return "-";
+  if (isStream && chartId && streamsMBCharts.has(chartId)) {
+    return formatMB(v);
+  }
+  if (chartId && mbCharts.has(chartId)) {
+    return formatMB(v);
+  }
+  const num = parseEuropeanNumber(v);
+  if (num === 0) return v;
+  return num.toLocaleString("en-US");
+}
+
 function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
@@ -93,32 +130,35 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
-    if (kind === "song" && entry.points) items.push({ label: "Points", value: entry.points });
-    if (chartId === "songs" && entry.units) items.push({ label: "Units", value: entry.units });
+    if (kind === "song" && entry.points) items.push({ label: "Points", value: formatValue(entry.points, chartId) });
+    if (chartId === "songs" && entry.units) items.push({ label: "Units", value: formatValue(entry.units, chartId) });
     if ((kind === "album" || kind === "artist") && entry.units && !["topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"].includes(chartId ?? "")) {
-      items.push({ label: "Units", value: entry.units });
+      items.push({ label: "Units", value: formatValue(entry.units, chartId) });
     }
     if (chartId === "yearEndRadio" || chartId === "goatRadio") {
-      if (entry.units) items.push({ label: "Total Audience", value: entry.units });
+      if (entry.units) items.push({ label: "Total Audience", value: formatValue(entry.units, chartId) });
     }
-    if (!isGoat && entry.audience) items.push({ label: "Audience", value: entry.audience });
-    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: entry.airplay });
+    if (!isGoat && entry.audience) items.push({ label: "Audience", value: formatValue(entry.audience, chartId) });
+    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: formatValue(entry.airplay, chartId) });
     if (!isGoat && entry.sales) {
       const label = chartId === "albums" ? "Pure Sales" : "Sales";
-      items.push({ label, value: entry.sales });
+      items.push({ label, value: formatValue(entry.sales, chartId) });
     }
     if (!isGoat && entry.streams && ["songs", "albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
       let label = "Streaming";
       if (chartId === "songs") label = "Streams";
-      if (chartId === "albums" || chartId === "topStreamingAlbums") label = "Streams";
+      if (chartId === "albums") label = "SEA";
+      if (chartId === "topStreamingAlbums") label = "Streams";
       if (chartId === "streamingSongs") label = "Streams";
-      items.push({ label, value: entry.streams });
+      items.push({ label, value: formatValue(entry.streams, chartId, true) });
     }    if (!isGoat && entry.totalStreams) {
-      items.push({ label: "Total Streams", value: entry.totalStreams });
+      let totalStreamsLabel = "Total Streams";
+      if (chartId === "albums") totalStreamsLabel = "Total SEA";
+      items.push({ label: totalStreamsLabel, value: formatValue(entry.totalStreams, chartId, true) });
     }
     if (!isGoat && entry.totalSales) {
       const label = chartId === "albums" || chartId === "topStreamingAlbums" ? "" : "Total Sales";
-      if (label) items.push({ label, value: entry.totalSales });
+      if (label) items.push({ label, value: formatValue(entry.totalSales, chartId) });
     }
     if (entry.totalUnits && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
       let totalLabel = "Total Units";
@@ -126,7 +166,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") totalLabel = "Total Sales";
       if (chartId === "albums" || chartId === "topStreamingAlbums") totalLabel = "Total Units";
       if (chartId === "yearEndRadio" || chartId === "goatRadio") totalLabel = "Total Audience";
-      items.push({ label: totalLabel, value: entry.totalUnits });
+      items.push({ label: totalLabel, value: formatValue(entry.totalUnits, chartId) });
     }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
@@ -145,9 +185,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (copyDiff.startsWith("▲")) copyDiff = "+" + copyDiff.slice(1);
     else if (copyDiff.startsWith("▼")) copyDiff = "-" + copyDiff.slice(1);
     
-    // Use raw values from CSV columns (no locale conversion)
-    const metricStr = isAlbum && entry.units ? entry.units : "";
-    const totalStr = isAlbum && entry.totalUnits ? `(${entry.totalUnits} total units)` : "";
+    const metricStr = isAlbum && entry.units ? formatValue(entry.units, chartId) : "";
+    const totalStr = isAlbum && entry.totalUnits ? `(${formatValue(entry.totalUnits, chartId)} total units)` : "";
     
     const peakStr = (entry.weeksAt1 ?? 0) > 0 ? `*peak: #${entry.peak} for ${entry.weeksAt1} weeks*` : `*peak: #${entry.peak}*`;
     
@@ -241,7 +280,7 @@ className="chart-card w-full"
 
       <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
         {metric && (
-          <div className="text-right text-sm md:text-2xl font-bold text-white tracking-tight">{metric}</div>
+          <div className="text-right text-sm md:text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
         )}
         <div className="flex flex-col md:flex-row gap-1 md:gap-2">
           <button
@@ -292,8 +331,8 @@ className="chart-card w-full"
                     <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-300">
                       <span>Peak: {run.peak}</span>
                       <span>Weeks: {run.weeks}</span>
-                      {run.points && <span>Points: {run.points}</span>}
-                      {run.totalUnits && <span>Total Units: {run.totalUnits}</span>}
+                      {run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
+                      {run.totalUnits && <span>Total Units: {formatValue(run.totalUnits, chartId)}</span>}
                     </div>
                   </a>
                 ))}
