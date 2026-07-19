@@ -39,48 +39,40 @@ function comparable(value: string) {
     .trim();
 }
 
-function scoreAlbum(album: any, albumName: string, artistName: string) {
-  const expectedAlbum = comparable(albumName);
-  const expectedArtist = comparable(artistName);
-  const actualAlbum = comparable(album.name ?? "");
-  const artists = (album.artists ?? []).map((artist: any) => comparable(artist.name ?? ""));
-
-  if (actualAlbum !== expectedAlbum) return 0;
-  if (artists.some((n) => n === expectedArtist)) return 300;
-  if (artists.some((n) => n.includes(expectedArtist) || expectedArtist.includes(n))) return 150;
-  return 0;
+function exactMatch(actual: string, expected: string): boolean {
+  return comparable(actual) === comparable(expected);
 }
 
-function scoreVariant(album: any, albumName: string, artistName: string) {
-  const expectedArtist = comparable(artistName);
-  const actualName = (album.name ?? "").trim();
-  const actualNorm = comparable(actualName);
-  const expectedNorm = comparable(albumName);
-
-  // Must start with the album name (normalized)
-  if (!actualNorm.startsWith(expectedNorm)) return 0;
-
-  // Must have extra content after the album name
-  const suffix = actualNorm.slice(expectedNorm.length).trim();
-  if (!suffix) return 0;
-
-  // Extra content must start with ( or [
-  if (!/^[\(\[]/.test(suffix)) return 0;
-
-  const artists = (album.artists ?? []).map((artist: any) => comparable(artist.name ?? ""));
-  if (artists.some((n) => n === expectedArtist)) return 300;
-  if (artists.some((n) => n.includes(expectedArtist) || expectedArtist.includes(n))) return 150;
-  return 0;
+function extractYear(name: string): { year: string | null; stripped: string } {
+  const match = name.match(/\b(19|20)\d{2}\b/);
+  return { year: match ? match[0] : null, stripped: match ? name.replace(match[0], "").trim() : name };
 }
 
-function findBest(albums: any[], albumName: string, artistName: string, variant = false): string | null {
-  const scorer = variant ? scoreVariant : scoreAlbum;
-  const scored = albums
-    .filter((a: any) => a.images?.[0]?.url)
-    .map((a: any) => ({ url: a.images[0].url, s: scorer(a, albumName, artistName) }))
-    .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s);
-  return scored[0]?.url ?? null;
+function albumVariants(name: string): string[] {
+  const { year, stripped } = extractYear(name);
+  const variants = [name];
+  if (year && stripped.trim()) variants.push(stripped.trim());
+  return variants;
+}
+
+function artistMatch(album: any, expectedArtist: string): boolean {
+  if (!expectedArtist) return true;
+  const artists = (album.artists ?? []).map((a: any) => comparable(a.name ?? ""));
+  const expected = comparable(expectedArtist);
+  return artists.some((n) => n === expected);
+}
+
+async function fetchJson(url: string, init?: RequestInit): Promise<any> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 async function spotifySearch(token: string, query: string, type: "album" | "artist" | "track", limit = 10) {
@@ -88,8 +80,30 @@ async function spotifySearch(token: string, query: string, type: "album" | "arti
   url.searchParams.set("q", query);
   url.searchParams.set("type", type);
   url.searchParams.set("limit", String(limit));
-  const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
-  return response.ok ? response.json() : null;
+  try {
+    const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function searchDeviantArt(albumName: string, artistName: string): Promise<string | null> {
+  try {
+    const q = `${albumName} ${artistName} fan art album cover`;
+    const url = `https://backend.deviantart.com/rss.xml?q=${encodeURIComponent(q)}&type=deviation`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    const text = await response.text();
+    const matches = [...text.matchAll(/<media:thumbnail[^>]*url="([^"]+)"/g)];
+    return matches[0]?.[1] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export const getSpotifyImage = createServerFn({ method: "GET" })
@@ -106,25 +120,191 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const albumName = fieldValue(data.query, "album") || data.query;
         const artistName = fieldValue(data.query, "artist");
 
-        // 1. Exact search
-        const q1 = artistName ? `album:"${albumName}" artist:"${artistName}"` : `album:"${albumName}"`;
-        const r1 = await spotifySearch(token, q1, "album");
-        imageUrl = findBest(r1?.albums?.items ?? [], albumName, artistName);
-
-        // 2. Anything in parentheses/brackets: "Dua Lipa (anything)" or "Dua Lipa [anything]"
+        // 1. Spotify album/EP (exact)
         if (!imageUrl) {
-          const q2 = artistName
-            ? `album:"${albumName}" artist:"${artistName}"`
-            : `album:"${albumName}"`;
-          const r2 = await spotifySearch(token, q2, "album", 50);
-          imageUrl = findBest(r2?.albums?.items ?? [], albumName, artistName, true);
+          for (const variant of albumVariants(albumName)) {
+            const q = artistName ? `album:"${variant}" artist:"${artistName}"` : `album:"${variant}"`;
+            const r = await spotifySearch(token, q, "album", 10);
+            for (const a of r?.albums?.items ?? []) {
+              const isAlbumOrEp = a.album_type === "album" || a.album_type === "ep";
+              if (!isAlbumOrEp) continue;
+              if (!exactMatch(a.name ?? "", variant)) continue;
+              if (!artistMatch(a, artistName)) continue;
+              if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
+            }
+            if (imageUrl) break;
+          }
         }
 
-        // 3. Artist image (never leave empty)
+        // 2. Wikipedia
+        if (!imageUrl) {
+          const yearMatch = albumName.match(/\b(19|20)\d{2}\b/);
+          const year = yearMatch ? yearMatch[0] : null;
+          const titles = artistName
+            ? [
+                `${albumName} (${artistName} album)`,
+                `${albumName} (${artistName} ${year} album)`,
+                year ? `${albumName.replace(year, "").trim()} (${artistName} ${year} album)` : null,
+                `${albumName} (${artistName} álbüm)`,
+                `${albumName} (álbum)`,
+                `${albumName} (${year} album)`,
+                `${albumName.replace(year, "").trim()} (${year} album)`,
+                `${albumName} album`,
+                `${albumName}`,
+              ].filter(Boolean) as string[]
+            : [
+                `${albumName} (album)`,
+                year ? `${albumName} (${year} album)` : null,
+                year ? `${albumName.replace(year, "").trim()} (${year} album)` : null,
+                `${albumName} (álbum)`,
+                `${albumName} album`,
+                `${albumName}`,
+              ].filter(Boolean) as string[];
+          for (const title of titles) {
+            const data = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+            if (data?.thumbnail?.source) { imageUrl = data.thumbnail.source; break; }
+          }
+        }
+
+        // 3. Last.fm
+        if (!imageUrl && artistName) {
+          for (const variant of albumVariants(albumName)) {
+            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&album=${encodeURIComponent(variant)}&format=json`);
+            if (data?.album?.name && exactMatch(data.album.name, variant)) {
+              const images = data.album.image ?? [];
+              for (const img of [...images].reverse()) {
+                if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                  imageUrl = img["#text"];
+                  break;
+                }
+              }
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 4. iTunes (exact)
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const q = artistName ? `${variant} ${artistName}` : variant;
+            const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=10`);
+            for (const r of data?.results ?? []) {
+              if (!r.artworkUrl100) continue;
+              if (!exactMatch(r.collectionName ?? "", variant)) continue;
+              if (artistName && !exactMatch(r.artistName ?? "", artistName)) continue;
+              imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+              break;
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 5. Cover Art Archive
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            try {
+              const q = artistName ? `release:${variant} AND artist:${artistName}` : `release:${variant}`;
+              const mbData = await fetchJson(`https://musicbrainz.org/ws/2/release/?query=${encodeURIComponent(q)}&fmt=json&limit=5`, { headers: { "User-Agent": "DaegonCharts/1.0 (contact@daegoncharts.com)" } });
+              for (const release of mbData?.releases ?? []) {
+                if (!exactMatch(release.title ?? "", variant)) continue;
+                try {
+                  const controller = new AbortController();
+                  const timeout = setTimeout(() => controller.abort(), 3000);
+                  const caaResponse = await fetch(`https://coverartarchive.org/release/${release.id}/front-500`, { method: "HEAD", signal: controller.signal });
+                  clearTimeout(timeout);
+                  if (caaResponse.ok) { imageUrl = `https://coverartarchive.org/release/${release.id}/front-500`; break; }
+                } catch {}
+              }
+            } catch {}
+            if (imageUrl) break;
+          }
+        }
+
+        // 6. Discogs (exact)
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            try {
+              const q = artistName ? `${variant} ${artistName}` : variant;
+              const data = await fetchJson(`https://api.discogs.com/database/search?q=${encodeURIComponent(q)}&type=release&per_page=10`, { headers: { "User-Agent": "DaegonCharts/1.0 (contact@daegoncharts.com)" } });
+              for (const r of data?.results ?? []) {
+                if (!r.cover_image) continue;
+                const title = comparable(r.title ?? "");
+                if (!title.includes(comparable(variant))) continue;
+                if (artistName && !title.includes(comparable(artistName))) continue;
+                imageUrl = r.cover_image;
+                break;
+              }
+            } catch {}
+            if (imageUrl) break;
+          }
+        }
+
+        // 7. Deezer (exact)
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const q = artistName ? `${variant} ${artistName}` : variant;
+            const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(q)}&limit=10`);
+            for (const a of data?.data ?? []) {
+              if (!exactMatch(a.title ?? "", variant)) continue;
+              if (artistName && !exactMatch(a.artist?.name ?? "", artistName)) continue;
+              if (a.cover_xl || a.cover_big || a.cover_medium) {
+                imageUrl = a.cover_xl || a.cover_big || a.cover_medium;
+                break;
+              }
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 8. Spotify broader (exact)
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const q = artistName ? `album:"${variant}" artist:"${artistName}"` : `album:"${variant}"`;
+            const r = await spotifySearch(token, q, "album", 20);
+            for (const a of r?.albums?.items ?? []) {
+              if (!exactMatch(a.name ?? "", variant)) continue;
+              if (!artistMatch(a, artistName)) continue;
+              if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 9. DeviantArt
+        if (!imageUrl) {
+          imageUrl = await searchDeviantArt(albumName, artistName);
+        }
+
+        // 10. Spotify album without artist
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const q = `album:"${variant}"`;
+            const r = await spotifySearch(token, q, "album", 5);
+            for (const a of r?.albums?.items ?? []) {
+              if (!exactMatch(a.name ?? "", variant)) continue;
+              if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 11. Spotify playlist cover
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const r = await spotifySearch(token, `"${variant}"`, "playlist", 5);
+            for (const p of r?.playlists?.items ?? []) {
+              if (!exactMatch(p.name ?? "", variant)) continue;
+              if (p.images?.[0]?.url) { imageUrl = p.images[0].url; break; }
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 12. Artist image (last resort)
         if (!imageUrl && artistName) {
           const ra = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (ra?.artists?.items ?? []).filter((a: any) => a.images?.[0]?.url);
-          const exact = artists.find((a: any) => comparable(a.name) === comparable(artistName));
+          const exact = artists.find((a: any) => exactMatch(a.name ?? "", artistName));
           imageUrl = (exact ?? artists[0])?.images?.[0]?.url ?? null;
         }
         if (!imageUrl) {
@@ -140,8 +320,8 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         }
         if (title) {
           const tracks = (await spotifySearch(token, `track:"${title}" artist:"${artistName}"`, "track"))?.tracks?.items ?? [];
-          const track = tracks.find((item: any) => item.artists?.some((artist: any) => comparable(artist.name) === comparable(artistName)));
-          const artist = track?.artists?.find((item: any) => comparable(item.name) === comparable(artistName));
+          const track = tracks.find((item: any) => item.artists?.some((artist: any) => exactMatch(artist.name ?? "", artistName)));
+          const artist = track?.artists?.find((item: any) => exactMatch(item.name ?? "", artistName));
           if (artist?.id) {
             const response = await fetch(`https://api.spotify.com/v1/artists/${artist.id}`, { headers: { Authorization: `Bearer ${token}` } });
             if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
@@ -152,13 +332,12 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           const artists = (result?.artists?.items ?? [])
             .filter((artist: any) => artist.images?.[0]?.url)
             .sort((a: any, b: any) => {
-              const nameMatch = Number(comparable(b.name) === comparable(artistName)) - Number(comparable(a.name) === comparable(artistName));
+              const nameMatch = Number(exactMatch(b.name ?? "", artistName)) - Number(exactMatch(a.name ?? "", artistName));
               if (nameMatch !== 0) return nameMatch;
               return (b.popularity ?? 0) - (a.popularity ?? 0);
             });
           imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
-        // Ultra-fallback: search without quotes
         if (!imageUrl) {
           const rb = await spotifySearch(token, artistName, "artist");
           const fallback = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url);
@@ -168,7 +347,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
       imageCache.set(cacheKey, imageUrl);
       return imageUrl;
     } catch (error) {
-      console.error("Spotify image search failed", error);
+      console.error("Image search failed", error);
       return null;
     }
   });
@@ -184,7 +363,7 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
     try {
       const artist = comparable(data.artistName) === "jao"
         ? await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
-        : (await spotifySearch(token, `artist:"${data.artistName}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(comparable(b.name) === comparable(data.artistName)) - Number(comparable(a.name) === comparable(data.artistName)))[0];
+        : (await spotifySearch(token, `artist:"${data.artistName}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(exactMatch(b.name ?? "", data.artistName)) - Number(exactMatch(a.name ?? "", data.artistName)))[0];
       if (!artist) return null;
       const profile = { imageUrl: artist.images?.[0]?.url ?? null, followers: artist.followers?.total ?? 0, genres: artist.genres ?? [] };
       profileCache.set(data.artistName, profile);

@@ -45,6 +45,18 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
   const no1s = entries.filter(e => e.peak === 1).length;
   const top10s = entries.filter(e => e.peak >= 1 && e.peak <= 10).length;
 
+  const unitsLabel: Record<string, string> = {
+    "Hot 100 Songs": "Units",
+    "Digital Songs Sales": "Sales",
+    "Streaming Songs": "Streams",
+    "Top 40 Radio": "Audience",
+    "Top 100 Albums": "Units",
+    "Top Album Sales": "Sales",
+    "Top Streaming Albums": "Streams",
+    "Top 50 Artists": "Units",
+  };
+  const colLabel = unitsLabel[chart] ?? "Units";
+
   return (
     <section>
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-4">
@@ -71,7 +83,7 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
                 <th className="p-3 text-center">Weeks</th>
                 <th className="p-3 text-center">First Entry</th>
                 <th className="p-3 text-center">Peak Date</th>
-                {!["Top 40 Radio", "Top Streaming Albums"].includes(chart) && <th className="p-3 text-right">Units</th>}
+                <th className="p-3 text-right">{colLabel}</th>
               </tr>
             </thead>
             <tbody>
@@ -82,9 +94,7 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
                   <td className="p-3 text-center">{e.weeks}</td>
                   <td className="p-3 text-center text-muted-foreground text-xs">{e.firstEntry ?? "—"}</td>
                   <td className="p-3 text-center text-muted-foreground text-xs">{e.peakDate ?? "—"}</td>
-                  {!["Top 40 Radio", "Top Streaming Albums"].includes(chart) && (
-                    <td className="p-3 text-right text-muted-foreground text-xs">{e.totalUnits ?? e.unitsSold ?? "—"}</td>
-                  )}
+                  <td className="p-3 text-right text-muted-foreground text-xs">{e.unitsSold ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

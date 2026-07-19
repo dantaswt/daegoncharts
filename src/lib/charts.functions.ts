@@ -428,7 +428,7 @@ export const getChartBeat = createServerFn({ method: "GET" })
 
 export interface ArtistDetails {
   name: string;
-  chartsByKind: Record<string, { item: string; peak: number; weeks: number; unitsSold?: string | null; totalUnits?: string | null; firstEntry?: string | null; peakDate?: string | null }[]>;
+  chartsByKind: Record<string, { item: string; peak: number; weeks: number; weeksAt1?: number; unitsSold?: string | null; totalUnits?: string | null; firstEntry?: string | null; peakDate?: string | null }[]>;
 }
 
 export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async () => {
@@ -442,6 +442,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       item: findIdx(header, ["item"]),
       peak: findIdx(header, ["peak"]),
       weeks: findIdx(header, ["weeks", "wks"]),
+      weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "weeks at #1"]),
       unitsSold: findIdx(header, ["units sold", "sales", "total sales", "units/sales"]),
       totalUnits: findIdx(header, ["total units", "total"]),
       firstEntry: findIdx(header, ["first entry"]),
@@ -456,6 +457,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
         item: (r[idx.item] ?? "").trim(),
         peak: toInt(r[idx.peak]),
         weeks: toInt(r[idx.weeks]),
+        weeksAt1: idx.weeksAt1 >= 0 ? toInt(r[idx.weeksAt1]) : undefined,
         unitsSold: idx.unitsSold >= 0 ? r[idx.unitsSold] || null : null,
         totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] || null : null,
         firstEntry: idx.firstEntry >= 0 ? r[idx.firstEntry] || null : null,
