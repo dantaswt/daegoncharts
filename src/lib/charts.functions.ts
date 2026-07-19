@@ -117,7 +117,22 @@ function findIdx(header: string[], keys: string[]): number {
 }
 
 function toInt(v: string | undefined): number {
-  const n = parseInt((v ?? "").replace(/,/g, ""), 10);
+  let s = (v ?? "").trim();
+  if (!s || s === "-") return 0;
+  // Remove non-numeric chars except dots, commas, minus
+  s = s.replace(/[^0-9.,\-]/g, "");
+  if (!s) return 0;
+  // European format: dots as thousand separators (e.g. "3.648.500" or "56.000")
+  if (s.includes(".") && (s.match(/\./g) || []).length >= 1) {
+    // Multiple dots → definitely thousand separators
+    // Single dot followed by exactly 3 digits at end → thousand separator
+    if ((s.match(/\./g) || []).length > 1 || /^\d+\.\d{3}$/.test(s)) {
+      s = s.replace(/\./g, "");
+    }
+  }
+  // Remove commas (thousand separator in US format)
+  s = s.replace(/,/g, "");
+  const n = parseInt(s, 10);
   return isNaN(n) ? 0 : n;
 }
 
