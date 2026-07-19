@@ -13,23 +13,7 @@ const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
   artists:        { accent: "#F87171", accentDark: "#EF4444" },
 };
 
-function ordinal(n: number): string {
-  if (n <= 0) return String(n);
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function formatDiff(entry: ChartEntry): string {
-  if (entry.diff === "NEW") return "NEW";
-  if (entry.diff === "RE") return "RE";
-  if (entry.diff === "=" || entry.diff === "") return "—";
-  const num = parseInt(entry.diff.replace(/[▲▼]/g, ""), 10);
-  if (isNaN(num)) return "—";
-  return entry.diff.includes("▲") ? `+${num}` : `-${num}`;
-}
-
-function lastWeekNumber(entry: ChartEntry): string {
+function lastWeekDisplay(entry: ChartEntry): string {
   if (entry.diff === "NEW") return "NEW";
   if (entry.diff === "RE") return "RE";
   if (!entry.lastWeek) return "—";
@@ -64,7 +48,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
     try {
       const dataUrl = await toPng(ref.current, {
         width: 1080,
-        height: 1350,
+        height: 0,
         pixelRatio: 2,
         backgroundColor: "#1a1a1a",
       });
@@ -95,7 +79,6 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
           ref={ref}
           style={{
             width: 1080,
-            height: 1350,
             background: "#1a1a1a",
             fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
             display: "flex",
@@ -108,48 +91,58 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
           <div
             style={{
               background: theme.accent,
-              padding: "48px 60px 40px",
+              padding: "44px 56px 36px",
               display: "flex",
               flexDirection: "column",
-              gap: 8,
+              gap: 6,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <div
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 900,
-                    color: "#000",
-                    letterSpacing: "-0.02em",
-                    textTransform: "uppercase",
-                    opacity: 0.6,
-                  }}
-                >
-                  daegon charts
-                </div>
+              <div
+                style={{
+                  fontSize: 26,
+                  fontWeight: 900,
+                  color: "#000",
+                  letterSpacing: "-0.02em",
+                  textTransform: "uppercase",
+                  opacity: 0.5,
+                }}
+              >
+                daegon charts
               </div>
               <div
                 style={{
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: 700,
                   color: "#000",
                   textAlign: "right",
-                  opacity: 0.7,
+                  opacity: 0.6,
+                  lineHeight: 1.3,
                 }}
               >
-                CHART DATED<br />
-                <span style={{ fontSize: 22, opacity: 1 }}>{dateLabel}</span>
+                CHART DATED
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div
+                style={{
+                  fontSize: 26,
+                  fontWeight: 900,
+                  color: "#000",
+                  textAlign: "right",
+                }}
+              >
+                {dateLabel}
               </div>
             </div>
             <div
               style={{
-                fontSize: 96,
+                fontSize: 88,
                 fontWeight: 900,
                 color: "#000",
                 letterSpacing: "-0.04em",
-                lineHeight: 1,
-                marginTop: 8,
+                lineHeight: 0.95,
+                marginTop: 4,
               }}
             >
               {chartTitle.toUpperCase()}
@@ -159,14 +152,13 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
           {/* Content */}
           <div
             style={{
-              flex: 1,
-              padding: "32px 60px 40px",
+              padding: "28px 56px 32px",
               display: "flex",
               flexDirection: "column",
               gap: 0,
             }}
           >
-            {/* Weeks at #1 badge */}
+            {/* Weeks at #1 badge - close to the entry */}
             {weeksAt1 && (
               <div
                 style={{
@@ -174,30 +166,43 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                   alignSelf: "flex-start",
                   background: theme.accent,
                   color: "#000",
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: 800,
-                  padding: "8px 20px",
-                  borderRadius: 6,
+                  padding: "6px 16px",
+                  borderRadius: 4,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  marginBottom: 24,
+                  marginBottom: 12,
                 }}
               >
                 {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
               </div>
             )}
 
-            {/* Column headers */}
+            {/* Column headers - LAST WEEK on the right */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                padding: "0 0 12px",
+                padding: "0 0 10px",
                 borderBottom: `2px solid ${theme.accent}`,
-                marginBottom: 4,
+                marginBottom: 2,
               }}
             >
-              <div style={{ width: 60, fontSize: 14, fontWeight: 800, color: theme.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              <div style={{ width: 70, flexShrink: 0 }} />
+              <div style={{ flex: 1 }} />
+              <div
+                style={{
+                  width: 120,
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: theme.accent,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  textAlign: "center",
+                  flexShrink: 0,
+                }}
+              >
                 LAST WEEK
               </div>
             </div>
@@ -211,16 +216,15 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    padding: "16px 0",
+                    padding: "14px 0",
                     borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.08)` : "none",
-                    gap: 20,
                   }}
                 >
                   {/* Rank */}
                   <div
                     style={{
-                      width: 60,
-                      fontSize: isNumberOne ? 52 : 44,
+                      width: 70,
+                      fontSize: isNumberOne ? 48 : 40,
                       fontWeight: 900,
                       color: isNumberOne ? theme.accent : "#fff",
                       lineHeight: 1,
@@ -231,49 +235,55 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                     {entry.position}
                   </div>
 
-                  {/* Song/Artist info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
+                  {/* Song name + Artist on same line */}
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 12,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <span
                       style={{
-                        fontSize: isNumberOne ? 30 : 26,
+                        fontSize: isNumberOne ? 26 : 22,
                         fontWeight: 900,
                         color: "#fff",
                         textTransform: "uppercase",
                         letterSpacing: "-0.01em",
                         lineHeight: 1.2,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        flexShrink: 0,
                       }}
                     >
                       {entry.name}
-                    </div>
-                    <div
+                    </span>
+                    <span
                       style={{
-                        fontSize: 20,
-                        color: "rgba(255,255,255,0.55)",
-                        marginTop: 4,
+                        fontSize: isNumberOne ? 20 : 18,
+                        color: "rgba(255,255,255,0.5)",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                       }}
                     >
                       {entry.artist}
-                    </div>
+                    </span>
                   </div>
 
                   {/* Last Week */}
                   <div
                     style={{
-                      width: 80,
-                      fontSize: 22,
+                      width: 120,
+                      fontSize: 20,
                       fontWeight: 800,
                       color: theme.accent,
                       textAlign: "center",
                       flexShrink: 0,
                     }}
                   >
-                    {lastWeekNumber(entry)}
+                    {lastWeekDisplay(entry)}
                   </div>
                 </div>
               );
@@ -283,17 +293,17 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
           {/* Footer */}
           <div
             style={{
-              padding: "20px 60px",
+              padding: "16px 56px 24px",
               borderTop: `1px solid rgba(255,255,255,0.06)`,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <div style={{ fontSize: 14, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>
               daegoncharts.com
             </div>
-            <div style={{ fontSize: 14, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>
               {topEntries.length} / {entries.length} ENTRIES SHOWN
             </div>
           </div>
