@@ -11,12 +11,10 @@ function DiffIndicator({ diff }: { diff: string }) {
   if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
   if (diff === "=") return <span className="diff-steady flex items-center justify-center"><span className="diff-arrow" style={{ transform: "rotate(90deg)" }}>&#9650;</span></span>;
   if (diff.startsWith("▲")) {
-    const num = diff.slice(1);
-    return <span className="diff-up flex flex-col items-center leading-none"><span className="diff-arrow">&#9650;</span><span className="diff-num">{num}</span></span>;
+    return <span className="diff-up flex items-center justify-center"><span className="diff-arrow">&#9650;</span></span>;
   }
   if (diff.startsWith("▼")) {
-    const num = diff.slice(1);
-    return <span className="diff-down flex flex-col items-center leading-none"><span className="diff-arrow">&#9660;</span><span className="diff-num">{num}</span></span>;
+    return <span className="diff-down flex items-center justify-center"><span className="diff-arrow">&#9660;</span></span>;
   }
   return <span className="text-xs">{diff}</span>;
 }
@@ -112,7 +110,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (!isGoat && entry.streams && ["songs", "albums", "topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
       let label = "Streaming";
       if (chartId === "songs") label = "Streams";
-      if (chartId === "albums" || chartId === "topStreamingAlbums") label = "SEA";
+      if (chartId === "albums" || chartId === "topStreamingAlbums") label = "Streams";
       if (chartId === "streamingSongs") label = "Streams";
       items.push({ label, value: entry.streams });
     }    if (!isGoat && entry.totalStreams) {
@@ -193,18 +191,20 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       id={`entry-${entry.position}`}
 className="chart-card w-full"
   >
-      <div className="grid grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] md:gap-3 gap-2 w-full">
-        <div className="flex items-center justify-center w-12 md:w-16 flex-shrink-0">
-          <div className="rank-num text-lg md:text-3xl font-black">{entry.position}</div>
-        </div>
-        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-12 h-12 md:w-24 md:h-24 flex-shrink-0">
-          <SpotifyImage entry={entry} kind={kind} />
-        </div>
-        <div className="flex items-center justify-center w-6 md:w-8 flex-shrink-0">
-          {showDiff && <DiffIndicator diff={entry.diff} />}
+      <div className="flex gap-2 w-full md:grid md:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] md:gap-3">
+        <div className="flex items-center gap-2 md:contents">
+          <div className="flex items-center justify-center w-12 md:w-16 flex-shrink-0">
+            <div className="rank-num text-lg md:text-3xl font-black">{entry.position}</div>
+          </div>
+          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-12 h-12 md:w-24 md:h-24 flex-shrink-0">
+            <SpotifyImage entry={entry} kind={kind} />
+          </div>
+          <div className="flex items-center justify-center w-6 md:w-8 flex-shrink-0">
+            {showDiff && <DiffIndicator diff={entry.diff} />}
+          </div>
         </div>
 
-      <div className="min-w-0 flex flex-col">
+      <div className="min-w-0 flex flex-col flex-1">
         <div className="font-bold text-xs md:text-base break-words line-clamp-2">{entry.name}</div>
         <Link
           to="/artist/$slug"
