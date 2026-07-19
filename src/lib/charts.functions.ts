@@ -117,7 +117,7 @@ function findIdx(header: string[], keys: string[]): number {
 }
 
 function toInt(v: string | undefined): number {
-  const n = parseInt(v ?? "");
+  const n = parseInt((v ?? "").replace(/,/g, ""), 10);
   return isNaN(n) ? 0 : n;
 }
 

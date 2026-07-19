@@ -128,7 +128,7 @@ function ArtistPage() {
   }
 
   const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
-  const totalUnitsAny = artist.chartsByKind["Top 50 Artists"]?.[0]?.totalUnits || artist.chartsByKind["Artists"]?.[0]?.totalUnits || artist.chartsByKind["Top 50 Artists"]?.[0]?.unitsSold || artist.chartsByKind["Artists"]?.[0]?.unitsSold;
+  const totalUnitsAny = artist.chartsByKind["Top 50 Artists"]?.[0]?.unitsSold || artist.chartsByKind["Artists"]?.[0]?.unitsSold;
 
   const order = [
     "Hot 100 Songs",

@@ -93,8 +93,9 @@
     letter-spacing: 0.05em;
     font-size: 0.6rem;
     font-weight: 800;
-    writing-mode: vertical-rl;
+    writing-mode: vertical-lr;
     text-orientation: mixed;
+    transform: rotate(180deg);
   }
   @media (min-width: 768px) {
     .diff-badge { font-size: 0.65rem; }

@@ -9,7 +9,7 @@ function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
   if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
-  if (diff === "=") return <span className="diff-steady flex flex-col items-center leading-none"><span className="text-sm">&#8594;</span></span>;
+  if (diff === "=") return <span className="diff-steady flex items-center justify-center"><span className="text-lg" style={{ transform: "rotate(90deg)" }}>&#9650;</span></span>;
   if (diff.startsWith("▲")) {
     const num = diff.slice(1);
     return <span className="diff-up flex flex-col items-center leading-none"><span className="text-sm">&#9650;</span><span className="text-[10px] font-bold">{num}</span></span>;
