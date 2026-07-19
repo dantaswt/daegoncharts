@@ -84,6 +84,12 @@
   .diff-down { color: var(--run-down); }
   .diff-new { color: #FFD600; font-weight: 700; }
   .diff-steady { color: var(--muted-foreground); }
+  .diff-arrow { font-size: 0.7rem; }
+  .diff-num { font-size: 0.6rem; font-weight: 800; }
+  @media (min-width: 768px) {
+    .diff-arrow { font-size: 0.85rem; }
+    .diff-num { font-size: 0.65rem; }
+  }
 
   .diff-badge {
     display: inline-flex;

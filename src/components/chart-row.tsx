@@ -9,14 +9,14 @@ function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
   if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
-  if (diff === "=") return <span className="diff-steady flex items-center justify-center"><span className="text-lg" style={{ transform: "rotate(90deg)" }}>&#9650;</span></span>;
+  if (diff === "=") return <span className="diff-steady flex items-center justify-center"><span className="diff-arrow" style={{ transform: "rotate(90deg)" }}>&#9650;</span></span>;
   if (diff.startsWith("▲")) {
     const num = diff.slice(1);
-    return <span className="diff-up flex flex-col items-center leading-none"><span className="text-sm">&#9650;</span><span className="text-[10px] font-bold">{num}</span></span>;
+    return <span className="diff-up flex flex-col items-center leading-none"><span className="diff-arrow">&#9650;</span><span className="diff-num">{num}</span></span>;
   }
   if (diff.startsWith("▼")) {
     const num = diff.slice(1);
-    return <span className="diff-down flex flex-col items-center leading-none"><span className="text-sm">&#9660;</span><span className="text-[10px] font-bold">{num}</span></span>;
+    return <span className="diff-down flex flex-col items-center leading-none"><span className="diff-arrow">&#9660;</span><span className="diff-num">{num}</span></span>;
   }
   return <span className="text-xs">{diff}</span>;
 }

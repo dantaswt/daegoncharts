@@ -491,6 +491,36 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
   });
 });
 
+export const getArtist50TotalUnits = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("artist50TotalUnits", async () => {
+    const cfg = chartsConfig.artists;
+    const rows = await fetchCsv(cfg.url);
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const idx = {
+      artist: findIdx(header, ["artist", "artists"]),
+      date: findIdx(header, ["chart date", "date"]),
+      totalUnits: findIdx(header, ["total units", "total", "total audience"]),
+    };
+    const map: Record<string, string> = {};
+    for (const r of rows.slice(1)) {
+      const artist = (r[idx.artist] ?? "").trim();
+      if (!artist || idx.totalUnits < 0) continue;
+      const date = normalizeDate(r[idx.date]);
+      const totalUnits = r[idx.totalUnits] ?? "";
+      if (!date || !totalUnits) continue;
+      const existing = map[artist];
+      if (!existing || date > existing.split("||")[0]) {
+        map[artist] = `${date}||${totalUnits}`;
+      }
+    }
+    const result: Record<string, string> = {};
+    for (const [artist, val] of Object.entries(map)) {
+      result[artist] = val.split("||")[1];
+    }
+    return result;
+  });
+});
+
 export interface Stats2Record {
   name: string;
   artist: string;

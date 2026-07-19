@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllArtistStats, getGoatChart } from "@/lib/charts.functions";
+import { getAllArtistStats, getGoatChart, getArtist50TotalUnits } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import React from "react";
 
 export const Route = createFileRoute("/artist/$slug")({
   loader: async ({ params }) => {
-    const all = await getAllArtistStats();
+    const [all, artist50Units] = await Promise.all([getAllArtistStats(), getArtist50TotalUnits()]);
     const match = Object.values(all).find((a) => slugifyArtist(a.name) === params.slug);
     
     let profile = null;
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/artist/$slug")({
       }
     }
     
-    return { artist: match ?? null, slug: params.slug, profile, goatData };
+    return { artist: match ?? null, slug: params.slug, profile, goatData, artist50Units };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.artist?.name ?? "Artist";
@@ -116,7 +116,7 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
 }
 
 function ArtistPage() {
-  const { artist, profile, goatData } = Route.useLoaderData();
+  const { artist, profile, goatData, artist50Units } = Route.useLoaderData();
   
   if (!artist) {
     return (
@@ -128,7 +128,7 @@ function ArtistPage() {
   }
 
   const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
-  const totalUnitsAny = artist.chartsByKind["Top 50 Artists"]?.[0]?.unitsSold || artist.chartsByKind["Artists"]?.[0]?.unitsSold;
+  const totalUnitsAny = artist50Units?.[artist.name] || artist.chartsByKind["Top 50 Artists"]?.[0]?.unitsSold || artist.chartsByKind["Artists"]?.[0]?.unitsSold;
 
   const order = [
     "Hot 100 Songs",
