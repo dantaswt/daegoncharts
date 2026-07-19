@@ -107,7 +107,7 @@ function ChartBeatPage() {
       <h1 className="section-title">Chart Beat</h1>
       <div className="flex gap-2 mb-8 flex-wrap">{blogs.map((item) => <Link key={item} to="/chart-beat/$blog" params={{ blog: item }} className={`btn-nav ${item === blog ? "active" : ""}`}>{chartBeatConfig[item].title}</Link>)}</div>
       <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-24 lg:self-start bg-[var(--muted)] border border-[var(--border-dark)] rounded-xl p-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
+        <aside className="lg:sticky lg:top-24 lg:self-start sidebar-section max-h-[calc(100vh-8rem)] overflow-y-auto">
           <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Archive</div>
           <button onClick={() => setExpandedYears(new Set())} className={`block w-full text-left px-2 py-1.5 rounded text-sm ${expandedYears.size === 0 ? "text-[var(--accent)] font-bold bg-[rgba(0,230,118,0.1)]" : "hover:text-[var(--accent)]"}`}>All articles</button>
           {yearsData.map(([year, months]) => (
