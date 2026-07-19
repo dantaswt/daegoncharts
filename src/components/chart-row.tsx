@@ -218,9 +218,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       const parts = [];
       if (streamsStr) parts.push(streamsStr);
       if (salesStr) parts.push(salesStr);
-      entryDetail = parts.length > 0 ? ` [${parts.join(" | ")}].` : ".";
+      entryDetail = parts.length > 0 ? ` [${parts.join(" | ")}].` : "";
     } else {
-      entryDetail = metricsPart ? ` ${metricsPart}.` : ".";
+      entryDetail = metricsPart ? ` ${metricsPart}.` : "";
     }
 
     // Annotations at end (replaces peak annotation)
@@ -245,14 +245,17 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       chartDateStr = `\n\nChart dated ${formattedDate}.`;
     }
 
+    const weeksPart = isNew ? "" : `[${entry.weeks} weeks].`;
+    const annotationPart = isNew ? "" : annotation;
+
     const parts = [
       `Daegon's ${chartTitle}:`,
       posPart,
       `${entry.name},`,
       entry.artist,
       entryDetail,
-      `[${entry.weeks} weeks].`,
-      annotation
+      weeksPart,
+      annotationPart
     ].filter(Boolean).join(" ");
 
     navigator.clipboard.writeText(`${parts}${chartDateStr}`);
