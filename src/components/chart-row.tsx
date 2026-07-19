@@ -9,12 +9,12 @@ function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
   if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
-  if (diff === "=") return <span className="diff-steady flex items-center justify-center"><span className="diff-arrow" style={{ transform: "rotate(90deg)" }}>&#9650;</span></span>;
+  if (diff === "=") return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>;
   if (diff.startsWith("▲")) {
-    return <span className="diff-up flex items-center justify-center"><span className="diff-arrow">&#9650;</span></span>;
+    return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg></span>;
   }
   if (diff.startsWith("▼")) {
-    return <span className="diff-down flex items-center justify-center"><span className="diff-arrow">&#9660;</span></span>;
+    return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13V3M4 9l4 4 4-4"/></svg></span>;
   }
   return <span className="text-xs">{diff}</span>;
 }
@@ -193,8 +193,13 @@ className="chart-card w-full"
   >
       <div className="flex gap-2 w-full md:grid md:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] md:gap-3">
         <div className="flex items-center gap-2 md:contents">
-          <div className="flex items-center justify-center w-12 md:w-16 flex-shrink-0">
+          <div className="flex flex-col items-center justify-center w-12 md:w-16 flex-shrink-0">
             <div className="rank-num text-lg md:text-3xl font-black">{entry.position}</div>
+            {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
+              <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] md:text-[9px] font-bold rounded whitespace-nowrap uppercase">
+{entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
+              </div>
+            )}
           </div>
           <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-12 h-12 md:w-24 md:h-24 flex-shrink-0">
             <SpotifyImage entry={entry} kind={kind} />
@@ -205,7 +210,14 @@ className="chart-card w-full"
         </div>
 
       <div className="min-w-0 flex flex-col flex-1">
-        <div className="font-bold text-xs md:text-base break-words line-clamp-2">{entry.name}</div>
+        <div className="font-bold text-xs md:text-base break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+          {entry.name}
+          {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
+            <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] md:text-[9px] font-bold rounded whitespace-nowrap uppercase">
+              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
+            </span>
+          )}
+        </div>
         <Link
           to="/artist/$slug"
           params={{ slug }}
@@ -218,19 +230,9 @@ className="chart-card w-full"
         )}
         <div className="hidden md:block">
           <ChartMetrics entry={entry} showDiff={showDiff} />
-          {(entry.weeksAt1 ?? 0) > 0 && (
-            <div className="inline-flex items-center rounded-full bg-blue-500/10 px-2 md:px-3 py-0.5 md:py-1 text-[9px] md:text-[10px] font-semibold text-blue-500">
-              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
-            </div>
-          )}
         </div>
         <div className="md:hidden">
           <ChartMetrics entry={entry} showDiff={showDiff} />
-          {(entry.weeksAt1 ?? 0) > 0 && (
-            <div className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-semibold text-blue-500 mt-1">
-              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "Wk" : "Wks"} at 1
-            </div>
-          )}
         </div>
       </div>
 

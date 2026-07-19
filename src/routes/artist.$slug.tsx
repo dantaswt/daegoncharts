@@ -89,7 +89,16 @@ function ChartSection({ chart, entries }: { chart: string; entries: any[] }) {
             <tbody>
               {visibleEntries.map((e, i: number) => (
                 <tr key={i} className="border-t border-[var(--border)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
-                  <td className="p-3 font-semibold">{e.item}</td>
+                  <td className="p-3 font-semibold">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {e.item}
+                      {(e.weeksAt1 ?? 0) > 0 && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap">
+                          {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <td className="p-3 text-center font-bold gold">#{e.peak}</td>
                   <td className="p-3 text-center">{e.weeks}</td>
                   <td className="p-3 text-center text-muted-foreground text-xs">{e.firstEntry ?? "—"}</td>

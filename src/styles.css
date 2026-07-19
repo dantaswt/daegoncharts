@@ -80,15 +80,15 @@
   }
   @media (min-width: 768px) { .rank-num { font-size: 1.75rem; width: 5rem; } }
 
-  .diff-up { color: var(--run-up); }
-  .diff-down { color: var(--run-down); }
   .diff-new { color: #FFD600; font-weight: 700; }
   .diff-steady { color: var(--muted-foreground); }
-  .diff-arrow { font-size: 1rem; line-height: 1; }
-  .diff-num { font-size: 0.6rem; font-weight: 800; }
+  .diff-arrow {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
   @media (min-width: 768px) {
-    .diff-arrow { font-size: 1.2rem; }
-    .diff-num { font-size: 0.65rem; }
+    .diff-arrow { width: 1.2rem; height: 1.2rem; }
   }
 
   .diff-badge {
