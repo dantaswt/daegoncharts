@@ -3,6 +3,7 @@ import { getWeeklyChart } from "@/lib/charts.functions";
 import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
 import { ChartTypeNav, WeekNavigator } from "@/components/chart-nav";
 import { ChartRow } from "@/components/chart-row";
+import { ChartImage } from "@/components/chart-image";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { useEffect, useState } from "react";
 
@@ -92,10 +93,23 @@ function WeeklyChartPage() {
       </aside>
       <main>
         <div className="text-center mb-2 md:text-left">
-          <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
-            <i className={`fas ${cfg.icon}`} /> {cfg.title}
-          </h1>
-          <p className="text-xs md:text-sm text-muted-foreground mt-1">Chart week of {dateLabel}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
+                <i className={`fas ${cfg.icon}`} /> {cfg.title}
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">Chart week of {dateLabel}</p>
+            </div>
+            <div className="flex justify-center md:justify-end">
+              <ChartImage
+                entries={entries}
+                chartTitle={cfg.title}
+                chartId={chartId}
+                date={date}
+                kind={cfg.kind}
+              />
+            </div>
+          </div>
         </div>
         <WeekNavigator chartId={chartId} dates={data.dates} currentDate={date} />
         <div className="space-y-2 md:space-y-3 max-w-4xl mx-auto">
