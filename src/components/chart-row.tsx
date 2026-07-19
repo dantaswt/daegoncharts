@@ -157,7 +157,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     } else if (!isGoat && entry.audience) {
       items.push({ label: "Audience", value: formatValue(entry.audience, chartId) });
     }
-    if (!isGoat && entry.airplay) items.push({ label: "Airplay", value: formatValue(entry.airplay, chartId) });
+    if (!isGoat && chartId === "songs" && entry.airplay !== undefined) {
+      const airVal = parseEuropeanNumber(entry.airplay);
+      items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId) : "N/A" });
+    } else if (!isGoat && entry.airplay) {
+      items.push({ label: "Airplay", value: formatValue(entry.airplay, chartId) });
+    }
     if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.sales !== undefined) {
       const salesVal = parseEuropeanNumber(entry.sales);
       const label = chartId === "albums" ? "Pure Sales" : "Sales";
