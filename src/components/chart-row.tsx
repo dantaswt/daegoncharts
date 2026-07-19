@@ -193,18 +193,21 @@ className="chart-card w-full"
   >
       <div className="flex gap-2 w-full md:grid md:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] md:gap-3">
         <div className="flex items-center gap-2 md:contents">
-          <div className="flex flex-col items-center justify-center w-12 md:w-16 flex-shrink-0">
+          <div className="flex flex-col items-center justify-center w-10 md:w-16 flex-shrink-0">
             <div className="rank-num text-lg md:text-3xl font-black">{entry.position}</div>
+            <div className="flex items-center justify-center h-4 md:hidden">
+              {showDiff && <DiffIndicator diff={entry.diff} />}
+            </div>
             {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
               <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] md:text-[9px] font-bold rounded whitespace-nowrap uppercase">
-{entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
+                {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
               </div>
             )}
           </div>
-          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-12 h-12 md:w-24 md:h-24 flex-shrink-0">
+          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-14 h-14 md:w-24 md:h-24 flex-shrink-0">
             <SpotifyImage entry={entry} kind={kind} />
           </div>
-          <div className="flex items-center justify-center w-6 md:w-8 flex-shrink-0">
+          <div className="hidden md:flex items-center justify-center w-8 flex-shrink-0">
             {showDiff && <DiffIndicator diff={entry.diff} />}
           </div>
         </div>
