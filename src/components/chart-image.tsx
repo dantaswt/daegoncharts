@@ -55,14 +55,23 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
       });
       const resp = await fetch(dataUrl);
       const blob = await resp.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `daegon-${chartId}-${date}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      const file = new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `daegon ${chartId}` });
+      } else {
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = `daegon-${chartId}-${date}.png`;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+      }
     } catch (err) {
       console.error("Failed to generate image:", err);
     } finally {
@@ -75,7 +84,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
       <button
         onClick={handleDownload}
         disabled={generating}
-        className="btn-gold text-xs"
+        className="btn-gold text-xs whitespace-nowrap"
       >
         <i className={`fas ${generating ? "fa-spinner fa-spin" : "fa-download"}`} />
         {generating ? "Generating..." : "Download Image"}
