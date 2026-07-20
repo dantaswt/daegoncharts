@@ -55,17 +55,16 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
       });
       const resp = await fetch(dataUrl);
       const blob = await resp.blob();
+      const file = new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" });
 
-      const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      if (isMobile && navigator.share && navigator.canShare?.({ files: [new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" })] })) {
-        const file = new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: `daegon ${chartId}` });
       } else {
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobUrl;
         link.download = `daegon-${chartId}-${date}.png`;
+        link.target = "_blank";
         document.body.appendChild(link);
         link.click();
         setTimeout(() => {
@@ -210,7 +209,8 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                   {isNumberOne && weeksAt1 && (
                     <div
                       style={{
-                        display: "inline-flex",
+                        display: "flex",
+                        justifyContent: "flex-start",
                         background: theme.accent,
                         color: "#000",
                         fontSize: 15,
@@ -220,6 +220,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                         marginBottom: 8,
+                        width: "fit-content",
                         marginLeft: 70,
                       }}
                     >
