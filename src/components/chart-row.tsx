@@ -144,7 +144,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
     if (kind === "song" && entry.points) items.push({ label: "Points", value: formatValue(entry.points, chartId) });
-    if (chartId === "songs" && entry.units) items.push({ label: "Units", value: formatValue(entry.units, chartId) });
+    if (chartId === "songs" && entry.units !== undefined) {
+      const unitsVal = parseEuropeanNumber(entry.units);
+      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
+    }
     if ((kind === "album" || kind === "artist") && entry.units && !["topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"].includes(chartId ?? "")) {
       items.push({ label: "Units", value: formatValue(entry.units, chartId) });
     }
