@@ -53,19 +53,16 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
         pixelRatio: 2,
         backgroundColor: "#1a1a1a",
       });
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isMobile) {
-        const resp = await fetch(dataUrl);
-        const blob = await resp.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        window.open(blobUrl, "_blank");
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      } else {
-        const link = document.createElement("a");
-        link.download = `daegon-${chartId}-${date}.png`;
-        link.href = dataUrl;
-        link.click();
-      }
+      const resp = await fetch(dataUrl);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `daegon-${chartId}-${date}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       console.error("Failed to generate image:", err);
     } finally {
