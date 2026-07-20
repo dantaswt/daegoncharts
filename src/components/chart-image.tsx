@@ -220,6 +220,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                         marginBottom: 8,
+                        marginLeft: 70,
                       }}
                     >
                       {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
