@@ -110,29 +110,27 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               >
                 daegon charts
               </div>
-              <div
-                style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "#000",
-                  textAlign: "right",
-                  opacity: 0.6,
-                  lineHeight: 1.3,
-                }}
-              >
-                CHART DATED
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <div
-                style={{
-                  fontSize: 26,
-                  fontWeight: 900,
-                  color: "#000",
-                  textAlign: "right",
-                }}
-              >
-                {dateLabel}
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#000",
+                    opacity: 0.6,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  CHART DATED
+                </div>
+                <div
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 900,
+                    color: "#000",
+                  }}
+                >
+                  {dateLabel}
+                </div>
               </div>
             </div>
             <div
@@ -158,28 +156,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               gap: 0,
             }}
           >
-            {/* Weeks at #1 badge - close to the entry */}
-            {weeksAt1 && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignSelf: "flex-start",
-                  background: theme.accent,
-                  color: "#000",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  padding: "6px 16px",
-                  borderRadius: 4,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  marginBottom: 12,
-                }}
-              >
-                {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
-              </div>
-            )}
-
-            {/* Column headers - LAST WEEK on the right */}
+            {/* Column headers */}
             <div
               style={{
                 display: "flex",
@@ -193,14 +170,14 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               <div style={{ flex: 1 }} />
               <div
                 style={{
-                  width: 120,
                   fontSize: 13,
                   fontWeight: 800,
                   color: theme.accent,
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
-                  textAlign: "center",
+                  textAlign: "right",
                   flexShrink: 0,
+                  marginRight: 20,
                 }}
               >
                 LAST WEEK
@@ -211,79 +188,112 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
             {topEntries.map((entry, i) => {
               const isNumberOne = entry.position === 1;
               return (
-                <div
-                  key={`${entry.position}-${entry.name}-${entry.artist}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "14px 0",
-                    borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.08)` : "none",
-                  }}
-                >
-                  {/* Rank */}
-                  <div
-                    style={{
-                      width: 70,
-                      fontSize: isNumberOne ? 48 : 40,
-                      fontWeight: 900,
-                      color: isNumberOne ? theme.accent : "#fff",
-                      lineHeight: 1,
-                      textAlign: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {entry.position}
-                  </div>
-
-                  {/* Song name + Artist on same line */}
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: 12,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <span
+                <div key={`${entry.position}-${entry.name}-${entry.artist}`}>
+                  {/* Weeks at #1 badge - directly above the #1 entry */}
+                  {isNumberOne && weeksAt1 && (
+                    <div
                       style={{
-                        fontSize: isNumberOne ? 26 : 22,
-                        fontWeight: 900,
-                        color: "#fff",
+                        display: "inline-flex",
+                        background: theme.accent,
+                        color: "#000",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        padding: "5px 14px",
+                        borderRadius: 4,
+                        letterSpacing: "0.08em",
                         textTransform: "uppercase",
-                        letterSpacing: "-0.01em",
-                        lineHeight: 1.2,
+                        marginBottom: 6,
+                      }}
+                    >
+                      {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
+                    </div>
+                  )}
+
+                  {/* Entry row */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "12px 0",
+                      borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.08)` : "none",
+                    }}
+                  >
+                    {/* Rank */}
+                    <div
+                      style={{
+                        width: 70,
+                        fontSize: isNumberOne ? 44 : 38,
+                        fontWeight: 900,
+                        color: isNumberOne ? theme.accent : "#fff",
+                        lineHeight: 1,
+                        textAlign: "center",
                         flexShrink: 0,
                       }}
                     >
-                      {entry.name}
-                    </span>
-                    <span
+                      {entry.position}
+                    </div>
+
+                    {/* Song name - left side */}
+                    <div
                       style={{
-                        fontSize: isNumberOne ? 20 : 18,
-                        color: "rgba(255,255,255,0.5)",
-                        whiteSpace: "nowrap",
+                        flex: 1,
+                        minWidth: 0,
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
                       }}
                     >
-                      {entry.artist}
-                    </span>
-                  </div>
+                      <div
+                        style={{
+                          fontSize: isNumberOne ? 24 : 20,
+                          fontWeight: 900,
+                          color: "#fff",
+                          textTransform: "uppercase",
+                          letterSpacing: "-0.01em",
+                          lineHeight: 1.2,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {entry.name}
+                      </div>
+                    </div>
 
-                  {/* Last Week */}
-                  <div
-                    style={{
-                      width: 120,
-                      fontSize: 20,
-                      fontWeight: 800,
-                      color: theme.accent,
-                      textAlign: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {lastWeekDisplay(entry)}
+                    {/* Artist name - right side (mirror) */}
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        textAlign: "right",
+                        marginLeft: 16,
+                        marginRight: 20,
+                        maxWidth: 320,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: isNumberOne ? 18 : 16,
+                          color: "rgba(255,255,255,0.45)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {entry.artist}
+                      </div>
+                    </div>
+
+                    {/* Last Week */}
+                    <div
+                      style={{
+                        width: 60,
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: theme.accent,
+                        textAlign: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {lastWeekDisplay(entry)}
+                    </div>
                   </div>
                 </div>
               );
