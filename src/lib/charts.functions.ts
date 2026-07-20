@@ -192,7 +192,7 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     certification: findIdx(header, ["certification"]),
     units: findIdx(header, ["units", "spins", "sales", "streams", "audience"]),
     totalUnits: findIdx(header, ["total units", "total"]),
-    totalStreams: findIdx(header, ["total streams"]),
+    totalStreams: findIdx(header, ["total streams", "total streaming"]),
     totalSales: findIdx(header, ["total sales"]),
   };
   if (cfg.id === "radioSongs") {
@@ -249,7 +249,7 @@ async function loadYearEnd(chartId: string): Promise<YearEndChartData> {
     points: findIdx(header, ["points"]),
     units: findIdx(header, ["units", "spins", "sales", "streams", "audience", "total audience"]),
     totalUnits: findIdx(header, ["total units", "total", "total audience"]),
-    totalStreams: findIdx(header, ["total streams"]),
+    totalStreams: findIdx(header, ["total streams", "total streaming"]),
     totalSales: findIdx(header, ["total sales"]),
     certification: findIdx(header, ["certification"]),
   };
