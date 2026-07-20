@@ -55,16 +55,17 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
       });
       const resp = await fetch(dataUrl);
       const blob = await resp.blob();
-      const file = new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" });
 
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile && navigator.share && navigator.canShare?.({ files: [new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" })] })) {
+        const file = new File([blob], `daegon-${chartId}-${date}.png`, { type: "image/png" });
         await navigator.share({ files: [file], title: `daegon ${chartId}` });
       } else {
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobUrl;
         link.download = `daegon-${chartId}-${date}.png`;
-        link.target = "_blank";
         document.body.appendChild(link);
         link.click();
         setTimeout(() => {
