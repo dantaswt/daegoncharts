@@ -143,6 +143,19 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
+
+    if (chartId === "artists") {
+      const salesVal = parseEuropeanNumber(entry.sales);
+      const totalSalesVal = parseEuropeanNumber(entry.totalSales);
+      const streamsVal = parseEuropeanNumber(entry.streams);
+      const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
+      const unitsVal = parseEuropeanNumber(entry.units);
+      const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
+      items.push({ label: "Sales / Total Sales", value: `${salesVal > 0 ? formatValue(entry.sales, chartId) : "-"} / ${totalSalesVal > 0 ? formatValue(entry.totalSales, chartId) : "-"}` });
+      items.push({ label: "Streams / Total Streams", value: `${streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-"} / ${totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-"}` });
+      items.push({ label: "Units / Total Units", value: `${unitsVal > 0 ? formatValue(entry.units, chartId) : "-"} / ${totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-"}` });
+      return items;
+    }
     if (kind === "song" && entry.points) items.push({ label: "Points", value: formatValue(entry.points, chartId) });
     if (chartId === "songs" && entry.units !== undefined) {
       const unitsVal = parseEuropeanNumber(entry.units);
