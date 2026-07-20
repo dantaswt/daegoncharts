@@ -1,7 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import type { ChartEntry } from "@/lib/charts.functions";
-import { getSpotifyImage } from "@/lib/spotify.functions";
 
 const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
   songs:          { accent: "#00E676", accentDark: "#00C853" },
@@ -19,38 +18,6 @@ function lastWeekDisplay(entry: ChartEntry): string {
   if (entry.diff === "RE") return "RE";
   if (!entry.lastWeek) return "—";
   return entry.lastWeek;
-}
-
-function ArtistImage({ name, size }: { name: string; size: number }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    getSpotifyImage({ data: { query: `artist:"${name}"`, type: "artist" } }).then((u) => {
-      if (active && u) setUrl(u);
-    });
-    return () => { active = false; };
-  }, [name]);
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        overflow: "hidden",
-        background: "linear-gradient(135deg, #333 0%, #1a1a1a 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      {url ? (
-        <img src={url} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
-        <i className="fas fa-user" style={{ fontSize: size * 0.4, color: "#666" }} />
-      )}
-    </div>
-  );
 }
 
 interface ChartImageProps {
@@ -200,7 +167,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                 marginBottom: 4,
               }}
             >
-              <div style={{ width: isArtist ? 80 : 70, flexShrink: 0 }} />
+              <div style={{ width: 70, flexShrink: 0 }} />
               <div style={{ flex: 1 }} />
               <div
                 style={{
@@ -248,15 +215,14 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      padding: isArtist ? "10px 0" : "14px 0",
+                      padding: "14px 0",
                       borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.08)` : "none",
-                      gap: isArtist ? 16 : 0,
                     }}
                   >
                     {/* Rank */}
                     <div
                       style={{
-                        width: isArtist ? 80 : 70,
+                        width: 70,
                         fontSize: isNumberOne ? 52 : 44,
                         fontWeight: 900,
                         color: isNumberOne ? theme.accent : "#fff",
@@ -268,12 +234,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       {entry.position}
                     </div>
 
-                    {/* Artist image (only for artist chart) */}
-                    {isArtist && (
-                      <ArtistImage name={entry.name} size={56} />
-                    )}
-
-                    {/* Song/Artist name - left side */}
+                    {/* Name - left side */}
                     <div
                       style={{
                         flex: 1,
@@ -294,7 +255,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {entry.name}
+                        {isArtist ? entry.name : entry.name}
                       </div>
                     </div>
 
