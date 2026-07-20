@@ -346,60 +346,89 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
 
-        // 4. iTunes artist
+        // 4. iTunes artist (search by artist name, exact match)
         if (!imageUrl) {
-          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=5`);
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=20`);
           for (const r of data?.results ?? []) {
-            if (!r.artistLinkUrl) continue;
-            if (exactMatch(r.artistName ?? "", artistName)) {
-              const itunesId = r.artistId;
-              if (itunesId) {
-                const detail = await fetchJson(`https://itunes.apple.com/lookup?id=${itunesId}`);
-                if (detail?.results?.[0]?.artistArtworkUrl100) {
-                  imageUrl = detail.results[0].artistArtworkUrl100.replace("100x100bb", "600x600bb");
-                  break;
-                }
-              }
+            if (!r.artistLinkUrl || !r.artistId) continue;
+            if (!exactMatch(r.artistName ?? "", artistName)) continue;
+            const detail = await fetchJson(`https://itunes.apple.com/lookup?id=${r.artistId}`);
+            const art = detail?.results?.[0]?.artistArtworkUrl100 ?? detail?.results?.[0]?.artworkUrl100;
+            if (art) { imageUrl = art.replace("100x100bb", "600x600bb"); break; }
+          }
+        }
+
+        // 4b. iTunes artist via album artwork (find album by exact artist, then use album art)
+        if (!imageUrl) {
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=album&limit=20`);
+          for (const r of data?.results ?? []) {
+            if (!r.artworkUrl100) continue;
+            if (!exactMatch(r.artistName ?? "", artistName)) continue;
+            imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+            break;
+          }
+        }
+
+        // 5. Deezer artist (exact name match)
+        if (!imageUrl) {
+          const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=20`);
+          for (const a of data?.data ?? []) {
+            if (!exactMatch(a.name ?? "", artistName)) continue;
+            if (a.picture_xl || a.picture_big || a.picture_medium) {
+              imageUrl = a.picture_xl || a.picture_big || a.picture_medium;
+              break;
             }
           }
         }
 
-        // 5. Deezer artist
+        // 5b. Deezer artist via album artwork
         if (!imageUrl) {
-          const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=5`);
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=20`);
           for (const a of data?.data ?? []) {
-            if (exactMatch(a.name ?? "", artistName)) {
-              if (a.picture_xl || a.picture_big || a.picture_medium) {
-                imageUrl = a.picture_xl || a.picture_big || a.picture_medium;
+            if (!exactMatch(a.artist?.name ?? "", artistName)) continue;
+            if (a.cover_xl || a.cover_big || a.cover_medium) {
+              imageUrl = a.cover_xl || a.cover_big || a.cover_medium;
+              break;
+            }
+          }
+        }
+
+        // 6. Wikipedia artist (try multiple disambiguation titles)
+        if (!imageUrl) {
+          const titles = [
+            `${artistName}`,
+            `${artistName} (artist)`,
+            `${artistName} (band)`,
+            `${artistName} (singer)`,
+            `${artistName} (rapper)`,
+            `${artistName} (DJ)`,
+            `${artistName} (musician)`,
+            `${artistName} (músico)`,
+            `${artistName} (cantor)`,
+            `${artistName} (grupo musical)`,
+          ];
+          for (const t of titles) {
+            const wikiData = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t)}`);
+            if (wikiData?.thumbnail?.source && wikiData?.title) {
+              const titleComp = comparable(wikiData.title.replace(/\s*\(.*\)/, ""));
+              if (titleComp === comparable(artistName) || titleComp.includes(comparable(artistName))) {
+                imageUrl = wikiData.thumbnail.source;
                 break;
               }
             }
           }
         }
 
-        // 6. Wikipedia artist
-        if (!imageUrl) {
-          const titles = [
-            `${artistName} (artist)`,
-            `${artistName} (band)`,
-            `${artistName} (singer)`,
-            `${artistName} (músico)`,
-            `${artistName}`,
-          ];
-          for (const title of titles) {
-            const wikiData = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
-            if (wikiData?.thumbnail?.source) { imageUrl = wikiData.thumbnail.source; break; }
-          }
-        }
-
-        // 7. Last.fm artist
+        // 7. Last.fm artist (exact name)
         if (!imageUrl) {
           const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
-          const images = data?.artist?.image ?? [];
-          for (const img of [...images].reverse()) {
-            if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
-              imageUrl = img["#text"];
-              break;
+          if (data?.artist?.name && exactMatch(data.artist.name, artistName)) {
+            const images = data.artist.image ?? [];
+            for (const img of [...images].reverse()) {
+              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                imageUrl = img["#text"];
+                break;
+              }
             }
           }
         }
