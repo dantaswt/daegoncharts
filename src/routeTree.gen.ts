@@ -9,39 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ArtistsRouteImport } from './routes/artists'
-import { Route as ChartBattleRouteImport } from './routes/chart-battle'
-import { Route as NumberOnesRouteImport } from './routes/number-ones'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as AlbumSlugRouteImport } from './routes/album.$slug'
-import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
-import { Route as ChartBeatBlogRouteImport } from './routes/chart-beat.$blog'
-import { Route as ChartChartIdRouteImport } from './routes/chart.$chartId'
-import { Route as GoatIndexRouteImport } from './routes/goat.index'
-import { Route as GoatChartIdRouteImport } from './routes/goat.$chartId'
-import { Route as StatsIndexRouteImport } from './routes/stats.index'
-import { Route as StatsCategoryRouteImport } from './routes/stats.$category'
+import { Route as NumberOnesRouteImport } from './routes/number-ones'
+import { Route as ChartBattleRouteImport } from './routes/chart-battle'
+import { Route as ArtistsRouteImport } from './routes/artists'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as YearEndIndexRouteImport } from './routes/year-end.index'
+import { Route as StatsIndexRouteImport } from './routes/stats.index'
+import { Route as GoatIndexRouteImport } from './routes/goat.index'
 import { Route as YearEndChartIdRouteImport } from './routes/year-end.$chartId'
-import { Route as ChartBeat2ChartIdDateRouteImport } from './routes/chart-beat-2.$chartId.$date'
-import { Route as ChartBeatBlogSlugRouteImport } from './routes/chart-beat.$blog.$slug'
+import { Route as StatsCategoryRouteImport } from './routes/stats.$category'
+import { Route as GoatChartIdRouteImport } from './routes/goat.$chartId'
+import { Route as ChartChartIdRouteImport } from './routes/chart.$chartId'
+import { Route as ChartBeatBlogRouteImport } from './routes/chart-beat.$blog'
+import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
+import { Route as AlbumSlugRouteImport } from './routes/album.$slug'
 import { Route as ChartChartIdIndexRouteImport } from './routes/chart.$chartId.index'
 import { Route as ChartChartIdDateRouteImport } from './routes/chart.$chartId.$date'
+import { Route as ChartBeatBlogSlugRouteImport } from './routes/chart-beat.$blog.$slug'
+import { Route as ChartBeat2ChartIdDateRouteImport } from './routes/chart-beat-2.$chartId.$date'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ArtistsRoute = ArtistsRouteImport.update({
-  id: '/artists',
-  path: '/artists',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChartBattleRoute = ChartBattleRouteImport.update({
-  id: '/chart-battle',
-  path: '/chart-battle',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NumberOnesRoute = NumberOnesRouteImport.update({
@@ -49,49 +39,19 @@ const NumberOnesRoute = NumberOnesRouteImport.update({
   path: '/number-ones',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const ChartBattleRoute = ChartBattleRouteImport.update({
+  id: '/chart-battle',
+  path: '/chart-battle',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AlbumSlugRoute = AlbumSlugRouteImport.update({
-  id: '/album/$slug',
-  path: '/album/$slug',
+const ArtistsRoute = ArtistsRouteImport.update({
+  id: '/artists',
+  path: '/artists',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArtistSlugRoute = ArtistSlugRouteImport.update({
-  id: '/artist/$slug',
-  path: '/artist/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChartBeatBlogRoute = ChartBeatBlogRouteImport.update({
-  id: '/chart-beat/$blog',
-  path: '/chart-beat/$blog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChartChartIdRoute = ChartChartIdRouteImport.update({
-  id: '/chart/$chartId',
-  path: '/chart/$chartId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoatIndexRoute = GoatIndexRouteImport.update({
-  id: '/goat/',
-  path: '/goat/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoatChartIdRoute = GoatChartIdRouteImport.update({
-  id: '/goat/$chartId',
-  path: '/goat/$chartId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StatsIndexRoute = StatsIndexRouteImport.update({
-  id: '/stats/',
-  path: '/stats/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StatsCategoryRoute = StatsCategoryRouteImport.update({
-  id: '/stats/$category',
-  path: '/stats/$category',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const YearEndIndexRoute = YearEndIndexRouteImport.update({
@@ -99,20 +59,50 @@ const YearEndIndexRoute = YearEndIndexRouteImport.update({
   path: '/year-end/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StatsIndexRoute = StatsIndexRouteImport.update({
+  id: '/stats/',
+  path: '/stats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoatIndexRoute = GoatIndexRouteImport.update({
+  id: '/goat/',
+  path: '/goat/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const YearEndChartIdRoute = YearEndChartIdRouteImport.update({
   id: '/year-end/$chartId',
   path: '/year-end/$chartId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChartBeat2ChartIdDateRoute = ChartBeat2ChartIdDateRouteImport.update({
-  id: '/chart-beat-2/$chartId/$date',
-  path: '/chart-beat-2/$chartId/$date',
+const StatsCategoryRoute = StatsCategoryRouteImport.update({
+  id: '/stats/$category',
+  path: '/stats/$category',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChartBeatBlogSlugRoute = ChartBeatBlogSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ChartBeatBlogRoute,
+const GoatChartIdRoute = GoatChartIdRouteImport.update({
+  id: '/goat/$chartId',
+  path: '/goat/$chartId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartChartIdRoute = ChartChartIdRouteImport.update({
+  id: '/chart/$chartId',
+  path: '/chart/$chartId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartBeatBlogRoute = ChartBeatBlogRouteImport.update({
+  id: '/chart-beat/$blog',
+  path: '/chart-beat/$blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtistSlugRoute = ArtistSlugRouteImport.update({
+  id: '/artist/$slug',
+  path: '/artist/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlbumSlugRoute = AlbumSlugRouteImport.update({
+  id: '/album/$slug',
+  path: '/album/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ChartChartIdIndexRoute = ChartChartIdIndexRouteImport.update({
   id: '/',
@@ -123,6 +113,16 @@ const ChartChartIdDateRoute = ChartChartIdDateRouteImport.update({
   id: '/$date',
   path: '/$date',
   getParentRoute: () => ChartChartIdRoute,
+} as any)
+const ChartBeatBlogSlugRoute = ChartBeatBlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ChartBeatBlogRoute,
+} as any)
+const ChartBeat2ChartIdDateRoute = ChartBeat2ChartIdDateRouteImport.update({
+  id: '/chart-beat-2/$chartId/$date',
+  path: '/chart-beat-2/$chartId/$date',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -274,25 +274,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/artists': {
-      id: '/artists'
-      path: '/artists'
-      fullPath: '/artists'
-      preLoaderRoute: typeof ArtistsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chart-battle': {
-      id: '/chart-battle'
-      path: '/chart-battle'
-      fullPath: '/chart-battle'
-      preLoaderRoute: typeof ChartBattleRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/number-ones': {
@@ -302,67 +288,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NumberOnesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/chart-battle': {
+      id: '/chart-battle'
+      path: '/chart-battle'
+      fullPath: '/chart-battle'
+      preLoaderRoute: typeof ChartBattleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/album/$slug': {
-      id: '/album/$slug'
-      path: '/album/$slug'
-      fullPath: '/album/$slug'
-      preLoaderRoute: typeof AlbumSlugRouteImport
+    '/artists': {
+      id: '/artists'
+      path: '/artists'
+      fullPath: '/artists'
+      preLoaderRoute: typeof ArtistsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/artist/$slug': {
-      id: '/artist/$slug'
-      path: '/artist/$slug'
-      fullPath: '/artist/$slug'
-      preLoaderRoute: typeof ArtistSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chart-beat/$blog': {
-      id: '/chart-beat/$blog'
-      path: '/chart-beat/$blog'
-      fullPath: '/chart-beat/$blog'
-      preLoaderRoute: typeof ChartBeatBlogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chart/$chartId': {
-      id: '/chart/$chartId'
-      path: '/chart/$chartId'
-      fullPath: '/chart/$chartId'
-      preLoaderRoute: typeof ChartChartIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/goat/': {
-      id: '/goat/'
-      path: '/goat'
-      fullPath: '/goat/'
-      preLoaderRoute: typeof GoatIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/goat/$chartId': {
-      id: '/goat/$chartId'
-      path: '/goat/$chartId'
-      fullPath: '/goat/$chartId'
-      preLoaderRoute: typeof GoatChartIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stats/': {
-      id: '/stats/'
-      path: '/stats'
-      fullPath: '/stats/'
-      preLoaderRoute: typeof StatsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stats/$category': {
-      id: '/stats/$category'
-      path: '/stats/$category'
-      fullPath: '/stats/$category'
-      preLoaderRoute: typeof StatsCategoryRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/year-end/': {
@@ -372,6 +316,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof YearEndIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stats/': {
+      id: '/stats/'
+      path: '/stats'
+      fullPath: '/stats/'
+      preLoaderRoute: typeof StatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goat/': {
+      id: '/goat/'
+      path: '/goat'
+      fullPath: '/goat/'
+      preLoaderRoute: typeof GoatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/year-end/$chartId': {
       id: '/year-end/$chartId'
       path: '/year-end/$chartId'
@@ -379,19 +337,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof YearEndChartIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chart-beat-2/$chartId/$date': {
-      id: '/chart-beat-2/$chartId/$date'
-      path: '/chart-beat-2/$chartId/$date'
-      fullPath: '/chart-beat-2/$chartId/$date'
-      preLoaderRoute: typeof ChartBeat2ChartIdDateRouteImport
+    '/stats/$category': {
+      id: '/stats/$category'
+      path: '/stats/$category'
+      fullPath: '/stats/$category'
+      preLoaderRoute: typeof StatsCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chart-beat/$blog/$slug': {
-      id: '/chart-beat/$blog/$slug'
-      path: '/$slug'
-      fullPath: '/chart-beat/$blog/$slug'
-      preLoaderRoute: typeof ChartBeatBlogSlugRouteImport
-      parentRoute: typeof ChartBeatBlogRoute
+    '/goat/$chartId': {
+      id: '/goat/$chartId'
+      path: '/goat/$chartId'
+      fullPath: '/goat/$chartId'
+      preLoaderRoute: typeof GoatChartIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chart/$chartId': {
+      id: '/chart/$chartId'
+      path: '/chart/$chartId'
+      fullPath: '/chart/$chartId'
+      preLoaderRoute: typeof ChartChartIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chart-beat/$blog': {
+      id: '/chart-beat/$blog'
+      path: '/chart-beat/$blog'
+      fullPath: '/chart-beat/$blog'
+      preLoaderRoute: typeof ChartBeatBlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artist/$slug': {
+      id: '/artist/$slug'
+      path: '/artist/$slug'
+      fullPath: '/artist/$slug'
+      preLoaderRoute: typeof ArtistSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/album/$slug': {
+      id: '/album/$slug'
+      path: '/album/$slug'
+      fullPath: '/album/$slug'
+      preLoaderRoute: typeof AlbumSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/chart/$chartId/': {
       id: '/chart/$chartId/'
@@ -406,6 +392,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/chart/$chartId/$date'
       preLoaderRoute: typeof ChartChartIdDateRouteImport
       parentRoute: typeof ChartChartIdRoute
+    }
+    '/chart-beat/$blog/$slug': {
+      id: '/chart-beat/$blog/$slug'
+      path: '/$slug'
+      fullPath: '/chart-beat/$blog/$slug'
+      preLoaderRoute: typeof ChartBeatBlogSlugRouteImport
+      parentRoute: typeof ChartBeatBlogRoute
+    }
+    '/chart-beat-2/$chartId/$date': {
+      id: '/chart-beat-2/$chartId/$date'
+      path: '/chart-beat-2/$chartId/$date'
+      fullPath: '/chart-beat-2/$chartId/$date'
+      preLoaderRoute: typeof ChartBeat2ChartIdDateRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -457,3 +457,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

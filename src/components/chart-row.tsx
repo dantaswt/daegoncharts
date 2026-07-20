@@ -330,7 +330,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
         <div className="flex flex-col items-center justify-center w-16">
           <div className="rank-num text-3xl font-black">{entry.position}</div>
-          {showDiff && <DiffIndicator diff={entry.diff} />}
           {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
             <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
               {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}

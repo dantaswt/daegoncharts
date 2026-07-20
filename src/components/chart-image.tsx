@@ -255,6 +255,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         flex: 1,
                         minWidth: 0,
                         overflow: "hidden",
+                        textAlign: "left",
                       }}
                     >
                       <div
@@ -265,6 +266,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                           textTransform: "uppercase",
                           letterSpacing: "-0.01em",
                           lineHeight: 1.2,
+                          textAlign: "left",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
