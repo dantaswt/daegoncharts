@@ -235,7 +235,7 @@ function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
   return (
     <section className="mb-14">
       <div className="section-banner">
-        <span>Chart Beat 2.0</span>
+        <span>Chart Beat</span>
         <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: articles[0]?.date ?? "" }} className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
           View All <i className="fas fa-arrow-right ml-1" />
         </Link>
@@ -247,11 +247,13 @@ function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
           return (
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={article.chartId}>
               <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: article.chartId, date: article.date }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32 shadow-sm">
-                <div className="w-24 sm:w-32 h-full shrink-0 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${article.chartId === "songs" ? "#00E676" : article.chartId === "albums" ? "#38BDF8" : "#F87171"}22, transparent)` }}>
-                  <i className={`fas ${cfg?.icon ?? "fa-chart-bar"} text-3xl opacity-40`} />
-                </div>
+                {article.artist && (
+                  <div className="w-24 sm:w-32 h-full shrink-0">
+                    <SpotifyImg query={`artist:"${article.artist}"`} type="artist" rounded={false} />
+                  </div>
+                )}
                 <div className="p-4 flex flex-col justify-center flex-1 min-w-0">
-                  <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{cfg?.title ?? article.chartTitle} — Chart Beat 2.0</div>
+                  <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{cfg?.title ?? article.chartTitle}</div>
                   <div className="font-bold text-sm sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{article.headline}</div>
                   <div className="text-xs text-muted-foreground">{dateLabel}</div>
                 </div>
@@ -406,7 +408,7 @@ function LandingPage() {
         <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
           <Link to="/artists" className="hover:text-[var(--accent)] transition-colors font-semibold">Artists</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/chart-beat/$blog" params={{ blog: "hot100" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
+          <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: "2026-07-06" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
           <span className="text-muted-foreground">|</span>
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
           <span className="text-muted-foreground">|</span>

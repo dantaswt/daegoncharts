@@ -11,6 +11,14 @@ const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
   topStreamingAlbums: { accent: "#38BDF8", accentDark: "#0EA5E9" },
   topAlbumSales:  { accent: "#38BDF8", accentDark: "#0EA5E9" },
   artists:        { accent: "#F87171", accentDark: "#EF4444" },
+  goatSongs:      { accent: "#FFD700", accentDark: "#FFC107" },
+  goatArtists:    { accent: "#FFD700", accentDark: "#FFC107" },
+  goatAlbums:     { accent: "#FFD700", accentDark: "#FFC107" },
+  goatRadio:      { accent: "#FFD700", accentDark: "#FFC107" },
+  yearEndSongs:   { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndArtists: { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndAlbums:  { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndRadio:   { accent: "#A855F7", accentDark: "#9333EA" },
 };
 
 function lastWeekDisplay(entry: ChartEntry): string {

@@ -104,7 +104,13 @@ function ChartBeatPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
-      <h1 className="section-title">Chart Beat</h1>
+      <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">BEAT</span>
+        </div>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">Chart Beat</h1>
+        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Stories, analysis and insights from the charts</p>
+      </div>
       <div className="flex gap-2 mb-8 flex-wrap">{blogs.map((item) => <Link key={item} to="/chart-beat/$blog" params={{ blog: item }} className={`btn-nav ${item === blog ? "active" : ""}`}>{chartBeatConfig[item].title}</Link>)}</div>
       <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-24 lg:self-start sidebar-section max-h-[calc(100vh-8rem)] overflow-y-auto">

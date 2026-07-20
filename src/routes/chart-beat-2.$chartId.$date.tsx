@@ -58,7 +58,7 @@ function ChartBeat2Page() {
     <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <div className="mb-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Chart Beat 2.0</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Chart Beat</h2>
           <div className="flex flex-col gap-1">
             {beatCharts.map((id) => (
               <Link
@@ -92,7 +92,7 @@ function ChartBeat2Page() {
       <main>
         <div className="mb-4 text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
-            <i className={`fas ${cfg.icon}`} /> Chart Beat 2.0
+            <i className={`fas ${cfg.icon}`} /> Chart Beat
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
             Auto-generated analysis for {cfg.title} — week of {formatDateShort(date)}

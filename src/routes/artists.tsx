@@ -78,8 +78,13 @@ function AllArtistsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-      <h1 className="section-title">All Artists Entries</h1>
-      <p className="text-sm text-muted-foreground mb-6">{list.length} artists tracked.</p>
+      <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">ARTISTS</span>
+        </div>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">All Artists</h1>
+        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{list.length} artists tracked across all charts</p>
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex flex-wrap gap-2">
