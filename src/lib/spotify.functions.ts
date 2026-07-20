@@ -315,11 +315,15 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
       } else {
         const artistName = fieldValue(data.query, "artist") || data.query;
         const title = fieldValue(data.query, "track") || fieldValue(data.query, "album");
+
+        // 1. Spotify (Jão hardcode)
         if (comparable(artistName) === "jao" && !title) {
           const response = await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } });
           if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
         }
-        if (title) {
+
+        // 2. Spotify via track → artist
+        if (!imageUrl && title) {
           const tracks = (await spotifySearch(token, `track:"${title}" artist:"${artistName}"`, "track"))?.tracks?.items ?? [];
           const track = tracks.find((item: any) => item.artists?.some((artist: any) => exactMatch(artist.name ?? "", artistName)));
           const artist = track?.artists?.find((item: any) => exactMatch(item.name ?? "", artistName));
@@ -328,6 +332,8 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
           }
         }
+
+        // 3. Spotify artist search (exact)
         if (!imageUrl) {
           const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (result?.artists?.items ?? [])
@@ -339,6 +345,66 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             });
           imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
+
+        // 4. iTunes artist
+        if (!imageUrl) {
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=5`);
+          for (const r of data?.results ?? []) {
+            if (!r.artistLinkUrl) continue;
+            if (exactMatch(r.artistName ?? "", artistName)) {
+              const itunesId = r.artistId;
+              if (itunesId) {
+                const detail = await fetchJson(`https://itunes.apple.com/lookup?id=${itunesId}`);
+                if (detail?.results?.[0]?.artistArtworkUrl100) {
+                  imageUrl = detail.results[0].artistArtworkUrl100.replace("100x100bb", "600x600bb");
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // 5. Deezer artist
+        if (!imageUrl) {
+          const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=5`);
+          for (const a of data?.data ?? []) {
+            if (exactMatch(a.name ?? "", artistName)) {
+              if (a.picture_xl || a.picture_big || a.picture_medium) {
+                imageUrl = a.picture_xl || a.picture_big || a.picture_medium;
+                break;
+              }
+            }
+          }
+        }
+
+        // 6. Wikipedia artist
+        if (!imageUrl) {
+          const titles = [
+            `${artistName} (artist)`,
+            `${artistName} (band)`,
+            `${artistName} (singer)`,
+            `${artistName} (músico)`,
+            `${artistName}`,
+          ];
+          for (const title of titles) {
+            const wikiData = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+            if (wikiData?.thumbnail?.source) { imageUrl = wikiData.thumbnail.source; break; }
+          }
+        }
+
+        // 7. Last.fm artist
+        if (!imageUrl) {
+          const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
+          const images = data?.artist?.image ?? [];
+          for (const img of [...images].reverse()) {
+            if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+              imageUrl = img["#text"];
+              break;
+            }
+          }
+        }
+
+        // 8. Spotify broader fallback
         if (!imageUrl) {
           const rb = await spotifySearch(token, artistName, "artist");
           const fallback = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url);

@@ -128,10 +128,10 @@ function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boole
   const weeks = entry.weeks > 0 ? String(entry.weeks) : "-";
 
   return (
-    <div className="mt-1 md:mt-2 grid grid-cols-3 gap-x-2 md:flex md:gap-x-3 text-[10px] md:text-[11px] text-muted-foreground">
-      {showDiff && <span className="truncate">LW: <span className="font-semibold">{lastWeek}</span></span>}
-      <span className="truncate">Peak: <span className="font-semibold">{peak}</span></span>
-      <span className="truncate">Weeks: <span className="font-semibold">{weeks}</span></span>
+    <div className="mt-1.5 md:mt-2 flex flex-wrap gap-x-3 md:gap-x-4 gap-y-0.5 text-[11px] md:text-[12px] text-muted-foreground">
+      {showDiff && <span>LW: <span className="font-semibold text-[var(--foreground)]">{lastWeek}</span></span>}
+      <span>Peak: <span className="font-semibold text-[var(--foreground)]">{peak}</span></span>
+      <span>Weeks: <span className="font-semibold text-[var(--foreground)]">{weeks}</span></span>
     </div>
   );
 }
