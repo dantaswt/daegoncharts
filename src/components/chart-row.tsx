@@ -201,7 +201,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const cfg = chartId ? chartsConfig[chartId] : undefined;
     const chartTitle = cfg ? cfg.title : "Chart";
     const isAlbum = kind === "album";
@@ -280,7 +280,30 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       annotationPart
     ].filter(Boolean).join(" ");
 
-    navigator.clipboard.writeText(`${parts}${chartDateStr}`);
+    const textToCopy = `${parts}${chartDateStr}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = textToCopy;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = textToCopy;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
   };
 
   const runEntries = useMemo(() => {
@@ -355,11 +378,11 @@ className="chart-card w-full"
         {metric && (
           <div className="text-right text-sm md:text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
         )}
-        <div className="flex flex-col md:flex-row gap-1 md:gap-2">
+        <div className="flex flex-row gap-1.5 md:gap-2">
           <button
             type="button"
             onClick={handleCopy}
-            className="w-7 h-7 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200 flex items-center justify-center"
+            className="w-9 h-9 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] active:scale-95 transition-all duration-200 flex items-center justify-center"
             aria-label="Copy info"
           >
             <i className="fas fa-copy" />
@@ -367,7 +390,7 @@ className="chart-card w-full"
           <button
             type="button"
             onClick={() => setShowDetails((value) => !value)}
-            className="w-7 h-7 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200 flex items-center justify-center"
+            className="w-9 h-9 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] active:scale-95 transition-all duration-200 flex items-center justify-center"
             aria-label="Toggle details"
           >
             {showDetails ? "−" : "+"}
