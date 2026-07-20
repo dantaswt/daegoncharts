@@ -316,25 +316,13 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const artistName = fieldValue(data.query, "artist") || data.query;
         const title = fieldValue(data.query, "track") || fieldValue(data.query, "album");
 
-        // 1. Deezer artist (exact name only)
-        if (!imageUrl) {
-          const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=20`);
-          for (const a of data?.data ?? []) {
-            if (!exactMatch(a.name ?? "", artistName)) continue;
-            if (a.picture_xl || a.picture_big || a.picture_medium) {
-              imageUrl = a.picture_xl || a.picture_big || a.picture_medium;
-              break;
-            }
-          }
-        }
-
-        // 2. Spotify (Jão hardcode)
-        if (!imageUrl && comparable(artistName) === "jao" && !title) {
+        // 1. Spotify (Jão hardcode)
+        if (comparable(artistName) === "jao" && !title) {
           const response = await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } });
           if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
         }
 
-        // 3. Spotify via track → artist
+        // 2. Spotify via track → artist
         if (!imageUrl && title) {
           const tracks = (await spotifySearch(token, `track:"${title}" artist:"${artistName}"`, "track"))?.tracks?.items ?? [];
           const track = tracks.find((item: any) => item.artists?.some((artist: any) => exactMatch(artist.name ?? "", artistName)));
@@ -345,7 +333,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 4. Spotify artist search (exact)
+        // 3. Spotify artist search (exact)
         if (!imageUrl) {
           const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (result?.artists?.items ?? [])
@@ -358,59 +346,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
 
-        // 5. iTunes artist (exact name only)
-        if (!imageUrl) {
-          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=20`);
-          for (const r of data?.results ?? []) {
-            if (!r.artistId) continue;
-            if (!exactMatch(r.artistName ?? "", artistName)) continue;
-            const detail = await fetchJson(`https://itunes.apple.com/lookup?id=${r.artistId}`);
-            const art = detail?.results?.[0]?.artistArtworkUrl100;
-            if (art) { imageUrl = art.replace("100x100bb", "600x600bb"); break; }
-          }
-        }
-
-        // 6. Wikipedia artist (exact name only)
-        if (!imageUrl) {
-          const titles = [
-            `${artistName}`,
-            `${artistName} (artist)`,
-            `${artistName} (band)`,
-            `${artistName} (singer)`,
-            `${artistName} (rapper)`,
-            `${artistName} (DJ)`,
-            `${artistName} (musician)`,
-            `${artistName} (músico)`,
-            `${artistName} (cantor)`,
-            `${artistName} (grupo musical)`,
-          ];
-          for (const t of titles) {
-            const wikiData = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t)}`);
-            if (wikiData?.thumbnail?.source && wikiData?.title) {
-              const tTitle = wikiData.title.replace(/\s*\(.*\)/, "").trim();
-              if (exactMatch(tTitle, artistName)) {
-                imageUrl = wikiData.thumbnail.source;
-                break;
-              }
-            }
-          }
-        }
-
-        // 7. Last.fm artist (exact name only)
-        if (!imageUrl) {
-          const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
-          if (data?.artist?.name && exactMatch(data.artist.name, artistName)) {
-            const images = data.artist.image ?? [];
-            for (const img of [...images].reverse()) {
-              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
-                imageUrl = img["#text"];
-                break;
-              }
-            }
-          }
-        }
-
-        // 8. Spotify broader fallback
+        // 4. Spotify broader fallback
         if (!imageUrl) {
           const rb = await spotifySearch(token, artistName, "artist");
           const fallback = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url);
