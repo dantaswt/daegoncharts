@@ -366,19 +366,14 @@ className="chart-card w-full"
         {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
           <div className="text-[10px] text-gray-500 break-words truncate md:whitespace-normal md:break-words hidden md:block">{entry.album}</div>
         )}
-        <div className="hidden md:block">
-          <ChartMetrics entry={entry} showDiff={showDiff} />
-        </div>
-        <div className="md:hidden">
-          <ChartMetrics entry={entry} showDiff={showDiff} />
-        </div>
+        <ChartMetrics entry={entry} showDiff={showDiff} />
       </div>
 
-      <div className="flex flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
+      <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
         {metric && (
           <div className="text-right text-sm md:text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
         )}
-        <div className="flex flex-row gap-1.5 md:gap-2">
+        <div className="flex flex-col md:flex-row gap-1.5 md:gap-2">
           <button
             type="button"
             onClick={handleCopy}
