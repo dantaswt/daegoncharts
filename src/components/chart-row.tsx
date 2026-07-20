@@ -6,7 +6,7 @@ import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
 
 const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
-const streamsMBCharts = new Set(["songs", "albums"]);
+const streamsMBCharts = new Set(["songs", "albums", "artists"]);
 
 function parseEuropeanNumber(v: string | undefined): number {
   let s = (v ?? "").trim();
@@ -159,64 +159,79 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
       return items;
     }
-    if (kind === "song" && entry.points) items.push({ label: "Points", value: formatValue(entry.points, chartId) });
-    if (chartId === "songs" && entry.units !== undefined) {
+
+    if (chartId === "songs") {
+      if (entry.points) items.push({ label: "Points", value: formatValue(entry.points, chartId) });
+      const streamsVal = parseEuropeanNumber(entry.streams);
+      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
+      if (entry.airplay !== undefined) {
+        const airVal = parseEuropeanNumber(entry.airplay);
+        items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId, true) : "-" });
+      }
+      const salesVal = parseEuropeanNumber(entry.sales);
+      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
+      const unitsVal = parseEuropeanNumber(entry.units);
+      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
+      if (entry.totalUnits !== undefined) {
+        const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
+        items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
+      }
+      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      return items;
+    }
+
+    if (chartId === "albums") {
+      const unitsVal = parseEuropeanNumber(entry.units);
+      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
+      if (entry.totalUnits !== undefined) {
+        const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
+        items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
+      }
+      const salesVal = parseEuropeanNumber(entry.sales);
+      items.push({ label: "Pure Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
+      const streamsVal = parseEuropeanNumber(entry.streams);
+      items.push({ label: "SEA", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
+      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      return items;
+    }
+
+    if (chartId === "yearEndRadio" || chartId === "goatRadio") {
+      if (entry.units) items.push({ label: "Total Audience", value: formatValue(entry.units, chartId) });
+      return items;
+    }
+
+    // Fallback for other charts
+    if (entry.units) {
       const unitsVal = parseEuropeanNumber(entry.units);
       items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
     }
-    if ((kind === "album" || kind === "artist") && entry.units && !["topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"].includes(chartId ?? "")) {
-      items.push({ label: "Units", value: formatValue(entry.units, chartId) });
+    if (entry.totalUnits) {
+      const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
+      items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
     }
-    if (chartId === "yearEndRadio" || chartId === "goatRadio") {
-      if (entry.units) items.push({ label: "Total Audience", value: formatValue(entry.units, chartId) });
-    }
-    if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.audience !== undefined) {
-      const audVal = parseEuropeanNumber(entry.audience);
-      items.push({ label: "Audience", value: audVal > 0 ? formatValue(entry.audience, chartId) : "N/A" });
-    } else if (!isGoat && entry.audience) {
-      items.push({ label: "Audience", value: formatValue(entry.audience, chartId) });
-    }
-    if (!isGoat && chartId === "songs" && entry.airplay !== undefined) {
-      const airVal = parseEuropeanNumber(entry.airplay);
-      items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId) : "N/A" });
-    } else if (!isGoat && entry.airplay) {
-      items.push({ label: "Airplay", value: formatValue(entry.airplay, chartId) });
-    }
-    if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.sales !== undefined) {
+    if (entry.sales) {
       const salesVal = parseEuropeanNumber(entry.sales);
-      const label = chartId === "albums" ? "Pure Sales" : "Sales";
-      items.push({ label, value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
-    } else if (!isGoat && entry.sales) {
-      const label = chartId === "albums" ? "Pure Sales" : "Sales";
-      items.push({ label, value: formatValue(entry.sales, chartId) });
+      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
     }
-    if (!isGoat && (chartId === "songs" || chartId === "albums") && entry.streams !== undefined) {
+    if (entry.streams) {
       const streamsVal = parseEuropeanNumber(entry.streams);
-      let label = chartId === "songs" ? "Streams" : "SEA";
-      items.push({ label, value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-    } else if (!isGoat && entry.streams && ["topStreamingAlbums", "streamingSongs", "yearEndAlbums"].includes(chartId ?? "")) {
-      let label = "Streams";
-      items.push({ label, value: formatValue(entry.streams, chartId, true) });
-    }    if (!isGoat && entry.totalStreams) {
-      let totalStreamsLabel = "Total Streams";
-      if (chartId === "albums") totalStreamsLabel = "Total SEA";
-      items.push({ label: totalStreamsLabel, value: formatValue(entry.totalStreams, chartId, true) });
+      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
     }
-    if (!isGoat && entry.totalSales) {
-      const label = chartId === "albums" || chartId === "topStreamingAlbums" ? "" : "Total Sales";
-      if (label) items.push({ label, value: formatValue(entry.totalSales, chartId) });
+    if (entry.totalStreams) {
+      const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
+      items.push({ label: "Total Streams", value: totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-" });
     }
-    if (entry.totalUnits && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
-      let totalLabel = "Total Units";
-      if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") totalLabel = "Total Streams";
-      if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") totalLabel = "Total Sales";
-      if (chartId === "albums" || chartId === "topStreamingAlbums") totalLabel = "Total Units";
-      if (chartId === "yearEndRadio" || chartId === "goatRadio") totalLabel = "Total Audience";
-      items.push({ label: totalLabel, value: formatValue(entry.totalUnits, chartId) });
+    if (entry.audience !== undefined) {
+      const audVal = parseEuropeanNumber(entry.audience);
+      items.push({ label: "Audience", value: audVal > 0 ? formatValue(entry.audience, chartId) : "-" });
+    }
+    if (entry.airplay !== undefined) {
+      const airVal = parseEuropeanNumber(entry.airplay);
+      items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId, true) : "-" });
     }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
-  }, [chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
+  }, [chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalStreams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
 
