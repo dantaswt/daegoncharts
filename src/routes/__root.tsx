@@ -124,6 +124,8 @@ function SiteFooter() {
           <span className="text-gray-600">|</span>
           <Link to="/chart-beat/$blog" params={{ blog: "hot100" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
           <span className="text-gray-600">|</span>
+          <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: "2026-07-06" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat 2</Link>
+          <span className="text-gray-600">|</span>
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
           <span className="text-gray-600">|</span>
           <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>

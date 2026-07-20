@@ -324,75 +324,119 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       viewport={{ once: true }}
       transition={{ duration: 0.3 }}
       id={`entry-${entry.position}`}
-className="chart-card w-full"
-  >
-      <div className="flex gap-2 w-full md:grid md:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] md:gap-3">
-        <div className="flex items-center gap-2 md:contents">
-          <div className="flex flex-col items-center justify-center w-10 md:w-16 flex-shrink-0">
-            <div className="rank-num text-lg md:text-3xl font-black">{entry.position}</div>
-            <div className="flex items-center justify-center h-4 md:hidden">
+      className="chart-card w-full"
+    >
+      {/* Desktop layout */}
+      <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
+        <div className="flex flex-col items-center justify-center w-16">
+          <div className="rank-num text-3xl font-black">{entry.position}</div>
+          {showDiff && <DiffIndicator diff={entry.diff} />}
+          {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
+            <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
+              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
+            </div>
+          )}
+        </div>
+        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-24 h-24 flex-shrink-0">
+          <SpotifyImage entry={entry} kind={kind} />
+        </div>
+        <div className="flex items-center justify-center w-8 flex-shrink-0">
+          {showDiff && <DiffIndicator diff={entry.diff} />}
+        </div>
+        <div className="min-w-0 flex flex-col flex-1">
+          <div className="font-bold text-base break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+            {entry.name}
+            {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
+                {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
+              </span>
+            )}
+          </div>
+          <Link
+            to="/artist/$slug"
+            params={{ slug }}
+            className="text-sm text-gray-500 hover:text-[var(--accent)] hover:underline block break-words line-clamp-2"
+          >
+            {kind === "artist" ? "View Artist Page" : entry.artist}
+          </Link>
+          {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
+            <div className="text-[11px] text-gray-500 break-words">{entry.album}</div>
+          )}
+          <ChartMetrics entry={entry} showDiff={showDiff} />
+        </div>
+        <div className="flex flex-row items-center gap-4 flex-shrink-0 justify-end">
+          {metric && (
+            <div className="text-right text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
+          )}
+          <div className="flex flex-row gap-2">
+            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+              <i className="fas fa-copy" />
+            </button>
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              {showDetails ? "−" : "+"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile layout */}
+      <div className="md:hidden flex flex-col">
+        {/* Top row: rank + image + name/artist + buttons */}
+        <div className="flex items-start gap-2">
+          <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
+            <div className="rank-num text-lg font-black">{entry.position}</div>
+            <div className="flex items-center justify-center h-4">
               {showDiff && <DiffIndicator diff={entry.diff} />}
             </div>
             {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
-              <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] md:text-[9px] font-bold rounded whitespace-nowrap uppercase">
+              <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded whitespace-nowrap uppercase">
                 {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
               </div>
             )}
           </div>
-          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-14 h-14 md:w-24 md:h-24 flex-shrink-0">
+          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-14 h-14 flex-shrink-0">
             <SpotifyImage entry={entry} kind={kind} />
           </div>
-          <div className="hidden md:flex items-center justify-center w-8 flex-shrink-0">
-            {showDiff && <DiffIndicator diff={entry.diff} />}
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+              {entry.name}
+              {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded whitespace-nowrap uppercase">
+                  {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
+                </span>
+              )}
+            </div>
+            <Link
+              to="/artist/$slug"
+              params={{ slug }}
+              className="text-[10px] text-gray-500 hover:text-[var(--accent)] hover:underline block break-words line-clamp-2"
+            >
+              {kind === "artist" ? "View Artist Page" : entry.artist}
+            </Link>
+          </div>
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            {metric && (
+              <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
+            )}
+            <div className="flex flex-row gap-1.5">
+              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+                <i className="fas fa-copy" />
+              </button>
+              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+                {showDetails ? "−" : "+"}
+              </button>
+            </div>
           </div>
         </div>
-
-      <div className="min-w-0 flex flex-col flex-1">
-        <div className="font-bold text-xs md:text-base break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
-          {entry.name}
-          {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
-            <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] md:text-[9px] font-bold rounded whitespace-nowrap uppercase">
-              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
-            </span>
-          )}
-        </div>
-        <Link
-          to="/artist/$slug"
-          params={{ slug }}
-          className="text-[10px] md:text-sm text-gray-500 hover:text-[var(--accent)] hover:underline block break-words line-clamp-2"
-        >
-          {kind === "artist" ? "View Artist Page" : entry.artist}
-        </Link>
-        {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-          <div className="text-[10px] text-gray-500 break-words truncate md:whitespace-normal md:break-words hidden md:block">{entry.album}</div>
-        )}
-        <ChartMetrics entry={entry} showDiff={showDiff} />
-      </div>
-
-      <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 w-auto flex-shrink-0 justify-end">
-        {metric && (
-          <div className="text-right text-sm md:text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
-        )}
-        <div className="flex flex-col md:flex-row gap-1.5 md:gap-2">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="w-9 h-9 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] active:scale-95 transition-all duration-200 flex items-center justify-center"
-            aria-label="Copy info"
-          >
-            <i className="fas fa-copy" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowDetails((value) => !value)}
-            className="w-9 h-9 md:w-8 md:h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] active:scale-95 transition-all duration-200 flex items-center justify-center"
-            aria-label="Toggle details"
-          >
-            {showDetails ? "−" : "+"}
-          </button>
+        {/* Bottom row: LW / Peak / Weeks — always visible, fixed at bottom */}
+        <div className="mt-2 pt-2 border-t border-[var(--border)] flex items-center gap-3 text-[11px] text-muted-foreground">
+          {showDiff && <span>LW: <span className="font-semibold text-[var(--foreground)]">{entry.lastWeek !== undefined && entry.lastWeek.trim() !== "" ? (entry.lastWeek === "0" ? "-" : entry.lastWeek) : "-"}</span></span>}
+          <span>Peak: <span className="font-semibold text-[var(--foreground)]">{entry.peak > 0 ? `#${entry.peak}` : "-"}</span></span>
+          <span>Weeks: <span className="font-semibold text-[var(--foreground)]">{entry.weeks > 0 ? String(entry.weeks) : "-"}</span></span>
         </div>
       </div>
-      </div>
+
+      {/* Details panel (shared) */}
       {showDetails && (
         <div className="mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm text-muted-foreground animate-fade-in">
           {detailFields.length > 0 && (
