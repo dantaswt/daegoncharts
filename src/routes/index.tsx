@@ -1,20 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { getWeeklyChart, getChartBeat, getAllArtistStats, type ChartEntry, type WeeklyChartData, type ChartBeatPost } from "@/lib/charts.functions";
+import { getWeeklyChart, getAllArtistStats, type ChartEntry, type WeeklyChartData } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
-import { chartsConfig, weeklyChartIds, chartBeatConfig, slugifyArtist } from "@/lib/charts-config";
+import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
+import { getLatestBeatArticles, type GeneratedBeatArticle } from "@/lib/chart-beat-generator";
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [songsData, albumsData, artistsData, hot100Beat, artistsBeat, albumsBeat, artistStats] = await Promise.all([
+    const [songsData, albumsData, artistsData, artistStats, latestArticles] = await Promise.all([
       getWeeklyChart({ data: { chartId: "songs" } }),
       getWeeklyChart({ data: { chartId: "albums" } }),
       getWeeklyChart({ data: { chartId: "artists" } }),
-      getChartBeat({ data: { blog: "hot100" } }),
-      getChartBeat({ data: { blog: "artists" } }),
-      getChartBeat({ data: { blog: "top100Albums" } }),
       getAllArtistStats(),
+      getLatestBeatArticles(),
     ]);
 
     // Load all weekly charts for #1 this week
@@ -53,11 +52,7 @@ export const Route = createFileRoute("/")({
         albums: { data: albumsData, latestDate: albumsData.dates[albumsData.dates.length - 1] },
         artists: { data: artistsData, latestDate: artistsData.dates[artistsData.dates.length - 1] },
       },
-      chartBeat: {
-        hot100: hot100Beat,
-        artists: artistsBeat,
-        top100Albums: albumsBeat,
-      },
+      latestArticles,
       numberOnes,
       firstTimers,
       artistList,
@@ -234,33 +229,32 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
 }
 
 /* ────── CHART BEAT Section ────── */
-function ChartBeatSection({ chartBeat }: { chartBeat: any }) {
-  const blogs: { key: keyof typeof chartBeatConfig; posts: ChartBeatPost[]; title: string }[] = [
-    { key: "hot100", posts: chartBeat.hot100.posts, title: chartBeat.hot100.title },
-    { key: "artists", posts: chartBeat.artists.posts, title: chartBeat.artists.title },
-    { key: "top100Albums", posts: chartBeat.top100Albums.posts, title: chartBeat.top100Albums.title },
-  ];
+function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
+  if (!articles || articles.length === 0) return null;
 
   return (
     <section className="mb-14">
-      <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">Chart Beat</h2>
+      <div className="section-banner">
+        <span>Chart Beat 2.0</span>
+        <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: articles[0]?.date ?? "" }} className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
+          View All <i className="fas fa-arrow-right ml-1" />
+        </Link>
+      </div>
       <div className="flex flex-col gap-4">
-        {blogs.map((b, i) => {
-          const latest = b.posts[0];
-          if (!latest) return null;
+        {articles.map((article, i) => {
+          const dateLabel = new Date(article.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          const cfg = chartsConfig[article.chartId];
           return (
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={b.key}>
-              <Link to="/chart-beat/$blog" params={{ blog: b.key }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32 shadow-sm">
-              {latest.artist && (
-                <div className="w-24 sm:w-32 h-full shrink-0">
-                  <SpotifyImg query={latest.artist} type="artist" rounded={false} />
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={article.chartId}>
+              <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: article.chartId, date: article.date }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32 shadow-sm">
+                <div className="w-24 sm:w-32 h-full shrink-0 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${article.chartId === "songs" ? "#00E676" : article.chartId === "albums" ? "#38BDF8" : "#F87171"}22, transparent)` }}>
+                  <i className={`fas ${cfg?.icon ?? "fa-chart-bar"} text-3xl opacity-40`} />
                 </div>
-              )}
-              <div className="p-4 flex flex-col justify-center flex-1 min-w-0">
-                <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{b.title}</div>
-                <div className="font-bold text-sm sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{latest.title}</div>
-                <div className="text-xs text-muted-foreground">{latest.publicationDate}</div>
-              </div>
+                <div className="p-4 flex flex-col justify-center flex-1 min-w-0">
+                  <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{cfg?.title ?? article.chartTitle} — Chart Beat 2.0</div>
+                  <div className="font-bold text-sm sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{article.headline}</div>
+                  <div className="text-xs text-muted-foreground">{dateLabel}</div>
+                </div>
               </Link>
             </motion.div>
           );
@@ -365,7 +359,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
 
 /* ────── LANDING PAGE ────── */
 function LandingPage() {
-  const { charts, chartBeat, numberOnes, firstTimers, artistList } = Route.useLoaderData();
+  const { charts, latestArticles, numberOnes, firstTimers, artistList } = Route.useLoaderData();
 
   return (
     <>
@@ -390,7 +384,7 @@ function LandingPage() {
           <TopChartsSection charts={charts} />
           <NumberOnesSection numberOnes={numberOnes} />
           <FirstTimersSection firstTimers={firstTimers} />
-          <ChartBeatSection chartBeat={chartBeat} />
+          <ChartBeatSection articles={latestArticles} />
           
           {/* Chart Battle Mobile Link */}
           <div className="md:hidden mt-10">
