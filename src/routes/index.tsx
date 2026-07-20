@@ -149,7 +149,12 @@ function TopChartsSection({ charts }: { charts: any }) {
 function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
   return (
     <section className="mb-14">
-      <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">No. 1 This Week</h2>
+      <div className="section-banner">
+        <span>No. 1 This Week</span>
+        <Link to="/number-ones" className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
+          View All <i className="fas fa-arrow-right ml-1" />
+        </Link>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {numberOnes.map((n, i) => {
           if (!n.entry) return null;
@@ -202,13 +207,18 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
   if (!firstTimers || firstTimers.length === 0) return null;
   return (
     <section className="mb-14">
-      <h2 className="text-2xl md:text-3xl font-extrabold mb-6 uppercase tracking-wide">First-Timers</h2>
+      <div className="section-banner">
+        <span>First-Timers</span>
+        <Link to="/artists" className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
+          View All <i className="fas fa-arrow-right ml-1" />
+        </Link>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {firstTimers.map((ft, i) => (
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm">
             <div className="aspect-square relative">
               <SpotifyImg query={ft.artist} type="artist" rounded={false} />
-              <div className="absolute top-2 right-2 bg-[var(--accent)] text-black text-xs font-black px-2 py-1 rounded-md">NEW</div>
+              <div className="rank-badge">{ft.position}</div>
             </div>
             <div className="p-3">
               <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
@@ -216,7 +226,6 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
                   {ft.artist}
                 </Link>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Debut: #{ft.position}</div>
               <Link to="/chart/$chartId/$date" params={{ chartId: "artists", date: ft.date }} className="text-xs text-[var(--accent)] hover:underline block mt-1">
                 Week of {new Date(ft.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
               </Link>

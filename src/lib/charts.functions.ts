@@ -488,8 +488,8 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
         weeksAt1: idx.weeksAt1 >= 0 ? toInt(r[idx.weeksAt1]) : undefined,
         unitsSold: idx.unitsSold >= 0 ? r[idx.unitsSold] || null : null,
       totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] || null : null,
-      firstEntry: idx.firstEntry >= 0 ? r[idx.firstEntry] || null : null,
-      peakDate: idx.peakDate >= 0 ? r[idx.peakDate] || null : null,
+      firstEntry: idx.firstEntry >= 0 ? normalizeDate(r[idx.firstEntry] || "") || null : null,
+      peakDate: idx.peakDate >= 0 ? normalizeDate(r[idx.peakDate] || "") || null : null,
     };
     (map[artist] ||= { name: artist, chartsByKind: {} });
     (map[artist].chartsByKind[chart] ||= []).push(entry);
@@ -530,6 +530,164 @@ export const getArtist50TotalUnits = createServerFn({ method: "GET" }).handler(a
     return result;
   });
 });
+
+export const getArtist50Totals = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("artist50Totals", async () => {
+    const cfg = chartsConfig.artists;
+    const rows = await fetchCsv(cfg.url);
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const idx = {
+      artist: findIdx(header, ["artist", "artists"]),
+      date: findIdx(header, ["chart date", "date"]),
+      totalUnits: findIdx(header, ["total units", "total", "total audience"]),
+      totalSales: findIdx(header, ["total sales", "sales"]),
+      totalStreams: findIdx(header, ["total streams", "total streaming"]),
+    };
+    const map: Record<string, { date: string; totalUnits: string; totalSales: string; totalStreams: string }> = {};
+    for (const r of rows.slice(1)) {
+      const artist = (r[idx.artist] ?? "").trim();
+      if (!artist) continue;
+      const date = normalizeDate(r[idx.date]);
+      if (!date) continue;
+      const totalUnits = idx.totalUnits >= 0 ? (r[idx.totalUnits] ?? "") : "";
+      const totalSales = idx.totalSales >= 0 ? (r[idx.totalSales] ?? "") : "";
+      const totalStreams = idx.totalStreams >= 0 ? (r[idx.totalStreams] ?? "") : "";
+      const existing = map[artist];
+      if (!existing || date > existing.date) {
+        map[artist] = { date, totalUnits, totalSales, totalStreams };
+      }
+    }
+    return map;
+  });
+});
+
+/* ────── Year-End Charts (generated from weekly data) ────── */
+export interface YECEntry {
+  position: number;
+  name: string;
+  artist: string;
+  peak: number;
+  weeks: number;
+  weeksAt1: number;
+  totalUnits: number;
+  kind: "song" | "album" | "artist";
+}
+
+export const getYearEndGenerated = createServerFn({ method: "GET" })
+  .validator((d: { chartId: string }) => d)
+  .handler(async ({ data }) => {
+    return cached(`yec_gen_${data.chartId}`, async () => {
+      const chartData = await getWeeklyChart({ data: { chartId: data.chartId } });
+      const years: Record<string, Record<string, YECEntry>> = {};
+
+      for (const date of chartData.dates) {
+        const year = date.slice(0, 4);
+        const entries = chartData.entriesByDate[date] || [];
+        if (!years[year]) years[year] = {};
+
+        for (const e of entries) {
+          const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+          if (!years[year][key]) {
+            years[year][key] = {
+              position: 0,
+              name: e.name,
+              artist: e.artist,
+              peak: e.peak,
+              weeks: 0,
+              weeksAt1: 0,
+              totalUnits: 0,
+              kind: chartData.kind,
+            };
+          }
+          const entry = years[year][key];
+          entry.weeks += 1;
+          if (e.peak < entry.peak) entry.peak = e.peak;
+          entry.weeksAt1 += (e.weeksAt1 ?? 0);
+          const unitsRaw = e.units || e.streams || e.sales || "0";
+          entry.totalUnits += toInt(unitsRaw);
+        }
+      }
+
+      const result: Record<string, YECEntry[]> = {};
+      for (const [year, items] of Object.entries(years)) {
+        result[year] = Object.values(items)
+          .sort((a, b) => b.weeks - a.weeks || a.peak - b.peak)
+          .slice(0, 100)
+          .map((e, i) => ({ ...e, position: i + 1 }));
+      }
+
+      const sortedYears = Object.keys(result).sort().reverse();
+      return { years: sortedYears, entriesByYear: result, kind: chartData.kind, title: chartsConfig[data.chartId]?.title ?? data.chartId };
+    });
+  });
+
+/* ────── GOAT Charts (generated from weekly data, top 500) ────── */
+export interface GOATEntry {
+  position: number;
+  name: string;
+  artist: string;
+  peak: number;
+  weeks: number;
+  weeksAt1: number;
+  totalUnits: number;
+  totalStreams: number;
+  totalSales: number;
+  kind: "song" | "album" | "artist";
+}
+
+export const getGoatGenerated = createServerFn({ method: "GET" })
+  .validator((d: { chartId: string }) => d)
+  .handler(async ({ data }) => {
+    return cached(`goat_gen_${data.chartId}`, async () => {
+      const cfg = chartsConfig[data.chartId];
+      const kind = cfg?.kind ?? "song";
+      const weeklyIds = kind === "artist" ? ["artists"] : kind === "album" ? ["albums", "topStreamingAlbums", "topAlbumSales"] : ["songs", "streamingSongs", "digitalSongsSales", "radioSongs"];
+
+      const allData = await Promise.all(
+        weeklyIds.map(id => getWeeklyChart({ data: { chartId: id } }).catch(() => null))
+      );
+
+      const aggregated: Record<string, GOATEntry> = {};
+
+      for (const chartData of allData) {
+        if (!chartData) continue;
+        for (const date of chartData.dates) {
+          const entries = chartData.entriesByDate[date] || [];
+          for (const e of entries) {
+            const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+            if (!aggregated[key]) {
+              aggregated[key] = {
+                position: 0,
+                name: e.name,
+                artist: e.artist,
+                peak: e.peak,
+                weeks: 0,
+                weeksAt1: 0,
+                totalUnits: 0,
+                totalStreams: 0,
+                totalSales: 0,
+                kind,
+              };
+            }
+            const entry = aggregated[key];
+            entry.weeks += 1;
+            if (e.peak < entry.peak) entry.peak = e.peak;
+            entry.weeksAt1 += (e.weeksAt1 ?? 0);
+            entry.totalUnits += toInt(e.units || "0");
+            entry.totalStreams += toInt(e.streams || "0");
+            entry.totalSales += toInt(e.sales || "0");
+          }
+        }
+      }
+
+      const sorted = Object.values(aggregated)
+        .sort((a, b) => b.weeks - a.weeks || a.peak - b.peak)
+        .slice(0, 500)
+        .map((e, i) => ({ ...e, position: i + 1 }));
+
+      return { entries: sorted, kind, title: cfg?.title ?? data.chartId };
+    });
+  });
 
 export interface Stats2Record {
   name: string;
