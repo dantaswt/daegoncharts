@@ -200,6 +200,28 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       return items;
     }
 
+    if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") {
+      const streamsVal = parseEuropeanNumber(entry.streams);
+      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
+      if (entry.totalStreams !== undefined) {
+        const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
+        items.push({ label: "Total Streams", value: totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-" });
+      }
+      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      return items;
+    }
+
+    if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") {
+      const salesVal = parseEuropeanNumber(entry.sales);
+      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
+      if (entry.totalSales !== undefined) {
+        const totalSalesVal = parseEuropeanNumber(entry.totalSales);
+        items.push({ label: "Total Sales", value: totalSalesVal > 0 ? formatValue(entry.totalSales, chartId) : "-" });
+      }
+      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      return items;
+    }
+
     // Fallback for other charts
     if (entry.units) {
       const unitsVal = parseEuropeanNumber(entry.units);
