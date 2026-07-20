@@ -27,10 +27,11 @@ function highlightNumbers(text: string) {
 
 export function ChartBeatArticle({ article }: { article: GeneratedBeatArticle }) {
   const dateLabel = new Date(article.date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const isArtistChart = article.chartId === "artists";
 
   return (
     <article className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 md:p-7 shadow-sm">
-      <ArticleImage artist={article.artist} />
+      {!isArtistChart && <ArticleImage artist={article.artist} />}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent)]">Chart Beat</span>
         <span className="text-xs text-muted-foreground">{dateLabel}</span>
@@ -43,7 +44,7 @@ export function ChartBeatArticle({ article }: { article: GeneratedBeatArticle })
           {article.subtitle}
         </p>
       )}
-      {article.artist && (
+      {article.artist && !isArtistChart && (
         <div className="inline-flex items-center gap-1 mb-5 text-sm font-bold text-[var(--accent)]">
           <i className="fas fa-user" />
           <Link to="/artist/$slug" params={{ slug: article.artist.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") }} className="hover:underline">
@@ -64,11 +65,6 @@ export function ChartBeatArticle({ article }: { article: GeneratedBeatArticle })
             ))}
           </div>
         ))}
-      </div>
-      <div className="mt-8 pt-4 border-t border-[var(--border)]">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {article.methodology}
-        </p>
       </div>
       <div className="mt-5">
         <Link

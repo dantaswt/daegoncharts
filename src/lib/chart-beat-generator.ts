@@ -9,7 +9,6 @@ export interface GeneratedBeatArticle {
   headline: string;
   subtitle: string;
   sections: BeatSection[];
-  methodology: string;
   image: string | null;
   artist: string | null;
 }
@@ -60,11 +59,11 @@ function formatDateLong(dateStr: string): string {
 }
 
 function diffLabel(diff: string): string {
-  if (diff === "NEW") return "debuts";
-  if (diff === "RE") return "re-enters";
-  if (diff.startsWith("▲")) return "rises";
-  if (diff.startsWith("▼")) return "falls";
-  return "holds";
+  if (diff === "NEW") return pick(["debuts", "arrives", "enters"]);
+  if (diff === "RE") return pick(["re-enters", "returns", "reclaims a spot"]);
+  if (diff.startsWith("▲")) return pick(["rises", "climbs", "ascends", "moves up"]);
+  if (diff.startsWith("▼")) return pick(["falls", "drops", "slides", "dips"]);
+  return pick(["holds", "maintains", "stays at"]);
 }
 
 function diffDirection(diff: string): "up" | "down" | "steady" | "new" {
@@ -72,6 +71,10 @@ function diffDirection(diff: string): "up" | "down" | "steady" | "new" {
   if (diff.startsWith("▲")) return "up";
   if (diff.startsWith("▼")) return "down";
   return "steady";
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function buildHeadline(artist: string, entry: ChartEntry, chartTitle: string, stats: { totalNo1s: number } | null): string {
@@ -82,24 +85,52 @@ function buildHeadline(artist: string, entry: ChartEntry, chartTitle: string, st
     if (entry.diff === "NEW") {
       const no1Count = (stats?.totalNo1s ?? 0) + 1;
       const ordinalStr = wordOrdinal(no1Count);
-      return `${artist} Achieves ${ordinalStr} No. 1 on ${chartName} with '${itemName}'`;
+      return pick([
+        `${artist} Achieves ${ordinalStr} No. 1 on ${chartName} with '${itemName}'`,
+        `${artist}'s '${itemName}' Debuts at No. 1 on ${chartName}, Earning ${ordinalStr} Chart-Topper`,
+        `${artist} Lands ${ordinalStr} No. 1 as '${itemName}' Storms to the Top of ${chartName}`,
+        `${itemName} Debuts at No. 1: ${artist} Scores ${ordinalStr} Chart-Topper on ${chartName}`,
+      ]);
     }
     if (entry.diff === "RE") {
-      return `${artist} Returns to No. 1 on ${chartName} with '${itemName}'`;
+      return pick([
+        `${artist} Returns to No. 1 on ${chartName} with '${itemName}'`,
+        `${artist}'s '${itemName}' Reclaims the Top Spot on ${chartName}`,
+        `${artist} Storms Back to No. 1 on ${chartName} with '${itemName}'`,
+        `'${itemName}' by ${artist} Ascends Back to No. 1 on ${chartName}`,
+      ]);
     }
     if ((entry.weeksAt1 ?? 0) > 1) {
-      return `${artist}'s '${itemName}' Rules ${chartName} for ${wordOrdinal(entry.weeksAt1!)} Week`;
+      return pick([
+        `${artist}'s '${itemName}' Rules ${chartName} for ${wordOrdinal(entry.weeksAt1!)} Week`,
+        `${artist}'s '${itemName}' Holds at No. 1 for ${wordOrdinal(entry.weeksAt1!)} Week on ${chartName}`,
+        `${itemName} by ${artist} Extends No. 1 Reign on ${chartName} to ${wordOrdinal(entry.weeksAt1!)} Week`,
+      ]);
     }
-    return `${artist}'s '${itemName}' Holds at No. 1 on ${chartName}`;
+    return pick([
+      `${artist}'s '${itemName}' Holds at No. 1 on ${chartName}`,
+      `${artist} Keeps '${itemName}' at No. 1 on ${chartName}`,
+      `${itemName} Remains No. 1 on ${chartName} Thanks to ${artist}`,
+    ]);
   }
 
   if (entry.diff === "NEW") {
-    return `${artist}'s '${itemName}' Debuts at No. ${entry.position} on ${chartName}`;
+    return pick([
+      `${artist}'s '${itemName}' Debuts at No. ${entry.position} on ${chartName}`,
+      `${itemName} Arrives at No. ${entry.position}: ${artist} Debuts on ${chartName}`,
+      `${artist} Enters ${chartName} at No. ${entry.position} with '${itemName}'`,
+    ]);
   }
   if (entry.diff === "RE") {
-    return `${artist}'s '${itemName}' Re-Enters ${chartName} at No. ${entry.position}`;
+    return pick([
+      `${artist}'s '${itemName}' Re-Enters ${chartName} at No. ${entry.position}`,
+      `${itemName} by ${artist} Returns to ${chartName} at No. ${entry.position}`,
+    ]);
   }
-  return `${artist}'s '${itemName}' at No. ${entry.position} on ${chartName}`;
+  return pick([
+    `${artist}'s '${itemName}' at No. ${entry.position} on ${chartName}`,
+    `${itemName} by ${artist} Holds at No. ${entry.position} on ${chartName}`,
+  ]);
 }
 
 function buildSubtitle(topEntries: ChartEntry[], chartTitle: string): string {
@@ -120,7 +151,12 @@ function buildSubtitle(topEntries: ChartEntry[], chartTitle: string): string {
       parts.push(`${movers[0].name} moves up to No. ${movers[0].position}`);
     }
   }
-  return parts.join(". ") || "A look at the biggest moves on this week's chart.";
+  return parts.join(". ") || pick([
+    "A look at the biggest moves on this week's chart.",
+    "Here are the key stories shaping this week's rankings.",
+    "The latest chart movements and what they mean.",
+    "A breakdown of the most notable chart activity this week.",
+  ]);
 }
 
 function buildNumberOneSection(entry: ChartEntry, artist: string, chartTitle: string, chartId: string, stats: { totalNo1s: number; items: string[] } | null): BeatSection {
@@ -148,29 +184,39 @@ function buildNumberOneSection(entry: ChartEntry, artist: string, chartTitle: st
 
   if (entry.diff === "NEW" && stats && stats.totalNo1s > 0) {
     const ordinalStr = wordOrdinal(stats.totalNo1s + 1);
-    paragraphs.push(
-      `${artist} lands its ${ordinalStr} No. 1 on the ${chartTitle} chart as '${entry.name}' ${diffWord} atop the chart.${metricLine}. With ${stats.totalNo1s + 1} chart-toppers, ${artist.split(" ")[0]} now stands among the acts with the most No. 1s on the ${chartTitle} chart.`
-    );
+    paragraphs.push(pick([
+      `${artist} lands its ${ordinalStr} No. 1 on the ${chartTitle} chart as '${entry.name}' ${diffWord} atop the chart.${metricLine}. With ${stats.totalNo1s + 1} chart-toppers, ${artist.split(" ")[0]} now stands among the acts with the most No. 1s on the ${chartTitle} chart.`,
+      `With '${entry.name}' ${diffWord} at No. 1, ${artist} secures its ${ordinalStr} chart-topper on the ${chartTitle}.${metricLine}. The artist now has ${stats.totalNo1s + 1} No. 1s on the ${chartTitle} chart.`,
+      `${artist}'s '${entry.name}' ${diffWord} atop the ${chartTitle} chart, giving the act its ${ordinalStr} No. 1.${metricLine}. That brings its total to ${stats.totalNo1s + 1} chart-toppers.`,
+    ]));
   } else if (entry.diff === "NEW") {
-    paragraphs.push(
-      `${artist}'s '${entry.name}' ${diffWord} at No. 1 on the ${chartTitle} chart${metricLine}.`
-    );
+    paragraphs.push(pick([
+      `${artist}'s '${entry.name}' ${diffWord} at No. 1 on the ${chartTitle} chart${metricLine}.`,
+      `'${entry.name}' by ${artist} opens at No. 1 on the ${chartTitle} chart${metricLine}.`,
+      `The ${chartTitle} welcomes a new leader: ${artist}'s '${entry.name}' arrives atop the chart${metricLine}.`,
+    ]));
   } else if ((entry.weeksAt1 ?? 0) > 1) {
-    paragraphs.push(
-      `${artist}'s '${entry.name}' rules the ${chartTitle} chart for the ${wordOrdinal(entry.weeksAt1!)} week, as it ${diffWord} at No. 1.${metricLine}.`
-    );
+    paragraphs.push(pick([
+      `${artist}'s '${entry.name}' rules the ${chartTitle} chart for the ${wordOrdinal(entry.weeksAt1!)} week, as it ${diffWord} at No. 1.${metricLine}.`,
+      `${entry.name} by ${artist} holds strong at No. 1 for the ${wordOrdinal(entry.weeksAt1!)} consecutive week on the ${chartTitle}.${metricLine}.`,
+      `For the ${wordOrdinal(entry.weeksAt1!)} week running, ${artist}'s '${entry.name}' maintains its grip on No. 1.${metricLine}.`,
+    ]));
   } else {
-    paragraphs.push(
-      `${artist}'s '${entry.name}' ${diffWord} at No. 1 on the ${chartTitle} chart.${metricLine}.`
-    );
+    paragraphs.push(pick([
+      `${artist}'s '${entry.name}' ${diffWord} at No. 1 on the ${chartTitle} chart.${metricLine}.`,
+      `'${entry.name}' by ${artist} ${diffWord} atop the ${chartTitle} chart${metricLine}.`,
+      `${artist} keeps '${entry.name}' at No. 1 on the ${chartTitle}.${metricLine}.`,
+    ]));
   }
 
   if (stats && stats.items.length > 1) {
     const otherItems = stats.items.filter((i) => i !== entry.name).slice(0, 3);
     if (otherItems.length > 0) {
-      paragraphs.push(
-        `Previously, ${artist} topped the ${chartTitle} with ${otherItems.map((i) => `'${i}'`).join(", ")}.`
-      );
+      paragraphs.push(pick([
+        `Previously, ${artist} topped the ${chartTitle} with ${otherItems.map((i) => `'${i}'`).join(", ")}.`,
+        `${artist}'s earlier ${chartTitle} No. 1s include ${otherItems.map((i) => `'${i}'`).join(", ")}.`,
+        `Before '${entry.name}', ${artist} reached No. 1 on the ${chartTitle} with ${otherItems.map((i) => `'${i}'`).join(", ")}.`,
+      ]));
     }
   }
 
@@ -190,17 +236,25 @@ function buildTop10Rundown(entries: ChartEntry[], chartTitle: string, chartId: s
     let detail = "";
 
     if (e.diff === "NEW") {
-      detail = `debuts at No. ${e.position}`;
+      detail = pick(["debuts at", "arrives at", "enters at"]);
     } else if (e.diff === "RE") {
-      detail = `re-enters at No. ${e.position}`;
+      detail = pick(["re-enters at", "returns at", "reclaims a spot at"]);
     } else if (e.diff.startsWith("▲")) {
-      const spots = e.diff.slice(1);
-      detail = `rises ${spots === "1" ? "one spot" : `${spots} spots`} to No. ${e.position}`;
+      const spots = parseInt(e.diff.slice(1)) || 0;
+      detail = pick([
+        `rises ${spots === 1 ? "one spot" : `${spots} spots`} to`,
+        `climbs ${spots === 1 ? "one spot" : `${spots} spots`} to`,
+        `ascends ${spots === 1 ? "one spot" : `${spots} spots`} to`,
+      ]);
     } else if (e.diff.startsWith("▼")) {
-      const spots = e.diff.slice(1);
-      detail = `falls ${spots === "1" ? "one spot" : `${spots} spots`} to No. ${e.position}`;
+      const spots = parseInt(e.diff.slice(1)) || 0;
+      detail = pick([
+        `falls ${spots === 1 ? "one spot" : `${spots} spots`} to`,
+        `drops ${spots === 1 ? "one spot" : `${spots} spots`} to`,
+        `slides ${spots === 1 ? "one spot" : `${spots} spots`} to`,
+      ]);
     } else {
-      detail = `holds at No. ${e.position}`;
+      detail = pick(["holds at", "maintains at", "stays at"]);
     }
 
     let metricStr = "";
@@ -208,7 +262,7 @@ function buildTop10Rundown(entries: ChartEntry[], chartTitle: string, chartId: s
     else if (chartId === "albums" && e.units) metricStr = ` (${formatUnits(e.units)} equivalent units)`;
     else if (chartId === "artists" && e.units) metricStr = ` (${formatUnits(e.units)} units)`;
 
-    lines.push(`${artist}'s '${name}' ${detail}${metricStr}`);
+    lines.push(`${artist}'s '${name}' ${detail} No. ${e.position}${metricStr}`);
   }
 
   if (lines.length <= 3) {
@@ -245,12 +299,20 @@ function buildNotableMovers(entries: ChartEntry[], allEntries: ChartEntry[], cha
 
   if (newEntries.length > 0) {
     const names = newEntries.slice(0, 5).map((e) => `${e.artist}'s '${e.name}' (No. ${e.position})`);
-    paragraphs.push(`Beyond the top 10, ${names.join(", ")} ${names.length === 1 ? "debuts" : "debut"} on the ${chartTitle}.`);
+    paragraphs.push(pick([
+      `Beyond the top 10, ${names.join(", ")} ${names.length === 1 ? "debuts" : "debut"} on the ${chartTitle}.`,
+      `The top 20 sees fresh arrivals: ${names.join(", ")} ${names.length === 1 ? "arrives" : "arrive"} on the ${chartTitle}.`,
+      `New to the chart: ${names.join(", ")} ${names.length === 1 ? "opens" : "open"} outside the top 10.`,
+    ]));
   }
 
   if (reEntries.length > 0) {
     const names = reEntries.slice(0, 3).map((e) => `${e.artist}'s '${e.name}' (No. ${e.position})`);
-    paragraphs.push(`Re-entries include ${names.join(", ")}.`);
+    paragraphs.push(pick([
+      `Re-entries include ${names.join(", ")}.`,
+      `Returning to the chart: ${names.join(", ")}.`,
+      `Back on the chart: ${names.join(", ")}.`,
+    ]));
   }
 
   if (bigGainers.length > 0) {
@@ -258,7 +320,11 @@ function buildNotableMovers(entries: ChartEntry[], allEntries: ChartEntry[], cha
       const spots = parseInt(e.diff.slice(1)) || 0;
       return `${e.artist}'s '${e.name}' surges ${spots} spots to No. ${e.position}`;
     });
-    paragraphs.push(`Among the week's biggest gainers: ${lines.join("; ")}.`);
+    paragraphs.push(pick([
+      `Among the week's biggest gainers: ${lines.join("; ")}.`,
+      `The week's biggest risers include ${lines.join("; ")}.`,
+      `Notable climbers: ${lines.join("; ")}.`,
+    ]));
   }
 
   if (bigDrops.length > 0) {
@@ -266,28 +332,20 @@ function buildNotableMovers(entries: ChartEntry[], allEntries: ChartEntry[], cha
       const spots = parseInt(e.diff.slice(1)) || 0;
       return `${e.artist}'s '${e.name}' drops ${spots} spots to No. ${e.position}`;
     });
-    paragraphs.push(`The steepest declines include ${lines.join("; ")}.`);
+    paragraphs.push(pick([
+      `The steepest declines include ${lines.join("; ")}.`,
+      `Falling fast: ${lines.join("; ")}.`,
+      `The week's biggest drops: ${lines.join("; ")}.`,
+    ]));
   }
 
   return { heading: "Notable Movers", paragraphs };
 }
 
-function buildMethodology(chartTitle: string, chartId: string): string {
-  if (chartId === "songs") {
-    return `The ${chartTitle} ranks the most popular songs of the week in the U.S. based on streaming, sales, and airplay data, compiled by Luminate. The chart combines streaming equivalent songs (SES), track equivalent songs (TES) and sales equivalent songs (SES). Streaming data accounts for the majority of the chart's methodology, reflecting on-demand audio and video streams from leading platforms. The new chart is posted on Billboard's website each Tuesday. For all chart news, follow @billboard and @billboardcharts on X and Instagram.`;
-  }
-  if (chartId === "albums") {
-    return `The ${chartTitle} ranks the most popular albums of the week in the U.S. based on multi-metric consumption as measured in equivalent album units, compiled by Luminate. Units comprise album sales, track equivalent albums (TEA) and streaming equivalent albums (SEA). Each unit equals one album sale, or 10 individual tracks sold from an album, or 2,500 ad-supported or 1,000 paid/subscription on-demand official audio and video streams generated by songs from an album. The new chart is posted on Billboard's website each Tuesday. For all chart news, follow @billboard and @billboardcharts on X and Instagram.`;
-  }
-  if (chartId === "artists") {
-    return `The ${chartTitle} ranks the most popular musical artists in the U.S. based on multi-metric consumption, including streaming, sales, and radio airplay, as measured by Luminate. The chart uses the same methodology as the Billboard 200, combining album sales, track equivalent albums, and streaming equivalent albums for each artist's catalog. The new chart is posted on Billboard's website each Tuesday. For all chart news, follow @billboard and @billboardcharts on X and Instagram.`;
-  }
-  return `The ${chartTitle} ranks the most popular entries based on data compiled by Luminate. The new chart is posted on Billboard's website each Tuesday.`;
-}
-
-function countNo1sForArtist(artistName: string, chartId: string, data: WeeklyChartData): { totalNo1s: number; items: string[] } {
+function countNo1sBeforeDate(artistName: string, chartId: string, data: WeeklyChartData, currentDate: string): { totalNo1s: number; items: string[] } {
   const items: Set<string> = new Set();
   for (const date of data.dates) {
+    if (date >= currentDate) continue;
     for (const entry of data.entriesByDate[date]) {
       if (entry.artist.toLowerCase() === artistName.toLowerCase() && entry.position === 1) {
         items.add(entry.name);
@@ -323,7 +381,6 @@ export const generateChartBeat2 = createServerFn({ method: "GET" })
         headline: `No Chart Data Available for ${formatDateLong(date)}`,
         subtitle: "",
         sections: [],
-        methodology: buildMethodology(cfg.title, chartId),
         image: null,
         artist: null,
       } satisfies GeneratedBeatArticle;
@@ -335,7 +392,7 @@ export const generateChartBeat2 = createServerFn({ method: "GET" })
     const artistStatsData = await getAllArtistStats();
     const artistEntry = artistStatsData[topEntry.artist];
     const artistChartEntries = artistEntry?.chartsByKind?.[chartId === "artists" ? cfg.title : chartId === "songs" ? "Hot 100" : "Billboard 200"] ?? [];
-    const no1Count = countNo1sForArtist(topEntry.artist, chartId, chartData);
+    const no1Count = countNo1sBeforeDate(topEntry.artist, chartId, chartData, date);
 
     const headline = buildHeadline(topEntry.artist, topEntry, cfg.title, { totalNo1s: no1Count.totalNo1s });
     const subtitle = buildSubtitle(top10, cfg.title);
@@ -357,7 +414,6 @@ export const generateChartBeat2 = createServerFn({ method: "GET" })
       headline,
       subtitle,
       sections,
-      methodology: buildMethodology(cfg.title, chartId),
       image: null,
       artist: artist ?? topEntry.artist,
     } satisfies GeneratedBeatArticle;
