@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAllArtistStats, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
-import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
+import { getSpotifyArtistProfile, getSpotifyFeaturedOn } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import React, { useState } from "react";
@@ -73,8 +73,12 @@ export const Route = createFileRoute("/artist/$slug")({
 
     let profile = null;
     let goatData = null;
+    let featuredOn = null;
     if (match) {
-      profile = await getSpotifyArtistProfile({ data: { artistName: match.name } });
+      [profile, featuredOn] = await Promise.all([
+        getSpotifyArtistProfile({ data: { artistName: match.name } }),
+        getSpotifyFeaturedOn({ data: { artistName: match.name } }),
+      ]);
       const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } }).catch(() => null);
       const foundInGoat = goatArtists?.entries.find(e => e.name === match.name);
       if (foundInGoat) {
@@ -82,7 +86,7 @@ export const Route = createFileRoute("/artist/$slug")({
       }
     }
 
-    return { artist: match ?? null, slug: params.slug, profile, goatData, artist50Units, artist50Totals };
+    return { artist: match ?? null, slug: params.slug, profile, goatData, featuredOn, artist50Units, artist50Totals };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.artist?.name ?? "Artist";
@@ -254,7 +258,7 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
 
 /* ────── ARTIST PAGE ────── */
 function ArtistPage() {
-  const { artist, profile, goatData, artist50Units, artist50Totals } = Route.useLoaderData();
+  const { artist, profile, goatData, featuredOn, artist50Units, artist50Totals } = Route.useLoaderData();
   const [imgLoaded, setImgLoaded] = useState(false);
 
   if (!artist) {
@@ -413,6 +417,43 @@ function ArtistPage() {
           <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} mainArtist={artist.name} />
         ))}
       </div>
+
+      {/* Featured Collaborations */}
+      {featuredOn && featuredOn.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="mt-8">
+          <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
+            <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-[var(--border)]">
+              <i className="fas fa-handshake text-[var(--accent)] text-lg" />
+              <div>
+                <h3 className="font-bold text-base sm:text-lg">Featured Collaborations</h3>
+                <p className="text-xs text-muted-foreground">{featuredOn.length} {featuredOn.length === 1 ? "track" : "tracks"} where {artist.name} is featured</p>
+              </div>
+            </div>
+            <div className="divide-y divide-[var(--border)]">
+              {featuredOn.map((track, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-[rgba(0,230,118,0.02)] transition-colors">
+                  {track.imageUrl ? (
+                    <img src={track.imageUrl} alt={track.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center shrink-0">
+                      <i className="fas fa-music text-xs opacity-50" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm break-words">{track.name}</div>
+                    <div className="text-xs text-muted-foreground break-words">
+                      <Link to="/artist/$slug" params={{ slug: track.slug }} className="hover:text-[var(--accent)] hover:underline">
+                        {track.artist}
+                      </Link>
+                      {" & "}{artist.name}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Back Link Bottom */}
       <div className="mt-12 text-center">
