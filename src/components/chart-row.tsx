@@ -416,7 +416,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             >
               {kind === "artist" ? "View Artist Page" : entry.artist}
             </Link>
-            {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[11px] text-gray-500" />}
+            {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-gray-500" />}
           </div>
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
             <div className="text-[11px] text-gray-500 break-words">{entry.album}</div>
@@ -473,7 +473,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               >
                 {kind === "artist" ? "View Artist Page" : entry.artist}
               </Link>
-              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[9px] text-gray-500" />}
+              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[10px] text-gray-500" />}
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">

@@ -7,25 +7,34 @@ export function stripFeatFromTitle(name: string): string {
     .replace(/\s*[\(\[]feat\.\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]ft\.\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]featuring\s+[^)\]]+[\)\]]/gi, "")
+    .replace(/\s*[\(\[]with\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]duet\s+with\s+[^)\]]+[\)\]]/gi, "")
+    .replace(/\s+\+\s+.*$/, "")
     .trim();
 }
 
-export function getFeatArtistsFromTitle(name: string): string | null {
-  const match = name.match(/\(?feat\.\s+([^)]+)\)?/i)
+export function getFeatArtistsFromTitle(name: string): { artists: string; prefix: string } | null {
+  let match = name.match(/\(?feat\.\s+([^)]+)\)?/i)
     || name.match(/\(?ft\.\s+([^)]+)\)?/i)
     || name.match(/\(?featuring\s+([^)]+)\)?/i);
-  return match ? match[1].trim() : null;
+  if (match) return { artists: match[1].trim(), prefix: "feat." };
+
+  match = name.match(/\(?with\s+([^)]+)\)?/i);
+  if (match) return { artists: match[1].trim(), prefix: "&" };
+
+  match = name.match(/\+\s+(.+)$/);
+  if (match) return { artists: match[1].trim(), prefix: "&" };
+
+  return null;
 }
 
 interface TrackArtistsProps {
   song: string;
   artist: string;
   className?: string;
-  showLabel?: boolean;
 }
 
-export function TrackArtists({ song, artist, className = "", showLabel = true }: TrackArtistsProps) {
+export function TrackArtists({ song, artist, className = "" }: TrackArtistsProps) {
   const [artists, setArtists] = useState<{ name: string; slug: string }[] | null>(null);
 
   useEffect(() => {
@@ -43,9 +52,11 @@ export function TrackArtists({ song, artist, className = "", showLabel = true }:
 
   if (featArtists.length === 0) return null;
 
+  const prefix = getFeatArtistsFromTitle(song)?.prefix ?? "feat.";
+
   return (
     <span className={className}>
-      {showLabel && " feat. "}
+      {prefix === "&" ? " & " : " feat. "}
       {featArtists.map((fa, i) => (
         <span key={fa.slug}>
           {i > 0 && ", "}

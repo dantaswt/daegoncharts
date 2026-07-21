@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllArtistStats, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
+import { getArtistChartHistory, getAllArtistNames, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile, getSpotifyFeaturedOn } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 import React, { useState } from "react";
@@ -67,25 +67,41 @@ function formatComma(v: string | null | undefined): string {
 
 export const Route = createFileRoute("/artist/$slug")({
   loader: async ({ params }) => {
-    const [all, artist50Units, artist50Totals] = await Promise.all([getAllArtistStats(), getArtist50TotalUnits(), getArtist50Totals()]);
-    const match = Object.values(all).find((a) => slugifyArtist(a.name) === params.slug);
+    const [artistNames, artist50Units, artist50Totals, goatArtists] = await Promise.all([
+      getAllArtistNames(),
+      getArtist50TotalUnits(),
+      getArtist50Totals(),
+      getGoatChart({ data: { chartId: "goatArtists" } }),
+    ]);
+
+    const artistName = artistNames.find((n) => slugifyArtist(n) === params.slug);
 
     let profile = null;
     let goatData = null;
     let featuredOn = null;
-    if (match) {
-      [profile, featuredOn] = await Promise.all([
-        getSpotifyArtistProfile({ data: { artistName: match.name } }),
-        getSpotifyFeaturedOn({ data: { artistName: match.name } }),
+    let chartsByKind: Record<string, any[]> = {};
+
+    if (artistName) {
+      [profile, featuredOn, chartsByKind] = await Promise.all([
+        getSpotifyArtistProfile({ data: { artistName } }),
+        getSpotifyFeaturedOn({ data: { artistName } }),
+        getArtistChartHistory({ data: { artistName } }),
       ]);
-      const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } });
-      const foundInGoat = goatArtists.entries.find(e => e.name === match.name);
+      const foundInGoat = goatArtists.entries.find((e) => e.name === artistName);
       if (foundInGoat) {
         goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
       }
     }
 
-    return { artist: match ?? null, slug: params.slug, profile, goatData, artist50Units, artist50Totals, featuredOn };
+    return {
+      artist: artistName ? { name: artistName, chartsByKind } : null,
+      slug: params.slug,
+      profile,
+      goatData,
+      artist50Units,
+      artist50Totals,
+      featuredOn,
+    };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.artist?.name ?? "Artist";
@@ -229,7 +245,7 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                     {e.peakDate ? <DateLink chartName={chartName} date={e.peakDate}>{e.peakDate}</DateLink> : "—"}
                   </td>
                   <td className="px-4 sm:px-5 py-3 text-right text-xs">
-                    {isStreams ? formatStreams(e.unitsSold) : formatComma(e.unitsSold)}
+                    {isStreams ? formatStreams(e.unitsSold || e.totalUnits) : formatComma(e.unitsSold || e.totalUnits)}
                   </td>
                 </tr>
               ))}

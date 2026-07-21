@@ -459,6 +459,22 @@ export interface ArtistDetails {
   chartsByKind: Record<string, { item: string; peak: number; weeks: number; weeksAt1?: number; unitsSold?: string | null; totalUnits?: string | null; firstEntry?: string | null; peakDate?: string | null }[]>;
 }
 
+export const getAllArtistNames = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("artistNames", async () => {
+    const cfg = chartsConfig.artistStats;
+    const rows = await fetchCsv(cfg.url);
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const artistIdx = findIdx(header, ["artist", "artists"]);
+    if (artistIdx < 0) return [];
+    const names = new Set<string>();
+    for (const r of rows.slice(1)) {
+      const name = (r[artistIdx] ?? "").trim();
+      if (name) names.add(name);
+    }
+    return Array.from(names);
+  });
+});
+
 export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async () => {
   return cached("artistStats", async () => {
     const cfg = chartsConfig.artistStats;
@@ -500,6 +516,99 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
     return map;
   });
 });
+
+const artistChartMapping: { chartId: string; label: string }[] = [
+  { chartId: "songs", label: "Hot 100 Songs" },
+  { chartId: "digitalSongsSales", label: "Digital Songs Sales" },
+  { chartId: "streamingSongs", label: "Streaming Songs" },
+  { chartId: "radioSongs", label: "Top 40 Radio" },
+  { chartId: "albums", label: "Top 100 Albums" },
+  { chartId: "topAlbumSales", label: "Top Album Sales" },
+  { chartId: "topStreamingAlbums", label: "Top Streaming Albums" },
+];
+
+function matchesArtist(entryArtist: string, artistName: string): boolean {
+  const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  const target = normalize(artistName);
+  const parts = entryArtist.split(/[,&+]/).map((p) => normalize(p.trim())).filter(Boolean);
+  return parts.some((p) => p === target);
+}
+
+export const getArtistChartHistory = createServerFn({ method: "GET" })
+  .validator((d: { artistName: string }) => d)
+  .handler(async ({ data }) => {
+    const { artistName } = data;
+
+    const results = await Promise.all(
+      artistChartMapping.map(async ({ chartId, label }) => {
+        try {
+          const chart = await getWeeklyChart({ data: { chartId } });
+          const dates = chart.dates;
+          const entriesByDate = chart.entriesByDate;
+          const seen: Record<string, {
+            item: string;
+            bestPos: number;
+            weeks: number;
+            weeksAt1: number;
+            totalUnits: number;
+            firstDate: string | null;
+            peakDate: string | null;
+          }> = {};
+
+          for (const date of dates) {
+            for (const e of entriesByDate[date]) {
+              if (!matchesArtist(e.artist, artistName)) continue;
+              const key = e.name.toLowerCase();
+              if (!seen[key]) {
+                seen[key] = {
+                  item: e.name,
+                  bestPos: e.position,
+                  weeks: 0,
+                  weeksAt1: 0,
+                  totalUnits: 0,
+                  firstDate: null,
+                  peakDate: null,
+                };
+              }
+              const s = seen[key];
+              s.weeks++;
+              if (e.position <= s.bestPos) {
+                s.bestPos = e.position;
+                s.peakDate = date;
+              }
+              if (e.position === 1) s.weeksAt1++;
+              if (e.units) s.totalUnits += parseEuropeanFloat(e.units);
+              if (!s.firstDate) s.firstDate = date;
+            }
+          }
+
+          const isSalesChart = label.includes("Sales");
+          const isStreamsChart = label.includes("Streaming");
+          const entries = Object.values(seen).map((s) => ({
+            item: s.item,
+            peak: s.bestPos,
+            weeks: s.weeks,
+            weeksAt1: s.weeksAt1,
+            unitsSold: isSalesChart ? formatNumber(s.totalUnits) : null as string | null,
+            totalUnits: isStreamsChart ? formatNumber(s.totalUnits) : s.totalUnits.toLocaleString("en-US"),
+            firstEntry: s.firstDate,
+            peakDate: s.peakDate,
+          }));
+
+          entries.sort((a, b) => a.peak - b.peak || b.weeks - a.weeks);
+          return { label, entries };
+        } catch {
+          return { label, entries: [] };
+        }
+      })
+    );
+
+    const map: Record<string, { item: string; peak: number; weeks: number; weeksAt1?: number; unitsSold?: string | null; totalUnits?: string | null; firstEntry?: string | null; peakDate?: string | null }[]> = {};
+    for (const r of results) {
+      if (r.entries.length > 0) map[r.label] = r.entries;
+    }
+    return map;
+  });
 
 export const getArtist50TotalUnits = createServerFn({ method: "GET" }).handler(async () => {
   return cached("artist50TotalUnits", async () => {
