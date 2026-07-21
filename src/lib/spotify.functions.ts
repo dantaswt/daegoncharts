@@ -404,6 +404,58 @@ export const getSpotifyTrackArtists = createServerFn({ method: "GET" })
     }
   });
 
+interface FeaturedOnTrack {
+  name: string;
+  artist: string;
+  slug: string;
+  imageUrl: string | null;
+}
+
+const featuredOnCache = new Map<string, FeaturedOnTrack[] | null>();
+
+export const getSpotifyFeaturedOn = createServerFn({ method: "GET" })
+  .validator((d: { artistName: string }) => d)
+  .handler(async ({ data }) => {
+    if (featuredOnCache.has(data.artistName)) return featuredOnCache.get(data.artistName);
+
+    const token = await getAccessToken();
+    if (!token) return null;
+
+    try {
+      const slugify = (name: string) =>
+        name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+      const results: FeaturedOnTrack[] = [];
+
+      const searchResult = await spotifySearch(token, `artist:"${data.artistName}"`, "track", 50);
+      const tracks = searchResult?.tracks?.items ?? [];
+
+      for (const track of tracks) {
+        const allArtists = track.artists ?? [];
+        const isFeatured = allArtists.length > 1 && allArtists.some((a: any) => exactMatch(a.name ?? "", data.artistName));
+        if (!isFeatured) continue;
+
+        const mainArtist = allArtists.find((a: any) => !exactMatch(a.name ?? "", data.artistName));
+        if (!mainArtist) continue;
+
+        const albumImg = track.album?.images?.[0]?.url ?? null;
+        results.push({
+          name: track.name,
+          artist: mainArtist.name,
+          slug: slugify(mainArtist.name),
+          imageUrl: albumImg,
+        });
+      }
+
+      const unique = results.slice(0, 20);
+      featuredOnCache.set(data.artistName, unique.length > 0 ? unique : null);
+      return unique.length > 0 ? unique : null;
+    } catch {
+      featuredOnCache.set(data.artistName, null);
+      return null;
+    }
+  });
+
 const profileCache = new Map<string, { imageUrl: string | null; followers: number; genres: string[] } | null>();
 
 export const getSpotifyArtistProfile = createServerFn({ method: "GET" })

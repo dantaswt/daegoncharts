@@ -2,13 +2,30 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { getSpotifyTrackArtists } from "@/lib/spotify.functions";
 
+export function stripFeatFromTitle(name: string): string {
+  return name
+    .replace(/\s*[\(\[]feat\.\s+[^)\]]+[\)\]]/gi, "")
+    .replace(/\s*[\(\[]ft\.\s+[^)\]]+[\)\]]/gi, "")
+    .replace(/\s*[\(\[]featuring\s+[^)\]]+[\)\]]/gi, "")
+    .replace(/\s*[\(\[]duet\s+with\s+[^)\]]+[\)\]]/gi, "")
+    .trim();
+}
+
+export function getFeatArtistsFromTitle(name: string): string | null {
+  const match = name.match(/\(?feat\.\s+([^)]+)\)?/i)
+    || name.match(/\(?ft\.\s+([^)]+)\)?/i)
+    || name.match(/\(?featuring\s+([^)]+)\)?/i);
+  return match ? match[1].trim() : null;
+}
+
 interface TrackArtistsProps {
   song: string;
   artist: string;
   className?: string;
+  showLabel?: boolean;
 }
 
-export function TrackArtists({ song, artist, className = "" }: TrackArtistsProps) {
+export function TrackArtists({ song, artist, className = "", showLabel = true }: TrackArtistsProps) {
   const [artists, setArtists] = useState<{ name: string; slug: string }[] | null>(null);
 
   useEffect(() => {
@@ -28,9 +45,10 @@ export function TrackArtists({ song, artist, className = "" }: TrackArtistsProps
 
   return (
     <span className={className}>
+      {showLabel && " feat. "}
       {featArtists.map((fa, i) => (
         <span key={fa.slug}>
-          {i === 0 ? " feat. " : ", "}
+          {i > 0 && ", "}
           <Link to="/artist/$slug" params={{ slug: fa.slug }} className="hover:text-[var(--accent)] hover:underline font-medium">
             {fa.name}
           </Link>

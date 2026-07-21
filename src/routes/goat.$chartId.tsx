@@ -5,7 +5,7 @@ import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrackArtists } from "@/components/track-artists";
+import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 
 export const Route = createFileRoute("/goat/$chartId")({
   loader: async ({ params }) => {
@@ -174,7 +174,7 @@ function GoatPage() {
                     <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${isFirst ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                       {idx + 1}
                     </div>
-                    <div className="font-bold text-sm sm:text-base break-words">{item.name}</div>
+                    <div className="font-bold text-sm sm:text-base break-words">{stripFeatFromTitle(item.name)}</div>
                     {data.kind !== "artist" && (
                       <div className="text-xs text-muted-foreground break-words">
                         {item.artist}
@@ -233,7 +233,7 @@ function GoatPage() {
                       {data.kind === "artist" ? (
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                       ) : (
-                        e.name
+                        stripFeatFromTitle(e.name)
                       )}
                     </div>
                     {data.kind !== "artist" && (

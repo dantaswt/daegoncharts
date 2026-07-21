@@ -4,7 +4,7 @@ import { slugifyArtist, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
-import { TrackArtists } from "@/components/track-artists";
+import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 
 const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
 const streamsMBCharts = new Set(["songs", "albums", "artists"]);
@@ -330,7 +330,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const parts = [
       `Daegon's ${chartTitle}:`,
       posPart,
-      `${entry.name},`,
+      `${stripFeatFromTitle(entry.name)},`,
       entry.artist,
       entryDetail,
       weeksPart,
@@ -401,21 +401,23 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         </div>
         <div className="min-w-0 flex flex-col flex-1">
           <div className="font-bold text-base break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
-            {entry.name}
+            {stripFeatFromTitle(entry.name)}
             {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
               <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
                 {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
               </span>
             )}
           </div>
-          <Link
-            to="/artist/$slug"
-            params={{ slug }}
-            className="text-sm text-gray-500 hover:text-[var(--accent)] hover:underline block break-words line-clamp-2"
-          >
-            {kind === "artist" ? "View Artist Page" : entry.artist}
-          </Link>
-          {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[11px] text-gray-500" />}
+          <div className="text-sm text-gray-500 break-words line-clamp-2">
+            <Link
+              to="/artist/$slug"
+              params={{ slug }}
+              className="hover:text-[var(--accent)] hover:underline"
+            >
+              {kind === "artist" ? "View Artist Page" : entry.artist}
+            </Link>
+            {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[11px] text-gray-500" />}
+          </div>
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
             <div className="text-[11px] text-gray-500 break-words">{entry.album}</div>
           )}
@@ -456,21 +458,23 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
-              {entry.name}
+              {stripFeatFromTitle(entry.name)}
               {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
                 <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded whitespace-nowrap uppercase">
                   {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
                 </span>
               )}
             </div>
-            <Link
-              to="/artist/$slug"
-              params={{ slug }}
-              className="text-[10px] text-gray-500 hover:text-[var(--accent)] hover:underline block break-words line-clamp-2"
-            >
-              {kind === "artist" ? "View Artist Page" : entry.artist}
-            </Link>
-            {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[9px] text-gray-500" />}
+            <div className="text-[10px] text-gray-500 break-words line-clamp-2">
+              <Link
+                to="/artist/$slug"
+                params={{ slug }}
+                className="hover:text-[var(--accent)] hover:underline"
+              >
+                {kind === "artist" ? "View Artist Page" : entry.artist}
+              </Link>
+              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[9px] text-gray-500" />}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {metric && (
