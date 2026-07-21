@@ -455,6 +455,38 @@ interface TrackArtist {
 }
 
 const trackArtistsCache = new Map<string, TrackArtist[] | null>();
+const slugify = (name: string) =>
+  name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+function parseItunesArtist(artistName: string): TrackArtist[] {
+  const parts = artistName.split(/\s*(?:feat\.|ft\.|featuring|&)\s*/i).map(s => s.trim()).filter(Boolean);
+  return parts.map(name => ({ name, slug: slugify(name) }));
+}
+
+async function fetchTrackArtistsFromItunes(song: string, artist: string): Promise<TrackArtist[] | null> {
+  try {
+    const q = `${song} ${artist}`;
+    const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5`);
+    for (const r of data?.results ?? []) {
+      const nameMatch = exactMatch(r.trackName ?? "", song);
+      const artistMatch = exactMatch(r.artistName ?? "", artist);
+      if (nameMatch && artistMatch) {
+        const allArtists = parseItunesArtist(r.artistName ?? "");
+        if (allArtists.length > 1) return allArtists;
+      }
+    }
+    for (const r of data?.results ?? []) {
+      const nameMatch = exactMatch(r.trackName ?? "", song);
+      if (nameMatch) {
+        const allArtists = parseItunesArtist(r.artistName ?? "");
+        if (allArtists.length > 1) return allArtists;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export const getSpotifyTrackArtists = createServerFn({ method: "GET" })
   .validator((d: { song: string; artist: string }) => d)
@@ -462,34 +494,32 @@ export const getSpotifyTrackArtists = createServerFn({ method: "GET" })
     const cacheKey = `${data.song.trim().toLowerCase()}|${data.artist.trim().toLowerCase()}`;
     if (trackArtistsCache.has(cacheKey)) return trackArtistsCache.get(cacheKey);
 
-    const token = await getAccessToken();
-    if (!token) return null;
+    let result: TrackArtist[] | null = null;
 
     try {
-      const tracks = (await spotifySearch(token, `track:"${data.song}" artist:"${data.artist}"`, "track"))?.tracks?.items ?? [];
-      const track = tracks.find((t: any) =>
-        t.artists?.some((a: any) => exactMatch(a.name ?? "", data.artist))
-      );
-
-      if (!track?.artists || track.artists.length <= 1) {
-        trackArtistsCache.set(cacheKey, null);
-        return null;
+      const token = await getAccessToken();
+      if (token) {
+        const tracks = (await spotifySearch(token, `track:"${data.song}" artist:"${data.artist}"`, "track"))?.tracks?.items ?? [];
+        const track = tracks.find((t: any) =>
+          t.artists?.some((a: any) => exactMatch(a.name ?? "", data.artist))
+        );
+        if (track?.artists && track.artists.length > 1) {
+          result = track.artists.map((a: any) => ({
+            name: a.name,
+            slug: slugify(a.name),
+          }));
+        }
       }
+    } catch {}
 
-      const slugify = (name: string) =>
-        name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-      const artists: TrackArtist[] = track.artists.map((a: any) => ({
-        name: a.name,
-        slug: slugify(a.name),
-      }));
-
-      trackArtistsCache.set(cacheKey, artists);
-      return artists;
-    } catch {
-      trackArtistsCache.set(cacheKey, null);
-      return null;
+    if (!result) {
+      result = await fetchTrackArtistsFromItunes(data.song, data.artist);
     }
+
+    if (result) {
+      trackArtistsCache.set(cacheKey, result);
+    }
+    return result;
   });
 
 interface FeaturedOnTrack {
@@ -510,9 +540,6 @@ export const getSpotifyFeaturedOn = createServerFn({ method: "GET" })
     if (!token) return null;
 
     try {
-      const slugify = (name: string) =>
-        name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
       const results: FeaturedOnTrack[] = [];
 
       const searchResult = await spotifySearch(token, `artist:"${data.artistName}"`, "track", 50);
@@ -536,7 +563,9 @@ export const getSpotifyFeaturedOn = createServerFn({ method: "GET" })
       }
 
       const unique = results.slice(0, 20);
-      featuredOnCache.set(data.artistName, unique.length > 0 ? unique : null);
+      if (unique.length > 0) {
+        featuredOnCache.set(data.artistName, unique);
+      }
       return unique.length > 0 ? unique : null;
     } catch {
       featuredOnCache.set(data.artistName, null);
