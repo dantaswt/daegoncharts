@@ -148,7 +148,7 @@ function YearEndChartPage() {
 
         {/* Entries */}
         {entries.length > 0 ? (
-          <div className="space-y-2 md:space-y-3 max-w-4xl mx-auto">
+          <div className="space-y-2 max-w-4xl mx-auto">
             {entries.map((e: YECEntry) => (
               <motion.div
                 key={`${e.position}-${e.name}`}

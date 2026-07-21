@@ -313,10 +313,99 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           imageUrl = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url)?.images?.[0]?.url ?? null;
         }
       } else if (data.type === "track") {
+        const trackName = fieldValue(data.query, "track") || data.query;
         const artistName = fieldValue(data.query, "artist");
 
-        // Always use artist image for tracks
-        if (artistName) {
+        // 1. Wikipedia single
+        if (!imageUrl && artistName) {
+          const titles = [
+            `${trackName} (${artistName} single)`,
+            `${trackName} (${artistName} song)`,
+            `${trackName} (song)`,
+            `${trackName} (single)`,
+          ];
+          for (const title of titles) {
+            const wd = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+            if (wd?.thumbnail?.source) { imageUrl = wd.thumbnail.source; break; }
+          }
+        }
+
+        // 2. iTunes single (trackCount === 1)
+        if (!imageUrl && artistName) {
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${artistName}`)}&entity=song&limit=20`);
+          for (const r of data?.results ?? []) {
+            if (!r.artworkUrl100) continue;
+            if (!exactMatch(r.trackName ?? "", trackName)) continue;
+            if (!exactMatch(r.artistName ?? "", artistName)) continue;
+            if (r.trackCount === 1) { imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb"); break; }
+          }
+        }
+
+        // 3. Deezer single (album_type === "single")
+        if (!imageUrl && artistName) {
+          const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${artistName}`)}&limit=20`);
+          for (const r of data?.data ?? []) {
+            if (!r.album?.cover_xl && !r.album?.cover_big) continue;
+            if (!exactMatch(r.title ?? "", trackName)) continue;
+            if (!exactMatch(r.artist?.name ?? "", artistName)) continue;
+            if (r.album?.album_type === "single") { imageUrl = r.album.cover_xl || r.album.cover_big; break; }
+          }
+        }
+
+        // 4. iTunes any result (track + artist)
+        if (!imageUrl && artistName) {
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${artistName}`)}&entity=song&limit=20`);
+          for (const r of data?.results ?? []) {
+            if (!r.artworkUrl100) continue;
+            if (!exactMatch(r.trackName ?? "", trackName)) continue;
+            if (!exactMatch(r.artistName ?? "", artistName)) continue;
+            imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+            break;
+          }
+        }
+
+        // 5. Deezer any result (track + artist)
+        if (!imageUrl && artistName) {
+          const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${artistName}`)}&limit=20`);
+          for (const r of data?.data ?? []) {
+            if (!r.album?.cover_xl && !r.album?.cover_big) continue;
+            if (!exactMatch(r.title ?? "", trackName)) continue;
+            if (!exactMatch(r.artist?.name ?? "", artistName)) continue;
+            imageUrl = r.album.cover_xl || r.album.cover_big;
+            break;
+          }
+        }
+
+        // 6. EPs by artist containing the track (Deezer)
+        if (!imageUrl && artistName) {
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
+          const eps = (data?.data ?? []).filter((a: any) => a.record_type === "EP");
+          for (const ep of eps) {
+            if (!ep.cover_xl && !ep.cover_big) continue;
+            try {
+              const albumData = await fetchJson(`https://api.deezer.com/album/${ep.id}/tracks`);
+              const found = (albumData?.data ?? []).find((t: any) => exactMatch(t.title ?? "", trackName));
+              if (found) { imageUrl = ep.cover_xl || ep.cover_big; break; }
+            } catch {}
+          }
+        }
+
+        // 7. Albums by artist containing the track (Deezer)
+        if (!imageUrl && artistName) {
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
+          const albums = (data?.data ?? []).filter((a: any) => a.record_type === "album");
+          for (const album of albums) {
+            if (!album.cover_xl && !album.cover_big) continue;
+            try {
+              const albumData = await fetchJson(`https://api.deezer.com/album/${album.id}/tracks`);
+              const found = (albumData?.data ?? []).find((t: any) => exactMatch(t.title ?? "", trackName));
+              if (found) { imageUrl = album.cover_xl || album.cover_big; break; }
+            } catch {}
+          }
+        }
+
+        // 8. Artist image (last resort — Spotify)
+        if (!imageUrl && artistName) {
           const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (result?.artists?.items ?? [])
             .filter((a: any) => a.images?.[0]?.url)
@@ -328,7 +417,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
 
-        // Fallback
+        // 9. Absolute fallback
         if (!imageUrl) {
           imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
         }

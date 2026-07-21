@@ -291,7 +291,7 @@ function ArtistPage() {
   const totalWeeks = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.reduce((s: number, e: any) => s + (e.weeks || 0), 0), 0);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
       {/* Back Link */}
       <Link to="/artists" className="text-sm text-muted-foreground hover:text-[var(--accent)] mb-6 inline-flex items-center gap-2 transition-colors">
         <i className="fas fa-arrow-left" /> All artists

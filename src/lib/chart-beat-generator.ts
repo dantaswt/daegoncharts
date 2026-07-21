@@ -417,7 +417,7 @@ function buildRecordsSection(entries: ChartEntry[], chartData: WeeklyChartData, 
         const prev = prevPos[key] ?? 101;
         return { ...e, gained: prev - e.position };
       })
-      .filter((e) => e.gained > 10)
+      .filter((e) => e.gained > 10 && !e.diff.startsWith("NEW") && !e.diff.startsWith("RE"))
       .sort((a, b) => b.gained - a.gained)
       .slice(0, 2);
     if (gainers.length > 0) {
