@@ -328,17 +328,18 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         }
 
         // 2. Spotify single (exact name)
-        if (!imageUrl && artistName) {
-          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 20))?.tracks?.items ?? [];
+        if (!imageUrl) {
+          const q = artistName ? `track:"${trackName}" artist:"${artistName}"` : `track:"${trackName}"`;
+          const tracks = (await spotifySearch(token, q, "track", 20))?.tracks?.items ?? [];
           const track = tracks.find((t: any) =>
             t.album?.album_type === "single" &&
             exactMatch(t.name ?? "", trackName) &&
-            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
+            (!artistName || t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName)))
           );
           if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
         }
 
-        // 3. Spotify single (contains, not exact) — any single by artist whose name contains the track name
+        // 3. Spotify single (contains, not exact)
         if (!imageUrl && artistName) {
           const tracks = (await spotifySearch(token, `artist:"${artistName}"`, "track", 50))?.tracks?.items ?? [];
           const track = tracks.find((t: any) =>
@@ -350,17 +351,29 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         }
 
         // 4. Spotify EP/Album (exact name)
-        if (!imageUrl && artistName) {
-          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 20))?.tracks?.items ?? [];
+        if (!imageUrl) {
+          const q = artistName ? `track:"${trackName}" artist:"${artistName}"` : `track:"${trackName}"`;
+          const tracks = (await spotifySearch(token, q, "track", 20))?.tracks?.items ?? [];
           const track = tracks.find((t: any) =>
             (t.album?.album_type === "album" || t.album?.album_type === "ep") &&
             exactMatch(t.name ?? "", trackName) &&
-            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
+            (!artistName || t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName)))
           );
           if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
         }
 
-        // 5. Find track inside artist's albums → use album cover
+        // 5. Any Spotify track result (broader — just needs to match name)
+        if (!imageUrl) {
+          const q = artistName ? `track:"${trackName}" artist:"${artistName}"` : `track:"${trackName}"`;
+          const tracks = (await spotifySearch(token, q, "track", 10))?.tracks?.items ?? [];
+          const track = tracks.find((t: any) =>
+            exactMatch(t.name ?? "", trackName) &&
+            (!artistName || t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName)))
+          ) ?? tracks[0];
+          if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
+        }
+
+        // 6. Find track inside artist's albums → use album cover
         if (!imageUrl && artistName) {
           const albums = (await spotifySearch(token, `artist:"${artistName}"`, "album", 20))?.albums?.items ?? [];
           for (const album of albums) {
@@ -374,12 +387,18 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 6. Artist image (last resort)
+        // 7. Artist image (last resort — never null if artistName exists)
         if (!imageUrl && artistName) {
           const ra = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (ra?.artists?.items ?? []).filter((a: any) => a.images?.[0]?.url);
           const exact = artists.find((a: any) => exactMatch(a.name ?? "", artistName));
           imageUrl = (exact ?? artists[0])?.images?.[0]?.url ?? null;
+        }
+
+        // 8. Absolute last resort — any artist image from broader search
+        if (!imageUrl && artistName) {
+          const rb = await spotifySearch(token, artistName, "artist");
+          imageUrl = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url)?.images?.[0]?.url ?? null;
         }
       } else {
         const artistName = fieldValue(data.query, "artist") || data.query;
