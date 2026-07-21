@@ -547,6 +547,19 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
     };
     (map[artist] ||= { name: artist, chartsByKind: {} });
     (map[artist].chartsByKind[chart] ||= []).push(entry);
+
+    const featMatch = entry.item.match(/\(?feat\.?\s+([^)]+)\)?/i)
+      || entry.item.match(/\(?ft\.?\s+([^)]+)\)?/i)
+      || entry.item.match(/\(?featuring\s+([^)]+)\)?/i)
+      || entry.item.match(/\(?with\s+([^)]+)\)?/i);
+    if (featMatch) {
+      const featNames = featMatch[1].split(/[,&]/).map((s: string) => s.trim()).filter(Boolean);
+      for (const featName of featNames) {
+        if (!featName) continue;
+        (map[featName] ||= { name: featName, chartsByKind: {} });
+        (map[featName].chartsByKind[chart] ||= []).push(entry);
+      }
+    }
     }
     for (const a of Object.values(map)) {
       for (const list of Object.values(a.chartsByKind)) list.sort((x, y) => x.peak - y.peak || y.weeks - x.weeks);
