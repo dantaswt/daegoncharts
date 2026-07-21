@@ -553,9 +553,8 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
     }
 
     const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-    const knownArtists = new Set(Object.keys(map).map(normalize));
 
-    for (const { chart, entry } of allRows) {
+    for (const { artist, chart, entry } of allRows) {
       const featMatch = entry.item.match(/\(feat\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(ft\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(featuring\s+([^)]+)\)/i)
@@ -563,9 +562,13 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       if (!featMatch) continue;
       const featNames = featMatch[1].split(/[,&]/).map((s: string) => s.trim()).filter(Boolean);
       for (const featName of featNames) {
-        if (!featName || !knownArtists.has(normalize(featName))) continue;
+        if (!featName) continue;
         const existingKey = Object.keys(map).find(k => normalize(k) === normalize(featName));
-        if (existingKey) {
+        if (!existingKey) continue;
+        const alreadyExists = map[existingKey].chartsByKind[chart]?.some(
+          (e: any) => e.item === entry.item && e.peak === entry.peak && e.weeks === entry.weeks
+        );
+        if (!alreadyExists) {
           (map[existingKey].chartsByKind[chart] ||= []).push(entry);
         }
       }
