@@ -32,8 +32,23 @@ export const Route = createFileRoute("/year-end/$chartId")({
   component: YearEndChartPage,
 });
 
-function formatMetric(v: number): string {
+function formatMetric(v: number, metricKey: string): string {
   if (v <= 0) return "-";
+  if (metricKey === "streams") {
+    if (v >= 1_000_000_000) {
+      const val = v / 1_000_000_000;
+      return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
+    }
+    if (v >= 1_000_000) {
+      const val = v / 1_000_000;
+      return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+    }
+    if (v >= 1_000) {
+      const val = v / 1_000;
+      return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+    }
+    return `${v}K`;
+  }
   return v.toLocaleString("en-US");
 }
 
@@ -144,7 +159,7 @@ function YearEndChartPage() {
                         <i className={`fas ${metricIcon} text-[9px]`} />
                         <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
                       </div>
-                      <div className="font-black text-[var(--foreground)] text-sm">{formatMetric(e.totalUnits)}</div>
+                      <div className="font-black text-[var(--foreground)] text-sm">{formatMetric(e.totalUnits, metricKey)}</div>
                     </div>
                   </div>
                 </motion.div>

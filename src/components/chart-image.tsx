@@ -19,6 +19,11 @@ const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
   yearEndArtists: { accent: "#A855F7", accentDark: "#9333EA" },
   yearEndAlbums:  { accent: "#A855F7", accentDark: "#9333EA" },
   yearEndRadio:   { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndStreamingSongs: { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndTopStreamingAlbums: { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndTopAlbumSales: { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndDigitalSongsSales: { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndNewArtists: { accent: "#A855F7", accentDark: "#9333EA" },
 };
 
 function lastWeekDisplay(entry: ChartEntry): string {
@@ -34,9 +39,12 @@ interface ChartImageProps {
   chartId: string;
   date: string;
   kind: "song" | "album" | "artist";
+  weeksAt1Hot100?: number;
+  weeksAt1Artists?: number;
+  weeksAt1Albums?: number;
 }
 
-export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartImageProps) {
+export function ChartImage({ entries, chartTitle, chartId, date, kind, weeksAt1Hot100, weeksAt1Artists, weeksAt1Albums }: ChartImageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
   const theme = COLOR_THEMES[chartId] ?? COLOR_THEMES.songs;
@@ -44,6 +52,12 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
   const topEntry = topEntries[0];
   const weeksAt1 = topEntry?.weeksAt1 && topEntry.position === 1 ? topEntry.weeksAt1 : null;
   const isArtist = kind === "artist";
+  const isGoat = chartId.startsWith("goat");
+  const goatWeeks1 = [
+    weeksAt1Hot100 && weeksAt1Hot100 > 0 ? `${weeksAt1Hot100}W at Hot 100 No.1` : null,
+    weeksAt1Artists && weeksAt1Artists > 0 ? `${weeksAt1Artists}W at Artist 50 No.1` : null,
+    weeksAt1Albums && weeksAt1Albums > 0 ? `${weeksAt1Albums}W at Top 100 Albums No.1` : null,
+  ].filter(Boolean);
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", {
     month: "long",
@@ -233,6 +247,36 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       }}
                     >
                       {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
+                    </div>
+                  )}
+
+                  {/* GOAT: weeks at #1 for Hot 100, Artist 50, Top 100 Albums */}
+                  {isGoat && goatWeeks1.length > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 8,
+                        marginLeft: 70,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {goatWeeks1.map((label, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            background: "rgba(255,255,255,0.1)",
+                            color: "#fff",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            padding: "4px 12px",
+                            borderRadius: 4,
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          {label}
+                        </div>
+                      ))}
                     </div>
                   )}
 

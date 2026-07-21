@@ -20,19 +20,22 @@ export const Route = createFileRoute("/goat/$chartId")({
   component: GoatPage,
 });
 
-function formatMetric(n: number): string {
+function formatMetric(n: number, useStreamFormat: boolean): string {
   if (n <= 0) return "0";
-  if (n >= 1_000_000_000) {
-    const val = n / 1_000_000_000;
-    return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
-  }
-  if (n >= 1_000_000) {
-    const val = n / 1_000_000;
-    return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
-  }
-  if (n >= 1_000) {
-    const val = n / 1_000;
-    return val % 1 === 0 ? `${val}K` : `${parseFloat(val.toFixed(1))}K`;
+  if (useStreamFormat) {
+    if (n >= 1_000_000_000) {
+      const val = n / 1_000_000_000;
+      return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
+    }
+    if (n >= 1_000_000) {
+      const val = n / 1_000_000;
+      return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+    }
+    if (n >= 1_000) {
+      const val = n / 1_000;
+      return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+    }
+    return `${n}K`;
   }
   return n.toLocaleString("en-US");
 }
@@ -149,6 +152,9 @@ function GoatPage() {
                 chartId={chartId}
                 date="2025-12-31"
                 kind={data.kind}
+                weeksAt1Hot100={sorted[0]?.weeksAt1Hot100 ?? 0}
+                weeksAt1Artists={sorted[0]?.weeksAt1Artists ?? 0}
+                weeksAt1Albums={sorted[0]?.weeksAt1Albums ?? 0}
               />
             </div>
           </div>
@@ -175,7 +181,7 @@ function GoatPage() {
                     {data.kind !== "artist" && <div className="text-xs text-muted-foreground truncate">{item.artist}</div>}
                     <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-black gold">
                       <i className={`fas ${metricIcon} text-xs`} />
-                      {sortBy === "units" ? `${formatMetric(item.totalUnits)} units` : sortBy === "streams" ? `${formatMetric(item.totalStreams)} streams` : sortBy === "sales" ? `${formatMetric(item.totalSales)} sales` : sortBy === "audience" ? `${formatMetric(item.totalAudience)} audience` : `${item.weeks} weeks`}
+                      {sortBy === "units" ? `${formatMetric(item.totalUnits, false)} units` : sortBy === "streams" ? `${formatMetric(item.totalStreams, true)} streams` : sortBy === "sales" ? `${formatMetric(item.totalSales, false)} sales` : sortBy === "audience" ? `${formatMetric(item.totalAudience, false)} audience` : `${item.weeks} weeks`}
                     </div>
                   </motion.div>
                 );
@@ -252,7 +258,7 @@ function GoatPage() {
                           <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
                         </div>
                         <div className="font-black text-[var(--foreground)] text-sm">
-                          {sortBy === "units" ? formatMetric(e.totalUnits) : sortBy === "streams" ? formatMetric(e.totalStreams) : sortBy === "sales" ? formatMetric(e.totalSales) : sortBy === "audience" ? formatMetric(e.totalAudience) : e.weeks}
+                          {sortBy === "units" ? formatMetric(e.totalUnits, false) : sortBy === "streams" ? formatMetric(e.totalStreams, true) : sortBy === "sales" ? formatMetric(e.totalSales, false) : sortBy === "audience" ? formatMetric(e.totalAudience, false) : e.weeks}
                         </div>
                       </div>
                     )}

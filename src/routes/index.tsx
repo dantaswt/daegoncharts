@@ -352,10 +352,15 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
         </button>
         {yeOpen && (
           <div className="mt-3 space-y-1">
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="sidebar-link"><i className="fas fa-music text-xs text-muted-foreground w-4" /> Songs</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="sidebar-link"><i className="fas fa-user text-xs text-muted-foreground w-4" /> Artists</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="sidebar-link"><i className="fas fa-compact-disc text-xs text-muted-foreground w-4" /> Albums</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="sidebar-link"><i className="fas fa-broadcast-tower text-xs text-muted-foreground w-4" /> Radio</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="sidebar-link"><i className="fas fa-music text-xs text-muted-foreground w-4" /> Hot 100</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="sidebar-link"><i className="fas fa-user text-xs text-muted-foreground w-4" /> Artist 50</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="sidebar-link"><i className="fas fa-compact-disc text-xs text-muted-foreground w-4" /> Top 100 Albums</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="sidebar-link"><i className="fas fa-broadcast-tower text-xs text-muted-foreground w-4" /> Radio Songs</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndStreamingSongs" }} className="sidebar-link"><i className="fas fa-headphones text-xs text-muted-foreground w-4" /> Streaming Songs</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndTopStreamingAlbums" }} className="sidebar-link"><i className="fas fa-headphones text-xs text-muted-foreground w-4" /> Top Streaming Albums</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndTopAlbumSales" }} className="sidebar-link"><i className="fas fa-chart-simple text-xs text-muted-foreground w-4" /> Top Album Sales</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndDigitalSongsSales" }} className="sidebar-link"><i className="fas fa-download text-xs text-muted-foreground w-4" /> Digital Songs Sales</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndNewArtists" }} className="sidebar-link"><i className="fas fa-user-plus text-xs text-muted-foreground w-4" /> New Artists</Link>
           </div>
         )}
       </div>

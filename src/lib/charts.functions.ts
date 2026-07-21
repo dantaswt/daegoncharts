@@ -628,16 +628,31 @@ export const getYearEndNewArtists = createServerFn({ method: "GET" })
   .handler(async () => {
     return cached("yec_new_artists", async () => {
       const chartData = await getWeeklyChart({ data: { chartId: "artists" } });
-      const years: Record<string, Record<string, YECEntry>> = {};
 
+      // Step 1: find each artist's first-ever appearance date
+      const firstSeen: Record<string, string> = {};
+      for (const date of chartData.dates) {
+        const entries = chartData.entriesByDate[date] || [];
+        for (const e of entries) {
+          const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+          if (e.diff === "NEW" && !firstSeen[key]) {
+            firstSeen[key] = date;
+          }
+        }
+      }
+
+      // Step 2: for each year, accumulate ALL units for artists whose first appearance is in that year
+      const years: Record<string, Record<string, YECEntry>> = {};
       for (const date of chartData.dates) {
         const year = date.slice(0, 4);
         const entries = chartData.entriesByDate[date] || [];
         if (!years[year]) years[year] = {};
 
         for (const e of entries) {
-          if (e.diff !== "NEW") continue;
           const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+          // Only include artists whose first appearance is in this year
+          if (!firstSeen[key] || firstSeen[key].slice(0, 4) !== year) continue;
+
           if (!years[year][key]) {
             years[year][key] = {
               position: 0,
@@ -654,8 +669,7 @@ export const getYearEndNewArtists = createServerFn({ method: "GET" })
           entry.weeks += 1;
           if (e.peak < entry.peak) entry.peak = e.peak;
           entry.weeksAt1 += (e.weeksAt1 ?? 0);
-          const unitsRaw = String(e.units ?? "0");
-          entry.totalUnits += toInt(unitsRaw);
+          entry.totalUnits += toInt(String(e.units ?? "0"));
         }
       }
 
@@ -680,6 +694,9 @@ export interface GOATEntry {
   peak: number;
   weeks: number;
   weeksAt1: number;
+  weeksAt1Hot100: number;
+  weeksAt1Artists: number;
+  weeksAt1Albums: number;
   totalUnits: number;
   totalStreams: number;
   totalSales: number;
@@ -695,13 +712,38 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
       const kind = cfg?.kind ?? "song";
       const weeklyIds = data.chartId === "goatArtists" ? ["artists"] : data.chartId === "goatAlbums" ? ["albums"] : data.chartId === "goatRadio" ? ["radioSongs"] : ["songs"];
 
-      const allData = await Promise.all(
-        weeklyIds.map(id => getWeeklyChart({ data: { chartId: id } }).catch(() => null))
-      );
+      // Fetch all three main charts for weeksAt1 breakdown
+      const [songsData, artistsData, albumsData] = await Promise.all([
+        getWeeklyChart({ data: { chartId: "songs" } }).catch(() => null),
+        getWeeklyChart({ data: { chartId: "artists" } }).catch(() => null),
+        getWeeklyChart({ data: { chartId: "albums" } }).catch(() => null),
+      ]);
+
+      // Build per-chart weeksAt1 maps: key → total weeksAt1 for that chart
+      function buildWeeksAt1Map(chartData: { dates: string[]; entriesByDate: Record<string, ChartEntry[]> } | null): Record<string, number> {
+        if (!chartData) return {};
+        const map: Record<string, number> = {};
+        for (const date of chartData.dates) {
+          for (const e of chartData.entriesByDate[date] || []) {
+            if (e.weeksAt1 && e.weeksAt1 > 0) {
+              const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+              map[key] = (map[key] || 0) + e.weeksAt1;
+            }
+          }
+        }
+        return map;
+      }
+
+      const hot100Map = buildWeeksAt1Map(songsData);
+      const artistsMap = buildWeeksAt1Map(artistsData);
+      const albumsMap = buildWeeksAt1Map(albumsData);
 
       const aggregated: Record<string, GOATEntry> = {};
 
-      for (const chartData of allData) {
+      // Aggregate from the relevant chart(s)
+      const relevantData = data.chartId === "goatArtists" ? [artistsData] : data.chartId === "goatAlbums" ? [albumsData] : data.chartId === "goatRadio" ? [songsData] : [songsData];
+
+      for (const chartData of relevantData) {
         if (!chartData) continue;
         for (const date of chartData.dates) {
           const entries = chartData.entriesByDate[date] || [];
@@ -715,6 +757,9 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
                 peak: e.peak,
                 weeks: 0,
                 weeksAt1: 0,
+                weeksAt1Hot100: 0,
+                weeksAt1Artists: 0,
+                weeksAt1Albums: 0,
                 totalUnits: 0,
                 totalStreams: 0,
                 totalSales: 0,
@@ -732,6 +777,13 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
             entry.totalAudience += toInt(e.audience || "0");
           }
         }
+      }
+
+      // Assign per-chart weeksAt1 from the pre-built maps
+      for (const key of Object.keys(aggregated)) {
+        aggregated[key].weeksAt1Hot100 = hot100Map[key] || 0;
+        aggregated[key].weeksAt1Artists = artistsMap[key] || 0;
+        aggregated[key].weeksAt1Albums = albumsMap[key] || 0;
       }
 
       const sorted = Object.values(aggregated)
