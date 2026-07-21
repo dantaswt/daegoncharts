@@ -3,6 +3,7 @@ import { getYearEndGenerated, getYearEndNewArtists, type YECEntry } from "@/lib/
 import { chartsConfig, yearEndChartIds, slugifyArtist } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
+import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -165,12 +166,13 @@ function YearEndChartPage() {
                     {e.kind === "artist" ? (
                       <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                     ) : (
-                      e.name
+                      <span>{stripFeatFromTitle(e.name)}</span>
                     )}
                   </div>
                   {e.kind !== "artist" && (
                     <div className="text-xs text-muted-foreground break-words">
                       <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
+                      <TrackArtists song={e.name} artist={e.artist} className="text-xs text-muted-foreground" />
                     </div>
                   )}
                 </div>

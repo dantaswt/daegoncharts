@@ -3,6 +3,7 @@ import { getWeeklyChart, getAllArtistStats, type ChartEntry, type WeeklyChartDat
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
 import { getLatestBeatArticles, type GeneratedBeatArticle } from "@/lib/chart-beat-generator";
+import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/")({
 });
 
 /* ────── Spotify Image (small reusable) ────── */
-function SpotifyImg({ query, type, rounded }: { query: string; type: "artist" | "album"; rounded?: boolean }) {
+function SpotifyImg({ query, type, rounded }: { query: string; type: "artist" | "album" | "track"; rounded?: boolean }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -115,7 +116,7 @@ function TopChartsSection({ charts }: { charts: any }) {
             <div className="aspect-square relative">
               <SpotifyImg
                 query={cfg.kind === "album" ? `album:"${e.name}" artist:"${e.artist}"` : cfg.kind === "artist" ? `artist:"${e.name}"` : `artist:"${e.artist}" track:"${e.name}"`}
-                type={cfg.kind === "album" ? "album" : "artist"}
+                type={cfg.kind === "album" ? "album" : cfg.kind === "artist" ? "artist" : "track"}
                 rounded={false}
               />
               <div className="rank-badge">{e.position}</div>
@@ -127,7 +128,7 @@ function TopChartsSection({ charts }: { charts: any }) {
                     {e.name}
                   </Link>
                 ) : (
-                  e.name
+                  <span>{stripFeatFromTitle(e.name)}</span>
                 )}
               </div>
               {cfg.kind !== "artist" && (
@@ -135,6 +136,7 @@ function TopChartsSection({ charts }: { charts: any }) {
                   <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">
                     {e.artist}
                   </Link>
+                  <TrackArtists song={e.name} artist={e.artist} className="text-xs text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -164,18 +166,19 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                 <div className="w-16 h-16 shrink-0">
                   <SpotifyImg
                     query={n.kind === "album" ? `album:"${n.entry.name}" artist:"${n.entry.artist}"` : n.kind === "artist" ? `artist:"${n.entry.name}"` : `artist:"${n.entry.artist}" track:"${n.entry.name}"`}
-                    type={n.kind === "album" ? "album" : "artist"}
+                    type={n.kind === "album" ? "album" : n.kind === "artist" ? "artist" : "track"}
                     rounded={false}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{n.title}</div>
-                  <div className="font-bold text-sm whitespace-normal break-words">{n.entry.name}</div>
+                  <div className="font-bold text-sm whitespace-normal break-words">{n.kind === "artist" ? n.entry.name : stripFeatFromTitle(n.entry.name)}</div>
                   {n.kind !== "artist" ? (
                     <div className="text-xs text-muted-foreground whitespace-normal break-words">
                       <Link to="/artist/$slug" params={{ slug: slugifyArtist(n.entry.artist) }} className="hover:text-[var(--accent)] hover:underline">
                         {n.entry.artist}
                       </Link>
+                      <TrackArtists song={n.entry.name} artist={n.entry.artist} className="text-xs text-muted-foreground" />
                     </div>
                   ) : (
                     <div className="text-xs text-muted-foreground whitespace-normal break-words">

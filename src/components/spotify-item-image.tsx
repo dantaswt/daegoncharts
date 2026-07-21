@@ -15,7 +15,7 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
   useEffect(() => {
     let active = true;
     let query: string;
-    let type: "album" | "artist";
+    let type: "album" | "artist" | "track";
     if (kind === "artist") {
       query = `artist:"${name}"`;
       type = "artist";
@@ -24,7 +24,7 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
       type = "album";
     } else {
       query = `artist:"${artist}" track:"${name}"`;
-      type = "artist";
+      type = "track";
     }
     getSpotifyImage({ data: { query, type } }).then((u) => {
       if (active && u) setUrl(u);

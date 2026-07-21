@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAllArtistStats, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
+import { SpotifyItemImage } from "@/components/spotify-item-image";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { TrackArtists } from "@/components/track-artists";
+import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 
 /* ────── Chart name → route mapping ────── */
 const chartNameToRoute: Record<string, { chartId: string }> = {};
@@ -193,16 +194,26 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
               {visibleEntries.map((e, i: number) => (
                 <tr key={i} className="border-t border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
                   <td className="px-4 sm:px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold whitespace-normal break-words">
-                        {e.item}
-                        {!isAlbumChart && <TrackArtists song={e.item} artist={mainArtist} className="text-muted-foreground font-normal" />}
-                      </span>
-                      {(e.weeksAt1 ?? 0) > 0 && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0">
-                          {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
-                        </span>
+                    <div className="flex items-center gap-3">
+                      {chartName !== "Top 50 Artists" && (
+                        <SpotifyItemImage name={e.item} artist={mainArtist} kind={isAlbumChart ? "album" : "song"} size={40} />
                       )}
+                      <div className="min-w-0">
+                        <div className="font-semibold whitespace-normal break-words">
+                          {chartName === "Top 50 Artists" ? e.item : stripFeatFromTitle(e.item)}
+                          {(e.weeksAt1 ?? 0) > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0 ml-1.5">
+                              {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
+                            </span>
+                          )}
+                        </div>
+                        {chartName !== "Top 50 Artists" && (
+                          <div className="text-xs text-muted-foreground break-words">
+                            {mainArtist}
+                            {!isAlbumChart && <TrackArtists song={e.item} artist={mainArtist} className="text-xs text-muted-foreground" />}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
