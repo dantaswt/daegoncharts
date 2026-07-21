@@ -1,7 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getYearEndGenerated, type YECEntry } from "@/lib/charts.functions";
 import { chartsConfig, yearEndChartIds, slugifyArtist } from "@/lib/charts-config";
-import { ChartRow } from "@/components/chart-row";
+import { ChartImage } from "@/components/chart-image";
+import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -70,8 +71,17 @@ function YearEndChartPage() {
               {cfg?.title ?? "Year-End"} {selectedYear}
             </h1>
             <p className="text-muted-foreground text-sm mt-2 relative z-10">
-              {entries.length} items ranked by total weeks on chart
+              {entries.length} items ranked by {mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units"}
             </p>
+            <div className="flex justify-center mt-4 relative z-10">
+              <ChartImage
+                entries={entries.map((e) => ({ position: e.position, diff: "", name: e.name, artist: e.artist, peak: e.peak, weeks: e.weeks, weeksAt1: e.weeksAt1 }))}
+                chartTitle={cfg?.title ?? "Year-End"}
+                chartId={chartId}
+                date={`${selectedYear}-12-31`}
+                kind={data.kind}
+              />
+            </div>
           </div>
 
           {/* Entries */}
@@ -88,6 +98,7 @@ function YearEndChartPage() {
                   <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                     {e.position}
                   </div>
+                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={40} />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm group-hover:text-[var(--accent)] transition-colors truncate">
                       {e.kind === "artist" ? (
@@ -111,12 +122,12 @@ function YearEndChartPage() {
                       <div className="text-[9px] uppercase font-bold tracking-wider">Weeks</div>
                       <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
                     </div>
-                    {e.weeksAt1 > 0 && (
-                      <div className="text-center">
-                        <div className="text-[9px] uppercase font-bold tracking-wider">#1's</div>
-                        <div className="font-black gold text-sm">{e.weeksAt1}</div>
+                    <div className="text-center">
+                      <div className="text-[9px] uppercase font-bold tracking-wider">
+                        {mappedId === "songs" ? "Points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "Streams" : mappedId === "radioSongs" ? "Audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "Sales" : "Units"}
                       </div>
-                    )}
+                      <div className="font-black text-[var(--foreground)] text-sm">{e.totalUnits > 0 ? e.totalUnits.toLocaleString("en-US") : "-"}</div>
+                    </div>
                   </div>
                 </motion.div>
               ))}

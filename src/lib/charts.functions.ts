@@ -580,6 +580,8 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
       const chartData = await getWeeklyChart({ data: { chartId: data.chartId } });
       const years: Record<string, Record<string, YECEntry>> = {};
 
+      const metricKey = data.chartId === "songs" ? "points" : data.chartId === "streamingSongs" || data.chartId === "topStreamingAlbums" ? "streams" : data.chartId === "radioSongs" ? "audience" : data.chartId === "topAlbumSales" || data.chartId === "digitalSongsSales" ? "sales" : "units";
+
       for (const date of chartData.dates) {
         const year = date.slice(0, 4);
         const entries = chartData.entriesByDate[date] || [];
@@ -603,7 +605,7 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
           entry.weeks += 1;
           if (e.peak < entry.peak) entry.peak = e.peak;
           entry.weeksAt1 += (e.weeksAt1 ?? 0);
-          const unitsRaw = e.units || e.streams || e.sales || "0";
+          const unitsRaw = String(e[metricKey as keyof ChartEntry] ?? e.units ?? "0");
           entry.totalUnits += toInt(unitsRaw);
         }
       }
@@ -611,7 +613,7 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
       const result: Record<string, YECEntry[]> = {};
       for (const [year, items] of Object.entries(years)) {
         result[year] = Object.values(items)
-          .sort((a, b) => b.weeks - a.weeks || a.peak - b.peak)
+          .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
           .slice(0, 100)
           .map((e, i) => ({ ...e, position: i + 1 }));
       }
@@ -632,6 +634,7 @@ export interface GOATEntry {
   totalUnits: number;
   totalStreams: number;
   totalSales: number;
+  totalAudience: number;
   kind: "song" | "album" | "artist";
 }
 
@@ -641,7 +644,7 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
     return cached(`goat_gen_${data.chartId}`, async () => {
       const cfg = chartsConfig[data.chartId];
       const kind = cfg?.kind ?? "song";
-      const weeklyIds = kind === "artist" ? ["artists"] : kind === "album" ? ["albums", "topStreamingAlbums", "topAlbumSales"] : ["songs", "streamingSongs", "digitalSongsSales", "radioSongs"];
+      const weeklyIds = data.chartId === "goatArtists" ? ["artists"] : data.chartId === "goatAlbums" ? ["albums"] : data.chartId === "goatRadio" ? ["radioSongs"] : ["songs"];
 
       const allData = await Promise.all(
         weeklyIds.map(id => getWeeklyChart({ data: { chartId: id } }).catch(() => null))
@@ -666,6 +669,7 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
                 totalUnits: 0,
                 totalStreams: 0,
                 totalSales: 0,
+                totalAudience: 0,
                 kind,
               };
             }
@@ -676,6 +680,7 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
             entry.totalUnits += toInt(e.units || "0");
             entry.totalStreams += toInt(e.streams || "0");
             entry.totalSales += toInt(e.sales || "0");
+            entry.totalAudience += toInt(e.audience || "0");
           }
         }
       }

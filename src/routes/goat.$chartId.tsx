@@ -1,6 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getGoatGenerated, type GOATEntry } from "@/lib/charts.functions";
 import { chartsConfig, goatChartIds, slugifyArtist } from "@/lib/charts-config";
+import { ChartImage } from "@/components/chart-image";
+import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
@@ -20,13 +22,17 @@ export const Route = createFileRoute("/goat/$chartId")({
 
 function formatStreams(n: number): string {
   if (n <= 0) return "0";
+  if (n >= 1_000_000_000) {
+    const val = n / 1_000_000_000;
+    return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
+  }
   if (n >= 1_000_000) {
     const val = n / 1_000_000;
-    return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
+    return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
   }
   if (n >= 1_000) {
     const val = n / 1_000;
-    return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+    return val % 1 === 0 ? `${val}K` : `${parseFloat(val.toFixed(1))}K`;
   }
   return n.toLocaleString("en-US");
 }
@@ -34,7 +40,8 @@ function formatStreams(n: number): string {
 function GoatPage() {
   const { data, chartId } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
-  const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales">("weeks");
+  const isRadio = chartId === "goatRadio";
+  const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales" | "audience">("weeks");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 50;
@@ -44,6 +51,7 @@ function GoatPage() {
     if (sortBy === "units") list.sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak);
     else if (sortBy === "streams") list.sort((a, b) => b.totalStreams - a.totalStreams || a.peak - b.peak);
     else if (sortBy === "sales") list.sort((a, b) => b.totalSales - a.totalSales || a.peak - b.peak);
+    else if (sortBy === "audience") list.sort((a, b) => b.totalAudience - a.totalAudience || a.peak - b.peak);
     else list.sort((a, b) => b.weeks - a.weeks || a.peak - b.peak);
     return list.map((e, i) => ({ ...e, position: i + 1 }));
   }, [data.entries, sortBy]);
@@ -63,6 +71,7 @@ function GoatPage() {
     { key: "units" as const, label: "Total Units", icon: "fa-chart-bar" },
     { key: "streams" as const, label: "Total Streams", icon: "fa-headphones" },
     { key: "sales" as const, label: "Total Sales", icon: "fa-shopping-cart" },
+    ...(isRadio ? [{ key: "audience" as const, label: "Total Audience", icon: "fa-broadcast-tower" }] : []),
   ];
 
   return (
@@ -127,6 +136,15 @@ function GoatPage() {
             <p className="text-muted-foreground text-sm mt-2 relative z-10">
               {sorted.length} greatest of all time
             </p>
+            <div className="flex justify-center mt-4 relative z-10">
+              <ChartImage
+                entries={sorted.slice(0, 50).map((e) => ({ position: e.position, diff: "", name: e.name, artist: e.artist, peak: e.peak, weeks: e.weeks, weeksAt1: e.weeksAt1 }))}
+                chartTitle={cfg?.title ?? "GOAT"}
+                chartId={chartId}
+                date="2025-12-31"
+                kind={data.kind}
+              />
+            </div>
           </div>
 
           {/* Top 3 Podium */}
@@ -149,7 +167,9 @@ function GoatPage() {
                     </div>
                     <div className="font-bold text-sm sm:text-base truncate">{item.name}</div>
                     {data.kind !== "artist" && <div className="text-xs text-muted-foreground truncate">{item.artist}</div>}
-                    <div className="font-black text-lg sm:text-xl gold mt-2">{item.weeks} weeks</div>
+                    <div className="font-black text-lg sm:text-xl gold mt-2">
+                      {sortBy === "units" ? `${formatStreams(item.totalUnits)} units` : sortBy === "streams" ? `${formatStreams(item.totalStreams)} streams` : sortBy === "sales" ? `${formatStreams(item.totalSales)} sales` : sortBy === "audience" ? `${formatStreams(item.totalAudience)} audience` : `${item.weeks} weeks`}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -192,6 +212,7 @@ function GoatPage() {
                   <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                     {e.position}
                   </div>
+                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={40} />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm group-hover:text-[var(--accent)] transition-colors truncate">
                       {data.kind === "artist" ? (
@@ -215,30 +236,14 @@ function GoatPage() {
                       <div className="text-[9px] uppercase font-bold tracking-wider">Weeks</div>
                       <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
                     </div>
-                    {e.weeksAt1 > 0 && (
-                      <div className="text-center">
-                        <div className="text-[9px] uppercase font-bold tracking-wider">#1's</div>
-                        <div className="font-black gold text-sm">{e.weeksAt1}</div>
+                    <div className="text-center">
+                      <div className="text-[9px] uppercase font-bold tracking-wider">
+                        {sortBy === "units" ? "Units" : sortBy === "streams" ? "Streams" : sortBy === "sales" ? "Sales" : sortBy === "audience" ? "Audience" : "Weeks"}
                       </div>
-                    )}
-                    {sortBy === "units" && (
-                      <div className="text-center">
-                        <div className="text-[9px] uppercase font-bold tracking-wider">Units</div>
-                        <div className="font-black text-[var(--foreground)] text-sm">{formatStreams(e.totalUnits)}</div>
+                      <div className="font-black text-[var(--foreground)] text-sm">
+                        {sortBy === "units" ? formatStreams(e.totalUnits) : sortBy === "streams" ? formatStreams(e.totalStreams) : sortBy === "sales" ? formatStreams(e.totalSales) : sortBy === "audience" ? formatStreams(e.totalAudience) : e.weeks}
                       </div>
-                    )}
-                    {sortBy === "streams" && (
-                      <div className="text-center">
-                        <div className="text-[9px] uppercase font-bold tracking-wider">Streams</div>
-                        <div className="font-black gold text-sm">{formatStreams(e.totalStreams)}</div>
-                      </div>
-                    )}
-                    {sortBy === "sales" && (
-                      <div className="text-center">
-                        <div className="text-[9px] uppercase font-bold tracking-wider">Sales</div>
-                        <div className="font-black text-[var(--foreground)] text-sm">{formatStreams(e.totalSales)}</div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </motion.div>
               ))

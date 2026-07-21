@@ -182,7 +182,7 @@ function ChartHistoryTable({ chartName, entries }: { chartName: string; entries:
               <tr className="text-left text-[10px] uppercase text-muted-foreground tracking-wider">
                 <th className="px-4 sm:px-5 py-3 font-bold">{itemLabel}</th>
                 <th className="px-3 py-3 text-center font-bold">Peak</th>
-                <th className="px-3 py-3 text-center font-bold hidden sm:table-cell">Weeks</th>
+                <th className="px-3 py-3 text-center font-bold">Weeks</th>
                 <th className="px-3 py-3 text-center font-bold hidden md:table-cell">First Entry</th>
                 <th className="px-3 py-3 text-center font-bold hidden md:table-cell">Peak Date</th>
                 <th className="px-4 sm:px-5 py-3 text-right font-bold">{colLabel}</th>
@@ -206,7 +206,7 @@ function ChartHistoryTable({ chartName, entries }: { chartName: string; entries:
                       #{e.peak}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-center hidden sm:table-cell">{e.weeks}</td>
+                  <td className="px-3 py-3 text-center">{e.weeks}</td>
                   <td className="px-3 py-3 text-center text-xs hidden md:table-cell">
                     {e.firstEntry ? <DateLink chartName={chartName} date={e.firstEntry}>{e.firstEntry}</DateLink> : "—"}
                   </td>
@@ -364,23 +364,23 @@ function ArtistPage() {
 
             {/* Sales / Units / Streams */}
             {totals && (totals.totalSales || totals.totalUnits || totals.totalStreams) && (
-              <div className="grid grid-cols-3 gap-3 mt-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-3">
                 {totals.totalSales && (
-                  <div className="text-center p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Total Sales</div>
-                    <div className="text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalSales)}</div>
+                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalSales)}</div>
                   </div>
                 )}
                 {totals.totalUnits && (
-                  <div className="text-center p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Total Units</div>
-                    <div className="text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalUnits)}</div>
+                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Units</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalUnits)}</div>
                   </div>
                 )}
                 {totals.totalStreams && (
-                  <div className="text-center p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Total Streams</div>
-                    <div className="text-lg font-black text-[var(--foreground)]">{formatStreams(totals.totalStreams)}</div>
+                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Streams</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatStreams(totals.totalStreams)}</div>
                   </div>
                 )}
               </div>

@@ -17,10 +17,12 @@ function ArticleImage({ artist }: { artist: string | null }) {
   return <img src={imageUrl} alt="" className="w-full h-52 md:h-72 object-cover rounded-xl border border-[var(--border)] mb-5" />;
 }
 
-function highlightNumbers(text: string) {
-  const pattern = /(#?\d+(?:[.,]\d+)?(?:[KMBkmb])?)/g;
-  return text.split(pattern).map((part, i) => {
-    if (/^#?\d+(?:[.,]\d+)?(?:[KMBkmb])?$/.test(part)) return <em key={i}>{part}</em>;
+function highlightText(text: string, artistName?: string | null) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
     return part;
   });
 }
@@ -60,7 +62,7 @@ export function ChartBeatArticle({ article }: { article: GeneratedBeatArticle })
             )}
             {section.paragraphs.map((p, j) => (
               <p key={j} className="whitespace-pre-wrap leading-relaxed text-sm md:text-base text-justify mb-3">
-                {highlightNumbers(p)}
+                {highlightText(p)}
               </p>
             ))}
           </div>
