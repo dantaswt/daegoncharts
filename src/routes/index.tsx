@@ -255,16 +255,16 @@ function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
           const cfg = chartsConfig[article.chartId];
           return (
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={article.chartId}>
-              <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: article.chartId, date: article.date }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-center group h-24 sm:h-32 shadow-sm">
+              <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: article.chartId, date: article.date }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-stretch group shadow-sm">
                 {article.artist && (
-                  <div className="w-24 sm:w-32 h-full shrink-0">
+                  <div className="w-20 sm:w-32 h-auto shrink-0">
                     <SpotifyImg query={`artist:"${article.artist}"`} type="artist" rounded={false} />
                   </div>
                 )}
-                <div className="p-4 flex flex-col justify-center flex-1 min-w-0">
+                <div className="p-3 sm:p-4 flex flex-col justify-center flex-1 min-w-0">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{cfg?.title ?? article.chartTitle}</div>
-                  <div className="font-bold text-sm sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{article.headline}</div>
-                  <div className="text-xs text-muted-foreground">{dateLabel}</div>
+                  <div className="font-bold text-xs sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2 break-words">{article.headline}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{dateLabel}</div>
                 </div>
               </Link>
             </motion.div>
