@@ -5,6 +5,7 @@ import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import { TrackArtists } from "@/components/track-artists";
 
 export const Route = createFileRoute("/goat/$chartId")({
   loader: async ({ params }) => {
@@ -173,8 +174,13 @@ function GoatPage() {
                     <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${isFirst ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                       {idx + 1}
                     </div>
-                    <div className="font-bold text-sm sm:text-base truncate">{item.name}</div>
-                    {data.kind !== "artist" && <div className="text-xs text-muted-foreground truncate">{item.artist}</div>}
+                    <div className="font-bold text-sm sm:text-base break-words">{item.name}</div>
+                    {data.kind !== "artist" && (
+                      <div className="text-xs text-muted-foreground break-words">
+                        {item.artist}
+                        <TrackArtists song={item.name} artist={item.artist} className="text-muted-foreground" />
+                      </div>
+                    )}
                     <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-black gold">
                       <i className={`fas ${metricIcon} text-xs`} />
                       {sortBy === "units" ? `${formatMetric(item.totalUnits, false)} units` : sortBy === "streams" ? `${formatMetric(item.totalStreams, true)} streams` : sortBy === "sales" ? `${formatMetric(item.totalSales, false)} sales` : sortBy === "audience" ? `${formatMetric(item.totalAudience, false)} audience` : `${item.weeks} weeks`}
@@ -233,6 +239,7 @@ function GoatPage() {
                     {data.kind !== "artist" && (
                       <div className="text-xs text-muted-foreground break-words">
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
+                        <TrackArtists song={e.name} artist={e.artist} className="text-muted-foreground" />
                       </div>
                     )}
                   </div>

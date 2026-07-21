@@ -361,6 +361,49 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
     }
   });
 
+interface TrackArtist {
+  name: string;
+  slug: string;
+}
+
+const trackArtistsCache = new Map<string, TrackArtist[] | null>();
+
+export const getSpotifyTrackArtists = createServerFn({ method: "GET" })
+  .validator((d: { song: string; artist: string }) => d)
+  .handler(async ({ data }) => {
+    const cacheKey = `${data.song.trim().toLowerCase()}|${data.artist.trim().toLowerCase()}`;
+    if (trackArtistsCache.has(cacheKey)) return trackArtistsCache.get(cacheKey);
+
+    const token = await getAccessToken();
+    if (!token) return null;
+
+    try {
+      const tracks = (await spotifySearch(token, `track:"${data.song}" artist:"${data.artist}"`, "track"))?.tracks?.items ?? [];
+      const track = tracks.find((t: any) =>
+        t.artists?.some((a: any) => exactMatch(a.name ?? "", data.artist))
+      );
+
+      if (!track?.artists || track.artists.length <= 1) {
+        trackArtistsCache.set(cacheKey, null);
+        return null;
+      }
+
+      const slugify = (name: string) =>
+        name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+      const artists: TrackArtist[] = track.artists.map((a: any) => ({
+        name: a.name,
+        slug: slugify(a.name),
+      }));
+
+      trackArtistsCache.set(cacheKey, artists);
+      return artists;
+    } catch {
+      trackArtistsCache.set(cacheKey, null);
+      return null;
+    }
+  });
+
 const profileCache = new Map<string, { imageUrl: string | null; followers: number; genres: string[] } | null>();
 
 export const getSpotifyArtistProfile = createServerFn({ method: "GET" })

@@ -4,6 +4,7 @@ import { slugifyArtist, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
+import { TrackArtists } from "@/components/track-artists";
 
 const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
 const streamsMBCharts = new Set(["songs", "albums", "artists"]);
@@ -414,6 +415,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           >
             {kind === "artist" ? "View Artist Page" : entry.artist}
           </Link>
+          {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[11px] text-gray-500" />}
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
             <div className="text-[11px] text-gray-500 break-words">{entry.album}</div>
           )}
@@ -468,6 +470,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             >
               {kind === "artist" ? "View Artist Page" : entry.artist}
             </Link>
+            {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[9px] text-gray-500" />}
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {metric && (

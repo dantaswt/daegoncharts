@@ -4,6 +4,7 @@ import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { TrackArtists } from "@/components/track-artists";
 
 /* ────── Chart name → route mapping ────── */
 const chartNameToRoute: Record<string, { chartId: string }> = {};
@@ -107,7 +108,7 @@ function DateLink({ chartName, date, children }: { chartName: string; date: stri
 }
 
 /* ────── Chart History Table ────── */
-function ChartHistoryTable({ chartName, entries }: { chartName: string; entries: any[] }) {
+function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: string; entries: any[]; mainArtist: string }) {
   const [expanded, setExpanded] = useState(false);
   const displayChartName = chartName === "Top 40 Radio" ? "Radio Songs" : chartName;
   const visibleEntries = expanded ? entries : entries.slice(0, 5);
@@ -193,7 +194,10 @@ function ChartHistoryTable({ chartName, entries }: { chartName: string; entries:
                 <tr key={i} className="border-t border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
                   <td className="px-4 sm:px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold whitespace-normal break-words">{e.item}</span>
+                      <span className="font-semibold whitespace-normal break-words">
+                        {e.item}
+                        {!isAlbumChart && <TrackArtists song={e.item} artist={mainArtist} className="text-muted-foreground font-normal" />}
+                      </span>
                       {(e.weeksAt1 ?? 0) > 0 && (
                         <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0">
                           {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
@@ -392,10 +396,10 @@ function ArtistPage() {
       {/* Chart History Sections */}
       <div className="space-y-8">
         {chartsToRender.map((c) => (
-          <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} />
+          <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} mainArtist={artist.name} />
         ))}
         {otherCharts.map((c) => (
-          <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} />
+          <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} mainArtist={artist.name} />
         ))}
       </div>
 
