@@ -427,13 +427,6 @@ function ArtistPage() {
             <div className="divide-y divide-[var(--border)]">
               {featuredOn.map((track, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-[rgba(0,230,118,0.02)] transition-colors">
-                  {track.imageUrl ? (
-                    <img src={track.imageUrl} alt={track.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center shrink-0">
-                      <i className="fas fa-music text-xs opacity-50" />
-                    </div>
-                  )}
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm break-words">{track.name}</div>
                     <div className="text-xs text-muted-foreground break-words">
