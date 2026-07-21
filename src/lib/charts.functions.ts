@@ -554,16 +554,43 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
 
     const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 
+    const featVerifyCache = new Map<string, string[]>();
+    async function verifyFeatViaApi(song: string, mainArtist: string): Promise<string[]> {
+      const key = `${song}|${mainArtist}`;
+      if (featVerifyCache.has(key)) return featVerifyCache.get(key)!;
+      try {
+        const q = encodeURIComponent(`${song} ${mainArtist}`);
+        const resp = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`);
+        const data = await resp.json();
+        for (const r of data.results ?? []) {
+          const nameMatch = normalize(r.trackName ?? "") === normalize(song);
+          const artistMatch = normalize(r.artistName ?? "").includes(normalize(mainArtist));
+          if (nameMatch && artistMatch) {
+            const raw = (r.artistName ?? "").trim();
+            const parts = raw.split(/\s*(?:feat\.|ft\.|featuring|&)\s*/i).map((s: string) => s.trim()).filter(Boolean);
+            if (parts.length > 1) {
+              featVerifyCache.set(key, parts.slice(1));
+              return parts.slice(1);
+            }
+          }
+        }
+        featVerifyCache.set(key, []);
+        return [];
+      } catch {
+        featVerifyCache.set(key, []);
+        return [];
+      }
+    }
+
     for (const { artist, chart, entry } of allRows) {
       const featMatch = entry.item.match(/\(feat\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(ft\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(featuring\s+([^)]+)\)/i)
         || entry.item.match(/\(with\s+([^)]+)\)/i);
       if (!featMatch) continue;
-      const featNames = featMatch[1].split(/[,&]/).map((s: string) => s.trim()).filter(Boolean);
-      for (const featName of featNames) {
-        if (!featName) continue;
-        const existingKey = Object.keys(map).find(k => normalize(k) === normalize(featName));
+      const apiFeats = await verifyFeatViaApi(entry.item, artist);
+      for (const apiFeat of apiFeats) {
+        const existingKey = Object.keys(map).find(k => normalize(k) === normalize(apiFeat));
         if (!existingKey) continue;
         const alreadyExists = map[existingKey].chartsByKind[chart]?.some(
           (e: any) => e.item === entry.item && e.peak === entry.peak && e.weeks === entry.weeks
