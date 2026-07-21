@@ -19,6 +19,9 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
     if (kind === "artist") {
       query = `artist:"${name}"`;
       type = "artist";
+    } else if (kind === "album") {
+      query = `album:"${name}" artist:"${artist}"`;
+      type = "album";
     } else {
       query = `artist:"${artist}" track:"${name}"`;
       type = "artist";

@@ -344,7 +344,7 @@ function ArtistPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {goatData && (
                 <div className="text-center p-3 rounded-xl border border-[rgba(255,215,0,0.2)]">
-                  <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">GOAT Rank</div>
+                  <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Greatest of All Time Rank</div>
                   <div className="text-xl font-black gold">#{goatData.position}</div>
                 </div>
               )}

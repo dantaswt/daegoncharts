@@ -61,7 +61,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "daegon charts — weekly music charts" },
-      { name: "description", content: "Weekly music charts, year-end rankings and GOAT lists." },
+      { name: "description", content: "Weekly music charts, year-end rankings and greatest of all time lists." },
     ],
   }),
   component: LandingPage,
@@ -328,7 +328,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
         </div>
       </div>
 
-      {/* GOAT */}
+      {/* Greatest of All Time */}
       <div className="sidebar-section">
         <button onClick={() => setGoatOpen(!goatOpen)} className="flex items-center justify-between w-full cursor-pointer">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Greatest of All Time</div>
@@ -381,7 +381,7 @@ function LandingPage() {
           <span className="text-[8rem] md:text-[14rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">Charts</span>
         </div>
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-[var(--foreground)] tracking-tight relative z-10">daegon charts</h1>
-        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & GOAT lists</p>
+        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & greatest of all time lists</p>
       </div>
 
       {/* Main Layout */}

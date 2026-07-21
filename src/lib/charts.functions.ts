@@ -623,7 +623,56 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
     });
   });
 
-/* ────── GOAT Charts (generated from weekly data, top 500) ────── */
+/* ────── Year-End New Artists (generated from artist chart data) ────── */
+export const getYearEndNewArtists = createServerFn({ method: "GET" })
+  .handler(async () => {
+    return cached("yec_new_artists", async () => {
+      const chartData = await getWeeklyChart({ data: { chartId: "artists" } });
+      const years: Record<string, Record<string, YECEntry>> = {};
+
+      for (const date of chartData.dates) {
+        const year = date.slice(0, 4);
+        const entries = chartData.entriesByDate[date] || [];
+        if (!years[year]) years[year] = {};
+
+        for (const e of entries) {
+          if (e.diff !== "NEW") continue;
+          const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+          if (!years[year][key]) {
+            years[year][key] = {
+              position: 0,
+              name: e.name,
+              artist: e.artist,
+              peak: e.peak,
+              weeks: 0,
+              weeksAt1: 0,
+              totalUnits: 0,
+              kind: "artist" as const,
+            };
+          }
+          const entry = years[year][key];
+          entry.weeks += 1;
+          if (e.peak < entry.peak) entry.peak = e.peak;
+          entry.weeksAt1 += (e.weeksAt1 ?? 0);
+          const unitsRaw = String(e.units ?? "0");
+          entry.totalUnits += toInt(unitsRaw);
+        }
+      }
+
+      const result: Record<string, YECEntry[]> = {};
+      for (const [year, items] of Object.entries(years)) {
+        result[year] = Object.values(items)
+          .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
+          .slice(0, 100)
+          .map((e, i) => ({ ...e, position: i + 1 }));
+      }
+
+      const sortedYears = Object.keys(result).sort().reverse();
+      return { years: sortedYears, entriesByYear: result, kind: "artist" as const, title: "Year-End New Artists" };
+    });
+  });
+
+/* ────── Greatest of All Time Charts (generated from weekly data, top 500) ────── */
 export interface GOATEntry {
   position: number;
   name: string;

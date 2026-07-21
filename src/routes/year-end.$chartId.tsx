@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getYearEndGenerated, type YECEntry } from "@/lib/charts.functions";
+import { getYearEndGenerated, getYearEndNewArtists, type YECEntry } from "@/lib/charts.functions";
 import { chartsConfig, yearEndChartIds, slugifyArtist } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
@@ -13,8 +13,14 @@ export const Route = createFileRoute("/year-end/$chartId")({
     const weeklyId = params.chartId.replace("yearEnd", "").replace(/^./, (c) => c.toLowerCase());
     const weeklyMap: Record<string, string> = {
       songs: "songs", artists: "artists", albums: "albums", radio: "radioSongs",
+      streamingSongs: "streamingSongs", topStreamingAlbums: "topStreamingAlbums",
+      topAlbumSales: "topAlbumSales", digitalSongsSales: "digitalSongsSales",
     };
     const mappedId = weeklyMap[weeklyId] ?? weeklyId;
+    if (params.chartId === "yearEndNewArtists") {
+      const data = await getYearEndNewArtists();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
     const data = await getYearEndGenerated({ data: { chartId: mappedId } });
     return { data, chartId: params.chartId, mappedId };
   },
@@ -26,11 +32,22 @@ export const Route = createFileRoute("/year-end/$chartId")({
   component: YearEndChartPage,
 });
 
+function formatMetric(v: number): string {
+  if (v <= 0) return "-";
+  return v.toLocaleString("en-US");
+}
+
 function YearEndChartPage() {
   const { data, chartId, mappedId } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
   const [selectedYear, setSelectedYear] = useState<string>(data.years[0] || "");
   const entries = selectedYear ? data.entriesByYear[selectedYear] ?? [] : [];
+  const isAlbum = data.kind === "album";
+  const imageSize = isAlbum ? 56 : 40;
+
+  const metricKey = mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units";
+  const metricLabel = metricKey === "points" ? "Points" : metricKey === "streams" ? "Streams" : metricKey === "audience" ? "Audience" : metricKey === "sales" ? "Sales" : "Units";
+  const metricIcon = metricKey === "points" ? "fa-star" : metricKey === "streams" ? "fa-headphones" : metricKey === "audience" ? "fa-broadcast-tower" : metricKey === "sales" ? "fa-shopping-cart" : "fa-chart-bar";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
@@ -71,7 +88,7 @@ function YearEndChartPage() {
               {cfg?.title ?? "Year-End"} {selectedYear}
             </h1>
             <p className="text-muted-foreground text-sm mt-2 relative z-10">
-              {entries.length} items ranked by {mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units"}
+              {entries.length} items ranked by {metricLabel.toLowerCase()}
             </p>
             <div className="flex justify-center mt-4 relative z-10">
               <ChartImage
@@ -95,12 +112,12 @@ function YearEndChartPage() {
                   transition={{ duration: 0.2, delay: Math.min(e.position * 0.01, 0.3) }}
                   className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group"
                 >
-                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
+                  <div className={`flex items-center justify-center font-black shrink-0 ${isAlbum ? "w-10 h-10 sm:w-12 sm:h-12 rounded-xl text-base" : "w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm"} ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                     {e.position}
                   </div>
-                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={40} />
+                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={imageSize} />
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-sm group-hover:text-[var(--accent)] transition-colors truncate">
+                    <div className={`font-bold group-hover:text-[var(--accent)] transition-colors truncate ${isAlbum ? "text-base" : "text-sm"}`}>
                       {e.kind === "artist" ? (
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                       ) : (
@@ -123,10 +140,11 @@ function YearEndChartPage() {
                       <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[9px] uppercase font-bold tracking-wider">
-                        {mappedId === "songs" ? "Points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "Streams" : mappedId === "radioSongs" ? "Audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "Sales" : "Units"}
+                      <div className="flex items-center gap-1 text-[var(--accent)]">
+                        <i className={`fas ${metricIcon} text-[9px]`} />
+                        <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
                       </div>
-                      <div className="font-black text-[var(--foreground)] text-sm">{e.totalUnits > 0 ? e.totalUnits.toLocaleString("en-US") : "-"}</div>
+                      <div className="font-black text-[var(--foreground)] text-sm">{formatMetric(e.totalUnits)}</div>
                     </div>
                   </div>
                 </motion.div>

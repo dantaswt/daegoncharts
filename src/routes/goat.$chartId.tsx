@@ -13,14 +13,14 @@ export const Route = createFileRoute("/goat/$chartId")({
     return { data, chartId: params.chartId };
   },
   head: ({ loaderData }) => {
-    const t = loaderData ? chartsConfig[loaderData.chartId]?.title : "GOAT";
+    const t = loaderData ? chartsConfig[loaderData.chartId]?.title : "Greatest of All Time";
     return { meta: [{ title: `${t} | daegon charts` }, { name: "description", content: `${t} — greatest of all time.` }] };
   },
   notFoundComponent: () => <div className="text-center py-16 gold font-bold">Not found</div>,
   component: GoatPage,
 });
 
-function formatStreams(n: number): string {
+function formatMetric(n: number): string {
   if (n <= 0) return "0";
   if (n >= 1_000_000_000) {
     const val = n / 1_000_000_000;
@@ -40,6 +40,7 @@ function formatStreams(n: number): string {
 function GoatPage() {
   const { data, chartId } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
+  const isAlbum = data.kind === "album";
   const isRadio = chartId === "goatRadio";
   const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales" | "audience">("weeks");
   const [search, setSearch] = useState("");
@@ -65,6 +66,8 @@ function GoatPage() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const displayed = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const top3 = sorted.slice(0, 3);
+  const showWeeksCol = sortBy !== "weeks";
+  const imageSize = isAlbum ? 56 : 40;
 
   const sortOptions = [
     { key: "weeks" as const, label: "Weeks on Chart", icon: "fa-calendar-week" },
@@ -73,6 +76,9 @@ function GoatPage() {
     { key: "sales" as const, label: "Total Sales", icon: "fa-shopping-cart" },
     ...(isRadio ? [{ key: "audience" as const, label: "Total Audience", icon: "fa-broadcast-tower" }] : []),
   ];
+
+  const metricLabel = sortBy === "units" ? "Units" : sortBy === "streams" ? "Streams" : sortBy === "sales" ? "Sales" : sortBy === "audience" ? "Audience" : "Weeks";
+  const metricIcon = sortBy === "units" ? "fa-chart-bar" : sortBy === "streams" ? "fa-headphones" : sortBy === "sales" ? "fa-shopping-cart" : sortBy === "audience" ? "fa-broadcast-tower" : "fa-calendar-week";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
@@ -117,7 +123,7 @@ function GoatPage() {
             </div>
 
             <Link to="/goat" className="sidebar-section block hover:border-[var(--accent)] transition-all">
-              <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest"><i className="fas fa-arrow-left mr-2" />All GOAT</div>
+              <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest"><i className="fas fa-arrow-left mr-2" />All Greatest of All Time</div>
             </Link>
           </aside>
         </div>
@@ -127,11 +133,11 @@ function GoatPage() {
           {/* Header */}
           <div className="relative text-center py-8 md:py-10 mb-6 overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-              <span className="text-[5rem] md:text-[8rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">GOAT</span>
+              <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">Greatest of All Time</span>
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10">
               <i className={`fas ${cfg?.icon ?? "fa-trophy"} mr-2`} />
-              {cfg?.title ?? "GOAT"}
+              {cfg?.title ?? "Greatest of All Time"}
             </h1>
             <p className="text-muted-foreground text-sm mt-2 relative z-10">
               {sorted.length} greatest of all time
@@ -139,7 +145,7 @@ function GoatPage() {
             <div className="flex justify-center mt-4 relative z-10">
               <ChartImage
                 entries={sorted.slice(0, 50).map((e) => ({ position: e.position, diff: "", name: e.name, artist: e.artist, peak: e.peak, weeks: e.weeks, weeksAt1: e.weeksAt1 }))}
-                chartTitle={cfg?.title ?? "GOAT"}
+                chartTitle={cfg?.title ?? "Greatest of All Time"}
                 chartId={chartId}
                 date="2025-12-31"
                 kind={data.kind}
@@ -167,8 +173,9 @@ function GoatPage() {
                     </div>
                     <div className="font-bold text-sm sm:text-base truncate">{item.name}</div>
                     {data.kind !== "artist" && <div className="text-xs text-muted-foreground truncate">{item.artist}</div>}
-                    <div className="font-black text-lg sm:text-xl gold mt-2">
-                      {sortBy === "units" ? `${formatStreams(item.totalUnits)} units` : sortBy === "streams" ? `${formatStreams(item.totalStreams)} streams` : sortBy === "sales" ? `${formatStreams(item.totalSales)} sales` : sortBy === "audience" ? `${formatStreams(item.totalAudience)} audience` : `${item.weeks} weeks`}
+                    <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-black gold">
+                      <i className={`fas ${metricIcon} text-xs`} />
+                      {sortBy === "units" ? `${formatMetric(item.totalUnits)} units` : sortBy === "streams" ? `${formatMetric(item.totalStreams)} streams` : sortBy === "sales" ? `${formatMetric(item.totalSales)} sales` : sortBy === "audience" ? `${formatMetric(item.totalAudience)} audience` : `${item.weeks} weeks`}
                     </div>
                   </motion.div>
                 );
@@ -207,14 +214,14 @@ function GoatPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: Math.min(i * 0.01, 0.3) }}
-                  className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group"
+                  className={`flex items-center gap-3 sm:gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group ${isAlbum ? "p-3 sm:p-4" : "p-3 sm:p-4"}`}
                 >
-                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
+                  <div className={`flex items-center justify-center font-black text-sm shrink-0 ${isAlbum ? "w-10 h-10 sm:w-12 sm:h-12 rounded-xl text-base" : "w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm"} ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                     {e.position}
                   </div>
-                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={40} />
+                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={imageSize} />
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-sm group-hover:text-[var(--accent)] transition-colors truncate">
+                    <div className={`font-bold group-hover:text-[var(--accent)] transition-colors truncate ${isAlbum ? "text-base" : "text-sm"}`}>
                       {data.kind === "artist" ? (
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                       ) : (
@@ -232,18 +239,23 @@ function GoatPage() {
                       <div className="text-[9px] uppercase font-bold tracking-wider">Peak</div>
                       <div className="font-black gold text-sm">#{e.peak}</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-[9px] uppercase font-bold tracking-wider">Weeks</div>
-                      <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[9px] uppercase font-bold tracking-wider">
-                        {sortBy === "units" ? "Units" : sortBy === "streams" ? "Streams" : sortBy === "sales" ? "Sales" : sortBy === "audience" ? "Audience" : "Weeks"}
+                    {showWeeksCol && (
+                      <div className="text-center">
+                        <div className="text-[9px] uppercase font-bold tracking-wider">Weeks</div>
+                        <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
                       </div>
-                      <div className="font-black text-[var(--foreground)] text-sm">
-                        {sortBy === "units" ? formatStreams(e.totalUnits) : sortBy === "streams" ? formatStreams(e.totalStreams) : sortBy === "sales" ? formatStreams(e.totalSales) : sortBy === "audience" ? formatStreams(e.totalAudience) : e.weeks}
+                    )}
+                    {sortBy !== "weeks" && (
+                      <div className="text-center">
+                        <div className="flex items-center gap-1 text-[var(--accent)]">
+                          <i className={`fas ${metricIcon} text-[9px]`} />
+                          <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
+                        </div>
+                        <div className="font-black text-[var(--foreground)] text-sm">
+                          {sortBy === "units" ? formatMetric(e.totalUnits) : sortBy === "streams" ? formatMetric(e.totalStreams) : sortBy === "sales" ? formatMetric(e.totalSales) : sortBy === "audience" ? formatMetric(e.totalAudience) : e.weeks}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </motion.div>
               ))
