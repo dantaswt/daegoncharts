@@ -223,7 +223,7 @@ function GoatPage() {
                   </div>
                   <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={imageSize} />
                   <div className="min-w-0 flex-1">
-                    <div className={`font-bold group-hover:text-[var(--accent)] transition-colors truncate ${isAlbum ? "text-base" : "text-sm"}`}>
+                    <div className={`font-bold group-hover:text-[var(--accent)] transition-colors break-words ${isAlbum ? "text-base" : "text-sm"}`}>
                       {data.kind === "artist" ? (
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                       ) : (
@@ -231,7 +231,7 @@ function GoatPage() {
                       )}
                     </div>
                     {data.kind !== "artist" && (
-                      <div className="text-xs text-muted-foreground truncate">
+                      <div className="text-xs text-muted-foreground break-words">
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
                       </div>
                     )}
