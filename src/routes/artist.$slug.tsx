@@ -1,18 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getArtistChartHistory, getGoatChart, getWeeklyChart } from "@/lib/charts.functions";
-import { getSpotifyArtistProfile, getSpotifyFeaturedOn } from "@/lib/spotify.functions";
+import { getAllArtistStats, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
+import { getSpotifyArtistProfile } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
+import { TrackArtists } from "@/components/track-artists";
 
+/* ────── Chart name → route mapping ────── */
 const chartNameToRoute: Record<string, { chartId: string }> = {};
 for (const id of weeklyChartIds) {
   const cfg = chartsConfig[id];
   if (cfg) chartNameToRoute[cfg.title] = { chartId: id };
 }
 chartNameToRoute["Hot 100 Songs"] = { chartId: "songs" };
-chartNameToRoute["Artist 50"] = { chartId: "artists" };
+chartNameToRoute["Top 50 Artists"] = { chartId: "artists" };
 chartNameToRoute["Top 100 Albums"] = { chartId: "albums" };
 chartNameToRoute["Radio Songs"] = { chartId: "radioSongs" };
 chartNameToRoute["Top 40 Radio"] = { chartId: "radioSongs" };
@@ -21,6 +22,7 @@ chartNameToRoute["Top Album Sales"] = { chartId: "topAlbumSales" };
 chartNameToRoute["Streaming Songs"] = { chartId: "streamingSongs" };
 chartNameToRoute["Digital Songs Sales"] = { chartId: "digitalSongsSales" };
 
+/* ────── Format helpers ────── */
 function parseEuro(v: string): number {
   let s = v.trim();
   if (!s || s === "-") return NaN;
@@ -63,81 +65,23 @@ function formatComma(v: string | null | undefined): string {
   return n.toLocaleString("en-US");
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000_000) {
-    const val = n / 1_000_000_000;
-    return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
-  }
-  if (n >= 1_000_000) {
-    const val = n / 1_000_000;
-    return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
-  }
-  return n.toLocaleString("en-US");
-}
-
 export const Route = createFileRoute("/artist/$slug")({
   loader: async ({ params }) => {
-    const artistChartMapping = [
-      { chartId: "artists", label: "Artist 50" },
-      { chartId: "songs", label: "Hot 100 Songs" },
-      { chartId: "digitalSongsSales", label: "Digital Songs Sales" },
-      { chartId: "streamingSongs", label: "Streaming Songs" },
-      { chartId: "radioSongs", label: "Top 40 Radio" },
-      { chartId: "albums", label: "Top 100 Albums" },
-      { chartId: "topAlbumSales", label: "Top Album Sales" },
-      { chartId: "topStreamingAlbums", label: "Top Streaming Albums" },
-    ];
-
-    const allCharts = await Promise.all(
-      artistChartMapping.map(async ({ chartId }) => {
-        try {
-          return await getWeeklyChart({ data: { chartId } });
-        } catch {
-          return null;
-        }
-      })
-    );
-
-    let artistName: string | null = null;
-    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-
-    for (const chart of allCharts) {
-      if (!chart) continue;
-      for (const date of chart.dates) {
-        for (const e of chart.entriesByDate[date]) {
-          const entryArtist = e.artist;
-          if (!entryArtist) continue;
-          const parts = entryArtist.split(/[,&+]/).map((p: string) => normalize(p.trim())).filter(Boolean);
-          if (parts.some((p: string) => p === normalize(params.slug.replace(/-/g, " ")))) {
-            artistName = entryArtist;
-            break;
-          }
-        }
-        if (artistName) break;
-      }
-      if (artistName) break;
-    }
+    const [all, artist50Units, artist50Totals] = await Promise.all([getAllArtistStats(), getArtist50TotalUnits(), getArtist50Totals()]);
+    const match = Object.values(all).find((a) => slugifyArtist(a.name) === params.slug);
 
     let profile = null;
     let goatData = null;
-    let featuredOn = null;
-    let chartsByKind: Record<string, any[]> = {};
-
-    if (artistName) {
-      [profile, featuredOn, chartsByKind] = await Promise.all([
-        getSpotifyArtistProfile({ data: { artistName } }),
-        getSpotifyFeaturedOn({ data: { artistName } }),
-        getArtistChartHistory({ data: { artistName } }),
-      ]);
-
-      const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } }).catch(() => null);
-      const foundInGoat = goatArtists?.entries.find((e) => e.name === artistName);
+    if (match) {
+      profile = await getSpotifyArtistProfile({ data: { artistName: match.name } });
+      const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } });
+      const foundInGoat = goatArtists.entries.find(e => e.name === match.name);
       if (foundInGoat) {
         goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
       }
     }
 
-    return { artist: artistName ? { name: artistName, chartsByKind } : null, slug: params.slug, profile, goatData };
+    return { artist: match ?? null, slug: params.slug, profile, goatData, artist50Units, artist50Totals };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.artist?.name ?? "Artist";
@@ -152,6 +96,7 @@ export const Route = createFileRoute("/artist/$slug")({
   component: ArtistPage,
 });
 
+/* ────── Date Link ────── */
 function DateLink({ chartName, date, children }: { chartName: string; date: string; children: React.ReactNode }) {
   const route = chartNameToRoute[chartName];
   if (!route || !date) return <span>{children}</span>;
@@ -162,6 +107,7 @@ function DateLink({ chartName, date, children }: { chartName: string; date: stri
   );
 }
 
+/* ────── Chart History Table ────── */
 function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: string; entries: any[]; mainArtist: string }) {
   const [expanded, setExpanded] = useState(false);
   const displayChartName = chartName === "Top 40 Radio" ? "Radio Songs" : chartName;
@@ -181,7 +127,7 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
     "Top 100 Albums": "Units",
     "Top Album Sales": "Sales",
     "Top Streaming Albums": "Streams",
-    "Artist 50": "Units",
+    "Top 50 Artists": "Units",
   };
   const colLabel = unitsLabel[chartName] ?? "Units";
   const isStreams = chartName === "Streaming Songs" || chartName === "Top Streaming Albums";
@@ -195,15 +141,16 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
     "Top 100 Albums": "fa-compact-disc",
     "Top Album Sales": "fa-shopping-cart",
     "Top Streaming Albums": "fa-headphones-alt",
-    "Artist 50": "fa-user",
+    "Top 50 Artists": "fa-user",
   };
 
   const isAlbumChart = chartName === "Top 100 Albums" || chartName === "Top Album Sales" || chartName === "Top Streaming Albums";
-  const itemLabel = isAlbumChart ? "Album" : chartName === "Artist 50" ? "Artist" : "Song";
+  const itemLabel = isAlbumChart ? "Album" : "Song";
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
       <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             <i className={`fas ${chartIcons[chartName] ?? "fa-chart-bar"} text-[var(--accent)] text-lg`} />
@@ -229,6 +176,7 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
           </div>
         </div>
 
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -246,22 +194,15 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                 <tr key={i} className="border-t border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
                   <td className="px-4 sm:px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="min-w-0">
-                        <div className="font-semibold whitespace-normal break-words">
-                          {chartName === "Artist 50" ? e.item : stripFeatFromTitle(e.item)}
-                          {(e.weeksAt1 ?? 0) > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0 ml-1.5">
-                              {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
-                            </span>
-                          )}
-                        </div>
-                        {!isAlbumChart && chartName !== "Artist 50" && (
-                          <div className="text-xs text-muted-foreground break-words">
-                            {mainArtist}
-                            <TrackArtists song={e.item} artist={mainArtist} className="text-xs text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
+                      <span className="font-semibold whitespace-normal break-words">
+                        {e.item}
+                        {!isAlbumChart && <TrackArtists song={e.item} artist={mainArtist} className="text-muted-foreground font-normal" />}
+                      </span>
+                      {(e.weeksAt1 ?? 0) > 0 && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0">
+                          {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -277,7 +218,7 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                     {e.peakDate ? <DateLink chartName={chartName} date={e.peakDate}>{e.peakDate}</DateLink> : "—"}
                   </td>
                   <td className="px-4 sm:px-5 py-3 text-right text-xs">
-                    {isStreams ? formatStreams(e.unitsSold || e.totalUnits) : formatComma(e.unitsSold || e.totalUnits)}
+                    {isStreams ? formatStreams(e.unitsSold) : formatComma(e.unitsSold)}
                   </td>
                 </tr>
               ))}
@@ -300,8 +241,9 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
   );
 }
 
+/* ────── ARTIST PAGE ────── */
 function ArtistPage() {
-  const { artist, profile, goatData } = Route.useLoaderData();
+  const { artist, profile, goatData, artist50Units, artist50Totals } = Route.useLoaderData();
   const [imgLoaded, setImgLoaded] = useState(false);
 
   if (!artist) {
@@ -319,8 +261,10 @@ function ArtistPage() {
     );
   }
 
+  const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
+  const totals = artist50Totals?.[artist.name];
+
   const order = [
-    "Artist 50",
     "Hot 100 Songs",
     "Digital Songs Sales",
     "Streaming Songs",
@@ -331,45 +275,25 @@ function ArtistPage() {
   ];
 
   const chartsToRender = order.filter(c => artist.chartsByKind[c] && artist.chartsByKind[c].length > 0);
-  const otherCharts = Object.keys(artist.chartsByKind).filter(c => !order.includes(c));
+  const otherCharts = Object.keys(artist.chartsByKind).filter(c => !order.includes(c) && c !== "Top 50 Artists" && c !== "Artists");
 
   const totalEntries = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0);
   const totalNo1s = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.filter((e: any) => e.peak === 1).length, 0);
   const totalWeeks = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.reduce((s: number, e: any) => s + (e.weeks || 0), 0), 0);
 
-  let totalSalesNum = 0;
-  let totalStreamsNum = 0;
-  let totalUnitsNum = 0;
-
-  for (const [chartName, entries] of Object.entries(artist.chartsByKind)) {
-    for (const e of entries) {
-      const raw = e.unitsSold || e.totalUnits;
-      if (!raw) continue;
-      const n = parseEuro(raw);
-      if (isNaN(n)) continue;
-
-      if (chartName.includes("Sales")) {
-        totalSalesNum += n;
-      } else if (chartName.includes("Streaming")) {
-        totalStreamsNum += n;
-      } else {
-        totalUnitsNum += n;
-      }
-    }
-  }
-
-  const hasStats = totalSalesNum > 0 || totalStreamsNum > 0 || totalUnitsNum > 0;
-
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
+      {/* Back Link */}
       <Link to="/artists" className="text-sm text-muted-foreground hover:text-[var(--accent)] mb-6 inline-flex items-center gap-2 transition-colors">
         <i className="fas fa-arrow-left" /> All artists
       </Link>
 
+      {/* Hero Card */}
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-lg mb-8">
         <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,230,118,0.03)] via-transparent to-[rgba(56,189,248,0.03)]" />
 
         <div className="relative flex flex-col md:flex-row items-center md:items-stretch gap-0">
+          {/* Artist Image */}
           <div className="relative w-full md:w-72 h-64 md:h-auto shrink-0 overflow-hidden">
             {profile?.imageUrl ? (
               <>
@@ -393,6 +317,7 @@ function ArtistPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--card)] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[var(--card)]" />
           </div>
 
+          {/* Info */}
           <div className="flex-1 p-6 md:p-8 flex flex-col justify-center min-w-0">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 text-[var(--foreground)]">
               {artist.name}
@@ -419,6 +344,7 @@ function ArtistPage() {
               </div>
             )}
 
+            {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {goatData && (
                 <div className="text-center p-3 rounded-xl border border-[rgba(255,215,0,0.2)]">
@@ -440,24 +366,25 @@ function ArtistPage() {
               </div>
             </div>
 
-            {hasStats && (
+            {/* Sales / Units / Streams */}
+            {totals && (totals.totalSales || totals.totalUnits || totals.totalStreams) && (
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-3">
-                {totalSalesNum > 0 && (
+                {totals.totalSales && (
                   <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
                     <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatNumber(totalSalesNum)}</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalSales)}</div>
                   </div>
                 )}
-                {totalUnitsNum > 0 && (
+                {totals.totalUnits && (
                   <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
                     <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Units</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatNumber(totalUnitsNum)}</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalUnits)}</div>
                   </div>
                 )}
-                {totalStreamsNum > 0 && (
+                {totals.totalStreams && (
                   <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
                     <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Streams</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatNumber(totalStreamsNum)}</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatStreams(totals.totalStreams)}</div>
                   </div>
                 )}
               </div>
@@ -466,6 +393,7 @@ function ArtistPage() {
         </div>
       </motion.div>
 
+      {/* Chart History Sections */}
       <div className="space-y-8">
         {chartsToRender.map((c) => (
           <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} mainArtist={artist.name} />
@@ -475,42 +403,7 @@ function ArtistPage() {
         ))}
       </div>
 
-      {featuredOn && featuredOn.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="mt-8">
-          <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
-            <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-[var(--border)]">
-              <i className="fas fa-handshake text-[var(--accent)] text-lg" />
-              <div>
-                <h3 className="font-bold text-base sm:text-lg">Featured Collaborations</h3>
-                <p className="text-xs text-muted-foreground">{featuredOn.length} {featuredOn.length === 1 ? "track" : "tracks"} where {artist.name} is featured</p>
-              </div>
-            </div>
-            <div className="divide-y divide-[var(--border)]">
-              {featuredOn.map((track, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-[rgba(0,230,118,0.02)] transition-colors">
-                  {track.imageUrl ? (
-                    <img src={track.imageUrl} alt={track.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center shrink-0">
-                      <i className="fas fa-music text-xs opacity-50" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-sm break-words">{track.name}</div>
-                    <div className="text-xs text-muted-foreground break-words">
-                      <Link to="/artist/$slug" params={{ slug: track.slug }} className="hover:text-[var(--accent)] hover:underline">
-                        {track.artist}
-                      </Link>
-                      {" & "}{artist.name}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
+      {/* Back Link Bottom */}
       <div className="mt-12 text-center">
         <Link to="/artists" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-[var(--accent)] transition-colors">
           <i className="fas fa-arrow-left" /> Browse all artists

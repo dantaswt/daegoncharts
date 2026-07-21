@@ -316,52 +316,65 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const trackName = fieldValue(data.query, "track") || data.query;
         const artistName = fieldValue(data.query, "artist");
 
-        // 1. Search for the track and get its album/single image
-        if (!imageUrl) {
-          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 10))?.tracks?.items ?? [];
+        // 1. Spotify single (exact name)
+        if (!imageUrl && artistName) {
+          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 20))?.tracks?.items ?? [];
           const track = tracks.find((t: any) =>
+            t.album?.album_type === "single" &&
+            exactMatch(t.name ?? "", trackName) &&
             t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
           );
-          if (track?.album?.images?.[0]?.url) {
-            imageUrl = track.album.images[0].url;
-          }
+          if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
         }
 
-        // 2. Broader track search
+        // 2. Wikipedia single
         if (!imageUrl) {
-          const tracks = (await spotifySearch(token, `track:"${trackName}"`, "track", 10))?.tracks?.items ?? [];
-          const track = tracks.find((t: any) => {
-            const name = t.name ?? "";
-            return exactMatch(name, trackName);
-          });
-          if (track?.album?.images?.[0]?.url) {
-            imageUrl = track.album.images[0].url;
+          const titles = artistName
+            ? [`${trackName} (song)`, `${trackName} (${artistName} song)`, `${trackName} (single)`, `${trackName}`]
+            : [`${trackName} (song)`, `${trackName} (single)`, `${trackName}`];
+          for (const title of titles) {
+            const wd = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+            if (wd?.thumbnail?.source) { imageUrl = wd.thumbnail.source; break; }
           }
         }
 
-        // 3. iTunes single search
+        // 3. Spotify single (contains, not exact) — any single by artist whose name contains the track name
         if (!imageUrl && artistName) {
-          const q = `${trackName} ${artistName}`;
-          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5`);
-          for (const r of data?.results ?? []) {
-            if (!r.artworkUrl100) continue;
-            if (!exactMatch(r.trackName ?? "", trackName)) continue;
-            if (!exactMatch(r.artistName ?? "", artistName)) continue;
-            imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
-            break;
-          }
+          const tracks = (await spotifySearch(token, `artist:"${artistName}"`, "track", 50))?.tracks?.items ?? [];
+          const track = tracks.find((t: any) =>
+            t.album?.album_type === "single" &&
+            comparable(t.name ?? "").includes(comparable(trackName)) &&
+            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
+          );
+          if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
         }
 
-        // 4. Album by artist fallback
+        // 4. Spotify EP/Album (exact name)
         if (!imageUrl && artistName) {
-          const q = `album:"${artistName}" artist:"${artistName}"`;
-          const r = await spotifySearch(token, q, "album", 5);
-          for (const a of r?.albums?.items ?? []) {
-            if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
+          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 20))?.tracks?.items ?? [];
+          const track = tracks.find((t: any) =>
+            (t.album?.album_type === "album" || t.album?.album_type === "ep") &&
+            exactMatch(t.name ?? "", trackName) &&
+            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
+          );
+          if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
+        }
+
+        // 5. Find track inside artist's albums → use album cover
+        if (!imageUrl && artistName) {
+          const albums = (await spotifySearch(token, `artist:"${artistName}"`, "album", 20))?.albums?.items ?? [];
+          for (const album of albums) {
+            try {
+              const resp = await fetch(`https://api.spotify.com/v1/albums/${album.id}/tracks`, { headers: { Authorization: `Bearer ${token}` } });
+              if (!resp.ok) continue;
+              const data = await resp.json();
+              const found = (data.items ?? []).find((t: any) => exactMatch(t.name ?? "", trackName));
+              if (found && album.images?.[0]?.url) { imageUrl = album.images[0].url; break; }
+            } catch {}
           }
         }
 
-        // 5. Artist image as last resort
+        // 6. Artist image (last resort)
         if (!imageUrl && artistName) {
           const ra = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (ra?.artists?.items ?? []).filter((a: any) => a.images?.[0]?.url);
