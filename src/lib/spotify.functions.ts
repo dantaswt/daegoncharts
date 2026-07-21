@@ -412,6 +412,11 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           const best = exact ?? artists[0];
           if (best?.picture_xl) imageUrl = best.picture_xl;
         }
+
+        // 9. Absolute fallback — generic music note
+        if (!imageUrl) {
+          imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
+        }
       } else {
         const artistName = fieldValue(data.query, "artist") || data.query;
         const title = fieldValue(data.query, "track") || fieldValue(data.query, "album");
