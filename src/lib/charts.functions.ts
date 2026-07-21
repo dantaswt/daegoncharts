@@ -461,17 +461,55 @@ export interface ArtistDetails {
 
 export const getAllArtistNames = createServerFn({ method: "GET" }).handler(async () => {
   return cached("artistNames", async () => {
-    const cfg = chartsConfig.artistStats;
-    const rows = await fetchCsv(cfg.url);
-    const header = rows[0].map((h) => h.toLowerCase().trim());
-    const artistIdx = findIdx(header, ["artist", "artists"]);
-    if (artistIdx < 0) return [];
     const names = new Set<string>();
-    for (const r of rows.slice(1)) {
-      const name = (r[artistIdx] ?? "").trim();
-      if (name) names.add(name);
+
+    const artistsChart = await getWeeklyChart({ data: { chartId: "artists" } }).catch(() => null);
+    if (artistsChart) {
+      for (const date of artistsChart.dates) {
+        for (const e of artistsChart.entriesByDate[date]) {
+          if (e.artist) names.add(e.artist);
+        }
+      }
     }
+
+    const songsChart = await getWeeklyChart({ data: { chartId: "songs" } }).catch(() => null);
+    if (songsChart) {
+      for (const date of songsChart.dates) {
+        for (const e of songsChart.entriesByDate[date]) {
+          if (e.artist) names.add(e.artist);
+        }
+      }
+    }
+
     return Array.from(names);
+  });
+});
+
+export const getAllArtistList = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("artistList", async () => {
+    const map: Record<string, { name: string; slug: string; entries: number }> = {};
+    const slugify = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+    const charts = ["artists", "songs", "digitalSongsSales", "streamingSongs", "radioSongs", "albums", "topAlbumSales", "topStreamingAlbums"];
+    const allCharts = await Promise.all(
+      charts.map(async (chartId) => {
+        try { return await getWeeklyChart({ data: { chartId } }); } catch { return null; }
+      })
+    );
+
+    for (const chart of allCharts) {
+      if (!chart) continue;
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (!e.artist) continue;
+          const slug = slugify(e.artist);
+          if (!map[slug]) map[slug] = { name: e.artist, slug, entries: 0 };
+          map[slug].entries++;
+        }
+      }
+    }
+
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
   });
 });
 
@@ -518,6 +556,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
 });
 
 const artistChartMapping: { chartId: string; label: string }[] = [
+  { chartId: "artists", label: "Artist 50" },
   { chartId: "songs", label: "Hot 100 Songs" },
   { chartId: "digitalSongsSales", label: "Digital Songs Sales" },
   { chartId: "streamingSongs", label: "Streaming Songs" },

@@ -107,7 +107,7 @@ async function searchDeviantArt(albumName: string, artistName: string): Promise<
 }
 
 export const getSpotifyImage = createServerFn({ method: "GET" })
-  .inputValidator((d: { query: string; type: "album" | "artist" }) => d)
+  .inputValidator((d: { query: string; type: "album" | "artist" | "track" }) => d)
   .handler(async ({ data }) => {
     const cacheKey = `${data.type}:${data.query.trim()}`;
     if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
@@ -311,6 +311,62 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         if (!imageUrl) {
           const rb = await spotifySearch(token, artistName || albumName, "artist");
           imageUrl = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url)?.images?.[0]?.url ?? null;
+        }
+      } else if (data.type === "track") {
+        const trackName = fieldValue(data.query, "track") || data.query;
+        const artistName = fieldValue(data.query, "artist");
+
+        // 1. Search for the track and get its album/single image
+        if (!imageUrl) {
+          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 10))?.tracks?.items ?? [];
+          const track = tracks.find((t: any) =>
+            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
+          );
+          if (track?.album?.images?.[0]?.url) {
+            imageUrl = track.album.images[0].url;
+          }
+        }
+
+        // 2. Broader track search
+        if (!imageUrl) {
+          const tracks = (await spotifySearch(token, `track:"${trackName}"`, "track", 10))?.tracks?.items ?? [];
+          const track = tracks.find((t: any) => {
+            const name = t.name ?? "";
+            return exactMatch(name, trackName);
+          });
+          if (track?.album?.images?.[0]?.url) {
+            imageUrl = track.album.images[0].url;
+          }
+        }
+
+        // 3. iTunes single search
+        if (!imageUrl && artistName) {
+          const q = `${trackName} ${artistName}`;
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5`);
+          for (const r of data?.results ?? []) {
+            if (!r.artworkUrl100) continue;
+            if (!exactMatch(r.trackName ?? "", trackName)) continue;
+            if (!exactMatch(r.artistName ?? "", artistName)) continue;
+            imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+            break;
+          }
+        }
+
+        // 4. Album by artist fallback
+        if (!imageUrl && artistName) {
+          const q = `album:"${artistName}" artist:"${artistName}"`;
+          const r = await spotifySearch(token, q, "album", 5);
+          for (const a of r?.albums?.items ?? []) {
+            if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
+          }
+        }
+
+        // 5. Artist image as last resort
+        if (!imageUrl && artistName) {
+          const ra = await spotifySearch(token, `artist:"${artistName}"`, "artist");
+          const artists = (ra?.artists?.items ?? []).filter((a: any) => a.images?.[0]?.url);
+          const exact = artists.find((a: any) => exactMatch(a.name ?? "", artistName));
+          imageUrl = (exact ?? artists[0])?.images?.[0]?.url ?? null;
         }
       } else {
         const artistName = fieldValue(data.query, "artist") || data.query;

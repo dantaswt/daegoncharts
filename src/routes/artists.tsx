@@ -1,19 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllArtistStats } from "@/lib/charts.functions";
+import { getAllArtistList } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import React, { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/artists")({
   loader: async () => {
-    const all = await getAllArtistStats();
-    const list: { name: string; slug: string; entries: number }[] = Object.values(all)
-      .map((a) => ({
-        name: a.name,
-        slug: slugifyArtist(a.name),
-        entries: Object.values(a.chartsByKind).reduce<number>((s, arr) => s + (arr as unknown[]).length, 0),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const list = await getAllArtistList();
     return { list };
   },
   head: () => ({

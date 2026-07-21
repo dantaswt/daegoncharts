@@ -4,7 +4,7 @@ import { slugifyArtist, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
-import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
+import { TrackArtists, stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-artists";
 
 const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
 const streamsMBCharts = new Set(["songs", "albums", "artists"]);
@@ -92,22 +92,19 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
       if (/^anitta$/i.test(name)) return 'artist:"Anitta"';
       return `artist:"${name}"`;
     }
-    // Resolve artists from the charted song first, avoiding similarly named artists.
     const artistName = entry.artist.trim();
     if (/^ja[oã]$/i.test(artistName)) return 'artist:"Jão"';
     if (/^anitta$/i.test(artistName)) return 'artist:"Anitta"';
-    return `artist:"${artistName}" track:"${entry.name}"`;
+    return `track:"${entry.name}" artist:"${artistName}"`;
   }, [entry.name, entry.artist, kind]);
-  const type = kind === "album" ? "album" : "artist";
+  const type = kind === "song" ? "track" : kind === "album" ? "album" : "artist";
 
   useEffect(() => {
     let active = true;
     getSpotifyImage({ data: { query, type } }).then((url) => {
       if (active && url) setImageUrl(url);
     });
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [query, type]);
 
   if (imageUrl) {
@@ -327,11 +324,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const weeksPart = isNew ? "" : `[${entry.weeks} weeks].`;
     const annotationPart = isNew ? "" : annotation;
 
+    const featInfo = getFeatArtistsFromTitle(entry.name);
+    const artistPart = featInfo ? `${entry.artist} ${featInfo.prefix} ${featInfo.artists}` : entry.artist;
+
     const parts = [
       `Daegon's ${chartTitle}:`,
       posPart,
       `${stripFeatFromTitle(entry.name)},`,
-      entry.artist,
+      artistPart,
       entryDetail,
       weeksPart,
       annotationPart
