@@ -213,7 +213,6 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                           </div>
                         )}
                       </div>
-                    </div>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className={`font-black ${e.peak === 1 ? "gold text-base" : e.peak <= 3 ? "text-[var(--accent)]" : ""}`}>
