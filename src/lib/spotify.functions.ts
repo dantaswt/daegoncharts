@@ -319,7 +319,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         // 1. Wikipedia single
         if (!imageUrl) {
           const titles = artistName
-            ? [`${trackName} (song)`, `${trackName} (${artistName} song)`, `${trackName} (single)`, `${trackName}`]
+            ? [`${trackName} (${artistName} single)`, `${trackName} (${artistName} song)`, `${trackName} (song)`, `${trackName} (single)`, `${trackName}`]
             : [`${trackName} (song)`, `${trackName} (single)`, `${trackName}`];
           for (const title of titles) {
             const wd = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
