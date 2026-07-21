@@ -316,18 +316,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const trackName = fieldValue(data.query, "track") || data.query;
         const artistName = fieldValue(data.query, "artist");
 
-        // 1. Spotify single (exact name)
-        if (!imageUrl && artistName) {
-          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 20))?.tracks?.items ?? [];
-          const track = tracks.find((t: any) =>
-            t.album?.album_type === "single" &&
-            exactMatch(t.name ?? "", trackName) &&
-            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
-          );
-          if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
-        }
-
-        // 2. Wikipedia single
+        // 1. Wikipedia single
         if (!imageUrl) {
           const titles = artistName
             ? [`${trackName} (song)`, `${trackName} (${artistName} song)`, `${trackName} (single)`, `${trackName}`]
@@ -336,6 +325,17 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             const wd = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
             if (wd?.thumbnail?.source) { imageUrl = wd.thumbnail.source; break; }
           }
+        }
+
+        // 2. Spotify single (exact name)
+        if (!imageUrl && artistName) {
+          const tracks = (await spotifySearch(token, `track:"${trackName}" artist:"${artistName}"`, "track", 20))?.tracks?.items ?? [];
+          const track = tracks.find((t: any) =>
+            t.album?.album_type === "single" &&
+            exactMatch(t.name ?? "", trackName) &&
+            t.artists?.some((a: any) => exactMatch(a.name ?? "", artistName))
+          );
+          if (track?.album?.images?.[0]?.url) imageUrl = track.album.images[0].url;
         }
 
         // 3. Spotify single (contains, not exact) — any single by artist whose name contains the track name

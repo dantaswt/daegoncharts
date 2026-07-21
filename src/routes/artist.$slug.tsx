@@ -74,8 +74,8 @@ export const Route = createFileRoute("/artist/$slug")({
     let goatData = null;
     if (match) {
       profile = await getSpotifyArtistProfile({ data: { artistName: match.name } });
-      const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } });
-      const foundInGoat = goatArtists.entries.find(e => e.name === match.name);
+      const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } }).catch(() => null);
+      const foundInGoat = goatArtists?.entries.find(e => e.name === match.name);
       if (foundInGoat) {
         goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
       }
