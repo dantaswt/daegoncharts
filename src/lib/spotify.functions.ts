@@ -376,42 +376,41 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 6. EPs by artist containing the track
+        // 6. EPs by artist containing the track (Deezer)
         if (!imageUrl && artistName) {
-          const albums = (await spotifySearch(token, `artist:"${artistName}"`, "album", 50))?.albums?.items ?? [];
-          const eps = albums.filter((a: any) => a.album_type === "ep");
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
+          const eps = (data?.data ?? []).filter((a: any) => a.record_type === "EP");
           for (const ep of eps) {
+            if (!ep.cover_xl && !ep.cover_big) continue;
             try {
-              const resp = await fetch(`https://api.spotify.com/v1/albums/${ep.id}/tracks`, { headers: { Authorization: `Bearer ${token}` } });
-              if (!resp.ok) continue;
-              const d = await resp.json();
-              const found = (d.items ?? []).find((t: any) => exactMatch(t.name ?? "", trackName));
-              if (found && ep.images?.[0]?.url) { imageUrl = ep.images[0].url; break; }
+              const albumData = await fetchJson(`https://api.deezer.com/album/${ep.id}/tracks`);
+              const found = (albumData?.data ?? []).find((t: any) => exactMatch(t.title ?? "", trackName));
+              if (found) { imageUrl = ep.cover_xl || ep.cover_big; break; }
             } catch {}
           }
         }
 
-        // 7. Albums by artist containing the track
+        // 7. Albums by artist containing the track (Deezer)
         if (!imageUrl && artistName) {
-          const albums = (await spotifySearch(token, `artist:"${artistName}"`, "album", 50))?.albums?.items ?? [];
-          const fullAlbums = albums.filter((a: any) => a.album_type === "album");
-          for (const album of fullAlbums) {
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
+          const albums = (data?.data ?? []).filter((a: any) => a.record_type === "album");
+          for (const album of albums) {
+            if (!album.cover_xl && !album.cover_big) continue;
             try {
-              const resp = await fetch(`https://api.spotify.com/v1/albums/${album.id}/tracks`, { headers: { Authorization: `Bearer ${token}` } });
-              if (!resp.ok) continue;
-              const d = await resp.json();
-              const found = (d.items ?? []).find((t: any) => exactMatch(t.name ?? "", trackName));
-              if (found && album.images?.[0]?.url) { imageUrl = album.images[0].url; break; }
+              const albumData = await fetchJson(`https://api.deezer.com/album/${album.id}/tracks`);
+              const found = (albumData?.data ?? []).find((t: any) => exactMatch(t.title ?? "", trackName));
+              if (found) { imageUrl = album.cover_xl || album.cover_big; break; }
             } catch {}
           }
         }
 
-        // 8. Artist image (last resort)
+        // 8. Artist image (last resort — Deezer)
         if (!imageUrl && artistName) {
-          const ra = await spotifySearch(token, `artist:"${artistName}"`, "artist");
-          const artists = (ra?.artists?.items ?? []).filter((a: any) => a.images?.[0]?.url);
+          const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=10`);
+          const artists = data?.data ?? [];
           const exact = artists.find((a: any) => exactMatch(a.name ?? "", artistName));
-          imageUrl = (exact ?? artists[0])?.images?.[0]?.url ?? null;
+          const best = exact ?? artists[0];
+          if (best?.picture_xl) imageUrl = best.picture_xl;
         }
       } else {
         const artistName = fieldValue(data.query, "artist") || data.query;
