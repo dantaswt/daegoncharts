@@ -558,7 +558,8 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
     for (const { chart, entry } of allRows) {
       const featMatch = entry.item.match(/\(feat\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(ft\.?\s+([^)]+)\)/i)
-        || entry.item.match(/\(featuring\s+([^)]+)\)/i);
+        || entry.item.match(/\(featuring\s+([^)]+)\)/i)
+        || entry.item.match(/\(with\s+([^)]+)\)/i);
       if (!featMatch) continue;
       const featNames = featMatch[1].split(/[,&]/).map((s: string) => s.trim()).filter(Boolean);
       for (const featName of featNames) {
