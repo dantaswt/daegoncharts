@@ -457,12 +457,18 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           const fallback = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url);
           imageUrl = fallback?.images?.[0]?.url ?? null;
         }
+
+        // 5. Absolute fallback — generic music note
+        if (!imageUrl) {
+          imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
+        }
       }
       imageCache.set(cacheKey, imageUrl);
       return imageUrl;
     } catch (error) {
       console.error("Image search failed", error);
-      return null;
+      return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
+    }
     }
   });
 
