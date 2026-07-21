@@ -23,19 +23,15 @@ export const Route = createFileRoute("/goat/$chartId")({
 function formatMetric(n: number, useStreamFormat: boolean): string {
   if (n <= 0) return "0";
   if (useStreamFormat) {
-    if (n >= 1_000_000_000) {
-      const val = n / 1_000_000_000;
-      return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
-    }
     if (n >= 1_000_000) {
       const val = n / 1_000_000;
-      return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+      return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
     }
     if (n >= 1_000) {
       const val = n / 1_000;
       return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
     }
-    return `${n}K`;
+    return `${n}`;
   }
   return n.toLocaleString("en-US");
 }

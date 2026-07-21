@@ -35,19 +35,15 @@ export const Route = createFileRoute("/year-end/$chartId")({
 function formatMetric(v: number, metricKey: string): string {
   if (v <= 0) return "-";
   if (metricKey === "streams") {
-    if (v >= 1_000_000_000) {
-      const val = v / 1_000_000_000;
-      return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
-    }
     if (v >= 1_000_000) {
       const val = v / 1_000_000;
-      return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
+      return val % 1 === 0 ? `${val}B` : `${parseFloat(val.toFixed(1))}B`;
     }
     if (v >= 1_000) {
       const val = v / 1_000;
       return val % 1 === 0 ? `${val}M` : `${parseFloat(val.toFixed(1))}M`;
     }
-    return `${v}K`;
+    return `${v}`;
   }
   return v.toLocaleString("en-US");
 }
