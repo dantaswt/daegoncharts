@@ -316,14 +316,15 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const trackName = fieldValue(data.query, "track") || data.query;
         const artistName = fieldValue(data.query, "artist");
 
+        // Anitta special case: always add "cantora" to searches
+        const isAnitta = comparable(artistName ?? "") === "anitta";
+        const searchArtist = isAnitta ? `${artistName} cantora` : artistName;
+
         // 1. Wikipedia single
         if (!imageUrl && artistName) {
-          const titles = [
-            `${trackName} (${artistName} single)`,
-            `${trackName} (${artistName} song)`,
-            `${trackName} (song)`,
-            `${trackName} (single)`,
-          ];
+          const titles = isAnitta
+            ? [`${trackName} (${artistName} cantora single)`, `${trackName} (${artistName} singer song)`, `${trackName} (${artistName} single)`, `${trackName} (${artistName} song)`]
+            : [`${trackName} (${artistName} single)`, `${trackName} (${artistName} song)`, `${trackName} (song)`, `${trackName} (single)`];
           for (const title of titles) {
             const wd = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
             if (wd?.thumbnail?.source) { imageUrl = wd.thumbnail.source; break; }
@@ -332,7 +333,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         // 2. iTunes single (trackCount === 1)
         if (!imageUrl && artistName) {
-          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${artistName}`)}&entity=song&limit=20`);
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${searchArtist}`)}&entity=song&limit=20`);
           for (const r of data?.results ?? []) {
             if (!r.artworkUrl100) continue;
             if (!exactMatch(r.trackName ?? "", trackName)) continue;
@@ -343,7 +344,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         // 3. Deezer single (album_type === "single")
         if (!imageUrl && artistName) {
-          const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${artistName}`)}&limit=20`);
+          const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${searchArtist}`)}&limit=20`);
           for (const r of data?.data ?? []) {
             if (!r.album?.cover_xl && !r.album?.cover_big) continue;
             if (!exactMatch(r.title ?? "", trackName)) continue;
@@ -354,7 +355,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         // 4. iTunes any result (track + artist)
         if (!imageUrl && artistName) {
-          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${artistName}`)}&entity=song&limit=20`);
+          const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${searchArtist}`)}&entity=song&limit=20`);
           for (const r of data?.results ?? []) {
             if (!r.artworkUrl100) continue;
             if (!exactMatch(r.trackName ?? "", trackName)) continue;
@@ -366,7 +367,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         // 5. Deezer any result (track + artist)
         if (!imageUrl && artistName) {
-          const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${artistName}`)}&limit=20`);
+          const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${searchArtist}`)}&limit=20`);
           for (const r of data?.data ?? []) {
             if (!r.album?.cover_xl && !r.album?.cover_big) continue;
             if (!exactMatch(r.title ?? "", trackName)) continue;
@@ -378,7 +379,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         // 6. EPs by artist containing the track (Deezer)
         if (!imageUrl && artistName) {
-          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(searchArtist)}&limit=50`);
           const eps = (data?.data ?? []).filter((a: any) => a.record_type === "EP");
           for (const ep of eps) {
             if (!ep.cover_xl && !ep.cover_big) continue;
@@ -392,7 +393,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         // 7. Albums by artist containing the track (Deezer)
         if (!imageUrl && artistName) {
-          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
+          const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(searchArtist)}&limit=50`);
           const albums = (data?.data ?? []).filter((a: any) => a.record_type === "album");
           for (const album of albums) {
             if (!album.cover_xl && !album.cover_big) continue;
@@ -485,7 +486,7 @@ const slugify = (name: string) =>
   name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 function parseItunesArtist(artistName: string): TrackArtist[] {
-  const parts = artistName.split(/\s*(?:feat\.|ft\.|featuring|&)\s*/i).map(s => s.trim()).filter(Boolean);
+  const parts = artistName.split(/\s*(?:feat\.|ft\.|featuring)\s*/i).map(s => s.trim()).filter(Boolean);
   return parts.map(name => ({ name, slug: slugify(name) }));
 }
 

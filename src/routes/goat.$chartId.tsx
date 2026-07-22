@@ -149,9 +149,6 @@ function GoatPage() {
                 chartId={chartId}
                 date="2025-12-31"
                 kind={data.kind}
-                weeksAt1Hot100={sorted[0]?.weeksAt1Hot100 ?? 0}
-                weeksAt1Artists={sorted[0]?.weeksAt1Artists ?? 0}
-                weeksAt1Albums={sorted[0]?.weeksAt1Albums ?? 0}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import type { ChartEntry } from "@/lib/charts.functions";
+import { stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-artists";
 
 const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
   songs:          { accent: "#00E676", accentDark: "#00C853" },
@@ -39,12 +40,9 @@ interface ChartImageProps {
   chartId: string;
   date: string;
   kind: "song" | "album" | "artist";
-  weeksAt1Hot100?: number;
-  weeksAt1Artists?: number;
-  weeksAt1Albums?: number;
 }
 
-export function ChartImage({ entries, chartTitle, chartId, date, kind, weeksAt1Hot100, weeksAt1Artists, weeksAt1Albums }: ChartImageProps) {
+export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartImageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
   const theme = COLOR_THEMES[chartId] ?? COLOR_THEMES.songs;
@@ -52,12 +50,6 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind, weeksAt1H
   const topEntry = topEntries[0];
   const weeksAt1 = topEntry?.weeksAt1 && topEntry.position === 1 ? topEntry.weeksAt1 : null;
   const isArtist = kind === "artist";
-  const isGoat = chartId.startsWith("goat");
-  const goatWeeks1 = [
-    weeksAt1Hot100 && weeksAt1Hot100 > 0 ? `${weeksAt1Hot100}W at Hot 100 No.1` : null,
-    weeksAt1Artists && weeksAt1Artists > 0 ? `${weeksAt1Artists}W at Artist 50 No.1` : null,
-    weeksAt1Albums && weeksAt1Albums > 0 ? `${weeksAt1Albums}W at Top 100 Albums No.1` : null,
-  ].filter(Boolean);
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", {
     month: "long",
@@ -250,36 +242,6 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind, weeksAt1H
                     </div>
                   )}
 
-                  {/* GOAT: weeks at #1 for Hot 100, Artist 50, Top 100 Albums */}
-                  {isGoat && goatWeeks1.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 8,
-                        marginLeft: 70,
-                        marginBottom: 8,
-                      }}
-                    >
-                      {goatWeeks1.map((label, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            background: "rgba(255,255,255,0.1)",
-                            color: "#fff",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            padding: "4px 12px",
-                            borderRadius: 4,
-                            letterSpacing: "0.05em",
-                          }}
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
                   {/* Entry row */}
                   <div
                     style={{
@@ -327,34 +289,44 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind, weeksAt1H
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {isArtist ? entry.name : entry.name}
+                        {isArtist ? entry.name : stripFeatFromTitle(entry.name)}
                       </div>
                     </div>
 
-                    {/* Artist name (only for songs/albums) */}
-                    {!isArtist && (
-                      <div
-                        style={{
-                          flexShrink: 0,
-                          textAlign: "right",
-                          marginLeft: 16,
-                          marginRight: 24,
-                          maxWidth: 340,
-                        }}
-                      >
+                    {/* Artist name + feat credit (only for songs/albums) */}
+                    {!isArtist && (() => {
+                      const featInfo = getFeatArtistsFromTitle(entry.name);
+                      return (
                         <div
                           style={{
-                            fontSize: isNumberOne ? 22 : 20,
-                            color: "rgba(255,255,255,0.45)",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            flexShrink: 0,
+                            textAlign: "right",
+                            marginLeft: 16,
+                            marginRight: 24,
+                            maxWidth: 340,
                           }}
                         >
-                          {entry.artist}
+                          <div
+                            style={{
+                              fontSize: isNumberOne ? 22 : 20,
+                              color: "rgba(255,255,255,0.45)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {entry.artist}
+                            {featInfo && (
+                              <span style={{ color: theme.accent, fontWeight: 700 }}>
+                                {" "}
+                                {featInfo.prefix === "&" ? "&" : "feat."}{" "}
+                                {featInfo.artists}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Spacer for artist chart (to push LAST WEEK to right) */}
                     {isArtist && <div style={{ flex: 1 }} />}
