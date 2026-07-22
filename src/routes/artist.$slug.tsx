@@ -138,20 +138,6 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
   const top5 = entries.filter(e => e.peak >= 1 && e.peak <= 5).length;
   const top10 = entries.filter(e => e.peak >= 1 && e.peak <= 10).length;
 
-  const unitsLabel: Record<string, string> = {
-    "Hot 100 Songs": "Units",
-    "Digital Songs Sales": "Sales",
-    "Streaming Songs": "Streams",
-    "Top 40 Radio": "Audience",
-    "Top 100 Albums": "Units",
-    "Top Album Sales": "Sales",
-    "Top Streaming Albums": "Streams",
-    "Top 50 Artists": "Units",
-  };
-  const colLabel = unitsLabel[chartName] ?? "Units";
-  const isStreams = chartName === "Streaming Songs" || chartName === "Top Streaming Albums";
-  const isSales = chartName === "Digital Songs Sales" || chartName === "Top Album Sales";
-
   const chartIcons: Record<string, string> = {
     "Hot 100 Songs": "fa-music",
     "Digital Songs Sales": "fa-download",
@@ -205,7 +191,6 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                 <th className="px-3 py-3 text-center font-bold">Weeks</th>
                 <th className="px-3 py-3 text-center font-bold hidden md:table-cell">First Entry</th>
                 <th className="px-3 py-3 text-center font-bold hidden md:table-cell">Peak Date</th>
-                <th className="px-4 sm:px-5 py-3 text-right font-bold">{colLabel}</th>
               </tr>
             </thead>
             <tbody>
@@ -214,7 +199,11 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                   <td className="px-4 sm:px-5 py-3">
                     <div className="min-w-0">
                       <div className="font-semibold whitespace-normal break-words">
-                        {chartName === "Top 50 Artists" ? e.item : stripFeatFromTitle(e.item)}
+                        {chartName === "Top 50 Artists" ? e.item : isAlbumChart ? (
+                          <Link to="/album/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
+                        ) : (
+                          <Link to="/song/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
+                        )}
                           {(e.weeksAt1 ?? 0) > 0 && (
                             <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0 ml-1.5">
                               {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
@@ -240,9 +229,6 @@ function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: stri
                   </td>
                   <td className="px-3 py-3 text-center text-xs hidden md:table-cell">
                     {e.peakDate ? <DateLink chartName={chartName} date={e.peakDate}>{e.peakDate}</DateLink> : "—"}
-                  </td>
-                  <td className="px-4 sm:px-5 py-3 text-right text-xs">
-                    {isStreams ? formatStreams(e.unitsSold) : formatComma(e.unitsSold)}
                   </td>
                 </tr>
               ))}

@@ -132,7 +132,9 @@ function TopChartsSection({ charts }: { charts: any }) {
                     {stripFeatFromTitle(e.name)}
                   </Link>
                 ) : (
-                  <span>{stripFeatFromTitle(e.name)}</span>
+                  <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
+                    {stripFeatFromTitle(e.name)}
+                  </Link>
                 )}
               </div>
               {cfg.kind !== "artist" && (
@@ -176,7 +178,15 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{n.title}</div>
-                  <div className="font-bold text-sm whitespace-normal break-words">{n.kind === "artist" ? n.entry.name : stripFeatFromTitle(n.entry.name)}</div>
+                  <div className="font-bold text-sm whitespace-normal break-words">{n.kind === "artist" ? n.entry.name : n.kind === "album" ? (
+                    <Link to="/album/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline">
+                      {stripFeatFromTitle(n.entry.name)}
+                    </Link>
+                  ) : (
+                    <Link to="/song/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline">
+                      {stripFeatFromTitle(n.entry.name)}
+                    </Link>
+                  )}</div>
                   {n.kind !== "artist" ? (
                     <div className="text-xs text-muted-foreground whitespace-normal break-words">
                       <Link to="/artist/$slug" params={{ slug: slugifyArtist(n.entry.artist) }} className="hover:text-[var(--accent)] hover:underline">

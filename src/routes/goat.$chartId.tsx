@@ -171,7 +171,11 @@ function GoatPage() {
                     <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${isFirst ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
                       {idx + 1}
                     </div>
-                    <div className="font-bold text-sm sm:text-base break-words">{stripFeatFromTitle(item.name)}</div>
+                    <div className="font-bold text-sm sm:text-base break-words">{data.kind === "artist" ? stripFeatFromTitle(item.name) : data.kind === "album" ? (
+                      <Link to="/album/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
+                    ) : (
+                      <Link to="/song/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
+                    )}</div>
                     {data.kind !== "artist" && (
                       <div className="text-xs text-muted-foreground break-words">
                         {item.artist}
@@ -232,7 +236,7 @@ function GoatPage() {
                       ) : data.kind === "album" ? (
                         <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                       ) : (
-                        stripFeatFromTitle(e.name)
+                        <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                       )}
                     </div>
                     {data.kind !== "artist" && (

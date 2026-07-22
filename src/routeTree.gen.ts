@@ -19,6 +19,7 @@ import { Route as StatsIndexRouteImport } from './routes/stats.index'
 import { Route as GoatIndexRouteImport } from './routes/goat.index'
 import { Route as YearEndChartIdRouteImport } from './routes/year-end.$chartId'
 import { Route as StatsCategoryRouteImport } from './routes/stats.$category'
+import { Route as SongSlugRouteImport } from './routes/song.$slug'
 import { Route as GoatChartIdRouteImport } from './routes/goat.$chartId'
 import { Route as ChartChartIdRouteImport } from './routes/chart.$chartId'
 import { Route as ChartBeatBlogRouteImport } from './routes/chart-beat.$blog'
@@ -79,6 +80,11 @@ const StatsCategoryRoute = StatsCategoryRouteImport.update({
   path: '/stats/$category',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SongSlugRoute = SongSlugRouteImport.update({
+  id: '/song/$slug',
+  path: '/song/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoatChartIdRoute = GoatChartIdRouteImport.update({
   id: '/goat/$chartId',
   path: '/goat/$chartId',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
+  '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat/': typeof GoatIndexRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/artist/$slug': typeof ArtistSlugRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
+  '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat': typeof GoatIndexRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
+  '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/goat/': typeof GoatIndexRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/chart-beat/$blog'
     | '/chart/$chartId'
     | '/goat/$chartId'
+    | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
     | '/goat/'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/artist/$slug'
     | '/chart-beat/$blog'
     | '/goat/$chartId'
+    | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
     | '/goat'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/chart-beat/$blog'
     | '/chart/$chartId'
     | '/goat/$chartId'
+    | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
     | '/goat/'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   ChartBeatBlogRoute: typeof ChartBeatBlogRouteWithChildren
   ChartChartIdRoute: typeof ChartChartIdRouteWithChildren
   GoatChartIdRoute: typeof GoatChartIdRoute
+  SongSlugRoute: typeof SongSlugRoute
   StatsCategoryRoute: typeof StatsCategoryRoute
   YearEndChartIdRoute: typeof YearEndChartIdRoute
   GoatIndexRoute: typeof GoatIndexRoute
@@ -342,6 +355,13 @@ declare module '@tanstack/react-router' {
       path: '/stats/$category'
       fullPath: '/stats/$category'
       preLoaderRoute: typeof StatsCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/song/$slug': {
+      id: '/song/$slug'
+      path: '/song/$slug'
+      fullPath: '/song/$slug'
+      preLoaderRoute: typeof SongSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/goat/$chartId': {
@@ -447,6 +467,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChartBeatBlogRoute: ChartBeatBlogRouteWithChildren,
   ChartChartIdRoute: ChartChartIdRouteWithChildren,
   GoatChartIdRoute: GoatChartIdRoute,
+  SongSlugRoute: SongSlugRoute,
   StatsCategoryRoute: StatsCategoryRoute,
   YearEndChartIdRoute: YearEndChartIdRoute,
   GoatIndexRoute: GoatIndexRoute,

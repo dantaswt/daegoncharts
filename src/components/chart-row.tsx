@@ -405,6 +405,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
                 {stripFeatFromTitle(entry.name)}
               </Link>
+            ) : kind === "song" ? (
+              <Link to="/song/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
+                {stripFeatFromTitle(entry.name)}
+              </Link>
             ) : (
               stripFeatFromTitle(entry.name)
             )}
@@ -466,6 +470,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
               {kind === "album" ? (
                 <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
+                  {stripFeatFromTitle(entry.name)}
+                </Link>
+              ) : kind === "song" ? (
+                <Link to="/song/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
                   {stripFeatFromTitle(entry.name)}
                 </Link>
               ) : (

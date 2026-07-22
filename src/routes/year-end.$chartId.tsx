@@ -168,7 +168,7 @@ function YearEndChartPage() {
                     ) : e.kind === "album" ? (
                       <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                     ) : (
-                      <span>{stripFeatFromTitle(e.name)}</span>
+                      <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                     )}
                   </div>
                   {e.kind !== "artist" && (

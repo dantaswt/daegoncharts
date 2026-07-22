@@ -1,91 +1,93 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getAlbumDetails } from "@/lib/charts.functions";
+import { getSongDetails } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 
-export const Route = createFileRoute("/album/$slug")({
+export const Route = createFileRoute("/song/$slug")({
   loader: async ({ params }) => {
-    const album = await getAlbumDetails({ data: { slug: params.slug } });
-    if (!album) throw notFound();
-    const imageUrl = await getSpotifyImage({ data: { query: `${album.name} ${album.artist}`, type: "album" } });
-    return { album, imageUrl };
+    const song = await getSongDetails({ data: { slug: params.slug } });
+    if (!song) throw notFound();
+    const imageUrl = await getSpotifyImage({ data: { query: `${song.name} ${song.artist}`, type: "track" } });
+    return { song, imageUrl };
   },
   head: ({ loaderData }) => {
-    const title = loaderData ? `${loaderData.album.name} — ${loaderData.album.artist} | daegon charts` : "Album | daegon charts";
+    const title = loaderData ? `${loaderData.song.name} — ${loaderData.song.artist} | daegon charts` : "Song | daegon charts";
     return {
       meta: [
         { title },
-        { name: "description", content: `Album details for ${loaderData?.album.name} by ${loaderData?.album.artist}.` },
+        { name: "description", content: `Song details for ${loaderData?.song.name} by ${loaderData?.song.artist}.` },
       ],
     };
   },
-  component: AlbumPage,
+  component: SongPage,
 });
 
-function AlbumPage() {
-  const { album, imageUrl } = Route.useLoaderData();
+function SongPage() {
+  const { song, imageUrl } = Route.useLoaderData();
 
   const chartLabels: Record<string, string> = {
-    albums: "Top 100 Albums",
-    topStreamingAlbums: "Top Streaming Albums",
-    topAlbumSales: "Top Album Sales",
+    songs: "Hot 100",
+    digitalSongsSales: "Digital Songs Sales",
+    streamingSongs: "Streaming Songs",
+    radioSongs: "Radio Songs",
   };
 
   const chartMetricLabel: Record<string, string> = {
-    albums: "Units",
-    topStreamingAlbums: "Streams",
-    topAlbumSales: "Sales",
+    songs: "Points",
+    digitalSongsSales: "Sales",
+    streamingSongs: "Streams",
+    radioSongs: "Audience",
   };
 
-  const chartRunsByChart: Record<string, typeof album.chartRuns> = {};
-  for (const run of album.chartRuns) {
+  const chartRunsByChart: Record<string, typeof song.chartRuns> = {};
+  for (const run of song.chartRuns) {
     (chartRunsByChart[run.chartId] ||= []).push(run);
   }
 
-  const chartGrids = albumChartIds().map((chartId) => {
+  const chartGrids = songChartIds().map((chartId) => {
     const runs = chartRunsByChart[chartId] || [];
     const dateMap = new Map<string, { position: number; peak: number; weeks: number }>();
     for (const r of runs) {
       dateMap.set(r.date, { position: r.position, peak: r.peak, weeks: r.weeks });
     }
-    const stats = album.chartStats[chartId];
+    const stats = song.chartStats[chartId];
     return { chartId, title: chartLabels[chartId] || chartId, dateMap, hasData: runs.length > 0, stats };
   });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 space-y-8">
-      <Link to="/chart/$chartId" params={{ chartId: "albums" }} className="text-sm text-gray-500 hover:text-[var(--accent)] dark:text-gray-400 inline-flex items-center gap-2">
-        <i className="fas fa-arrow-left" /> Back to Albums
+      <Link to="/chart/$chartId" params={{ chartId: "songs" }} className="text-sm text-gray-500 hover:text-[var(--accent)] dark:text-gray-400 inline-flex items-center gap-2">
+        <i className="fas fa-arrow-left" /> Back to Hot 100
       </Link>
 
       <div className="flex flex-col sm:flex-row gap-6 bg-white dark:bg-[#111] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-lg">
         <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0 mx-auto sm:mx-0">
           {imageUrl ? (
-            <img src={imageUrl} alt={album.name} className="w-full h-full object-cover" loading="lazy" />
+            <img src={imageUrl} alt={song.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-5xl text-gray-400">
-              <i className="fas fa-compact-disc" />
+              <i className="fas fa-music" />
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">{album.artist}</div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 break-words text-gray-900 dark:text-white">{album.name}</h1>
-          {album.goatPosition && (
+          <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">{song.artist}</div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 break-words text-gray-900 dark:text-white">{song.name}</h1>
+          {song.goatPosition && (
             <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-4 py-1.5 text-sm font-semibold mb-4 border border-amber-500/20">
               <i className="fas fa-trophy" />
-              GOAT Albums #{album.goatPosition} · {album.goatWeeks} total weeks
+              GOAT Songs #{song.goatPosition} · {song.goatWeeks} total weeks
             </div>
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatBox label="Peak" value={`#${album.peak}`} />
-            <StatBox label="Weeks" value={String(album.weeks)} />
-            <StatBox label="Total Units" value={album.totalUnits || "—"} />
-            <StatBox label="Sales" value={album.totalSales || "—"} />
-            <StatBox label="Streams" value={album.totalStreams || "—"} />
+            <StatBox label="Peak" value={`#${song.peak}`} />
+            <StatBox label="Weeks" value={String(song.weeks)} />
+            {song.totalPoints && <StatBox label="Total Points" value={song.totalPoints} />}
+            {song.totalSales && <StatBox label="Sales" value={song.totalSales} />}
+            {song.totalStreams && <StatBox label="Streams" value={song.totalStreams} />}
           </div>
-          {album.certification && (
+          {song.certification && (
             <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-              Certification: <span className="text-gray-900 dark:text-white font-semibold">{album.certification}</span>
+              Certification: <span className="text-gray-900 dark:text-white font-semibold">{song.certification}</span>
             </div>
           )}
         </div>
@@ -107,7 +109,6 @@ function AlbumPage() {
                     {grid.stats.weeksAt1 > 0 && <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 font-semibold text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">{grid.stats.weeksAt1} #1's</span>}
                     {grid.stats.top5 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top5} top 5</span>}
                     {grid.stats.top10 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top10} top 10</span>}
-                    {grid.stats.totalUnits > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{formatNum(grid.stats.totalUnits)} {chartMetricLabel[grid.chartId] || "Units"}</span>}
                   </div>
                 )}
                 <div className="flex flex-wrap gap-1.5">
@@ -141,11 +142,11 @@ function AlbumPage() {
         )}
       </section>
 
-      {album.yecEntries.length > 0 && (
+      {song.yecEntries.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">Year-End History</h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {album.yecEntries.map((e) => (
+            {song.yecEntries.map((e) => (
               <Link
                 key={`${e.year}-${e.chartId}`}
                 to="/year-end/$chartId"
@@ -166,11 +167,11 @@ function AlbumPage() {
         </section>
       )}
 
-      {album.statsRecords.length > 0 && (
+      {song.statsRecords.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">Records</h2>
           <div className="grid gap-2 sm:grid-cols-2">
-            {album.statsRecords.map((rec, i) => (
+            {song.statsRecords.map((rec, i) => (
               <div key={i} className="flex items-center gap-3 rounded-2xl bg-white dark:bg-[#111] p-3 border border-gray-200 dark:border-gray-800 shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
                   <i className="fas fa-chart-bar text-[var(--accent)] text-sm" />
@@ -203,12 +204,6 @@ function formatDateShort(date: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function formatNum(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (v >= 1_000) return `${Math.round(v / 1_000)}K`;
-  return String(v);
-}
-
-function albumChartIds(): string[] {
-  return ["albums", "topStreamingAlbums", "topAlbumSales"];
+function songChartIds(): string[] {
+  return ["songs", "digitalSongsSales", "streamingSongs", "radioSongs"];
 }
