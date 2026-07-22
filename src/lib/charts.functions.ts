@@ -56,6 +56,23 @@ export interface AlbumDetails {
     certification?: string;
     totalUnits?: string;
   }[];
+  chartStats: Record<string, {
+    weeksAt1: number;
+    top5: number;
+    top10: number;
+    totalEntries: number;
+    totalUnits: number;
+    totalSales: number;
+    totalStreams: number;
+  }>;
+  totalEra: {
+    weeksAt1: number;
+    top5: number;
+    top10: number;
+    totalEntries: number;
+    totalUnits: number;
+    totalSales: number;
+  };
   songs: Array<{
     name: string;
     artist: string;
@@ -64,6 +81,13 @@ export interface AlbumDetails {
     points?: string;
     totalUnits?: string;
   }>;
+  songsByChart: Record<string, Array<{
+    name: string;
+    artist: string;
+    peak: number;
+    weeks: number;
+    metric?: string;
+  }>>;
   peak: number;
   weeks: number;
   totalUnits?: string;
@@ -348,10 +372,17 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   const totalSales = { raw: 0, formatted: "" };
   const totalStreams = { raw: 0, formatted: "" };
 
+  // Per-chart stats accumulator
+  const chartStatsAcc: Record<string, { weeksAt1: number; top5: number; top10: number; totalEntries: number; totalUnits: number; totalSales: number; totalStreams: number }> = {};
+
   for (const chartId of albumChartIds) {
     const chartData = await loadWeekly(chartId);
     let chartSales = 0;
     let chartStreams = 0;
+    let weeksAt1 = 0;
+    let top5 = 0;
+    let top10 = 0;
+    let totalEntries = 0;
     for (const date of chartData.dates) {
       for (const entry of chartData.entriesByDate[date]) {
         if (slugify(entry.name) !== slug) continue;
@@ -365,6 +396,10 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         const st = toInt(entry.streams);
         chartSales += s;
         chartStreams += st;
+        totalEntries++;
+        if (entry.position === 1) weeksAt1++;
+        if (entry.position <= 5) top5++;
+        if (entry.position <= 10) top10++;
         albumRuns.push({
           chartId,
           chartTitle: chartsConfig[chartId].title,
@@ -382,6 +417,7 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
     }
     totalSales.raw += chartSales;
     totalStreams.raw += chartStreams;
+    chartStatsAcc[chartId] = { weeksAt1, top5, top10, totalEntries, totalUnits: chartSales + chartStreams, totalSales: chartSales, totalStreams: chartStreams };
   }
 
   if (!albumName) {
@@ -391,6 +427,7 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   totalSales.formatted = totalSales.raw > 0 ? formatMetric(totalSales.raw, "albums") : "";
   totalStreams.formatted = totalStreams.raw > 0 ? formatMetric(totalStreams.raw, "topStreamingAlbums") : "";
 
+  // Songs from Hot 100
   const songData = await loadWeekly("songs");
   for (const date of songData.dates) {
     for (const entry of songData.entriesByDate[date]) {
@@ -410,6 +447,50 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
       }
     }
   }
+
+  // Songs from other charts
+  const songChartIds = [
+    { id: "songs", label: "Hot 100", metricKey: "points", metricLabel: "Points" },
+    { id: "digitalSongsSales", label: "Digital Songs Sales", metricKey: "sales", metricLabel: "Sales" },
+    { id: "streamingSongs", label: "Streaming Songs", metricKey: "streams", metricLabel: "Streams" },
+    { id: "radioSongs", label: "Radio Songs", metricKey: "audience", metricLabel: "Audience" },
+  ];
+  const songsByChart: AlbumDetails["songsByChart"] = {};
+  for (const sc of songChartIds) {
+    const seen = new Map<string, { name: string; artist: string; peak: number; weeks: number; metric?: string }>();
+    try {
+      const chartData = await loadWeekly(sc.id);
+      for (const date of chartData.dates) {
+        for (const entry of chartData.entriesByDate[date]) {
+          if (entry.album && slugify(entry.album) === slug) {
+            const key = `${entry.name}||${entry.artist}`;
+            const existing = seen.get(key);
+            const metricVal = sc.metricKey === "points" ? entry.points : sc.metricKey === "sales" ? entry.sales : sc.metricKey === "streams" ? entry.streams : entry.audience;
+            if (!existing || entry.peak < existing.peak) {
+              seen.set(key, {
+                name: entry.name,
+                artist: entry.artist,
+                peak: entry.peak,
+                weeks: entry.weeks,
+                metric: metricVal,
+              });
+            }
+          }
+        }
+      }
+    } catch {}
+    songsByChart[sc.label] = Array.from(seen.values()).sort((a, b) => a.peak - b.peak || b.weeks - a.weeks);
+  }
+
+  // Total Era: sum of #1s, top5, top10, entries, units, sales (not streams) across all 3 album charts
+  const totalEra = {
+    weeksAt1: Object.values(chartStatsAcc).reduce((s, c) => s + c.weeksAt1, 0),
+    top5: Object.values(chartStatsAcc).reduce((s, c) => s + c.top5, 0),
+    top10: Object.values(chartStatsAcc).reduce((s, c) => s + c.top10, 0),
+    totalEntries: Object.values(chartStatsAcc).reduce((s, c) => s + c.totalEntries, 0),
+    totalUnits: totalSales.raw,
+    totalSales: totalSales.raw,
+  };
 
   // YEC entries
   const yecEntries: AlbumDetails["yecEntries"] = [];
@@ -487,8 +568,11 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
     goatWeeks,
     yecEntries,
     statsRecords,
+    chartStats: chartStatsAcc,
+    totalEra,
     chartRuns: albumRuns.sort((a, b) => a.date.localeCompare(b.date)),
     songs: Array.from(songMap.values()).sort((a, b) => a.peak - b.peak || b.weeks - a.weeks),
+    songsByChart,
   };
 }
 
