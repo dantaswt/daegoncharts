@@ -122,6 +122,10 @@ function SiteFooter() {
         <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground mb-6">
           <Link to="/artists" className="hover:text-[var(--accent)] transition-colors font-semibold">Artists</Link>
           <span className="text-gray-600">|</span>
+          <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Year-End</Link>
+          <span className="text-gray-600">|</span>
+          <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="hover:text-[var(--accent)] transition-colors font-semibold">GOAT</Link>
+          <span className="text-gray-600">|</span>
           <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: "2026-07-06" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
           <span className="text-gray-600">|</span>
           <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>

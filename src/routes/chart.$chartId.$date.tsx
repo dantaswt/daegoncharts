@@ -147,8 +147,10 @@ function DropoutChip({ dropout, chartKind }: { dropout: any; chartKind: string }
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const query = chartKind === "album"
     ? `album:"${dropout.name}" artist:"${dropout.artist}"`
+    : chartKind === "song"
+    ? `artist:"${dropout.artist}" track:"${dropout.name}"`
     : `artist:"${dropout.artist}"`;
-  const type = chartKind === "album" ? "album" : "artist";
+  const type = chartKind === "album" ? "album" : chartKind === "song" ? "track" : "artist";
 
   useEffect(() => {
     let active = true;
@@ -170,7 +172,7 @@ function DropoutChip({ dropout, chartKind }: { dropout: any; chartKind: string }
         {imageUrl ? (
           <img src={imageUrl} alt={dropout.artist} className="w-full h-full object-cover" />
         ) : (
-          <i className="fas fa-user text-xl text-gray-400" />
+          <i className={`fas ${chartKind === "album" ? "fa-compact-disc" : chartKind === "song" ? "fa-music" : "fa-user"} text-xl text-gray-400`} />
         )}
       </div>
       <div className="min-w-0 flex-1">

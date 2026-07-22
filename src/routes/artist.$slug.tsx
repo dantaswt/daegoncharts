@@ -393,24 +393,18 @@ function ArtistPage() {
             {/* Units / Sales / Streams */}
             {totals && (totals.totalUnits || totals.totalSales || totals.totalStreams) && (
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-3">
-                {totals.totalUnits && (
-                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Units</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalUnits)}</div>
-                  </div>
-                )}
-                {totals.totalSales && (
-                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalSales)}</div>
-                  </div>
-                )}
-                {totals.totalStreams && (
-                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Streams</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatStreams(totals.totalStreams)}</div>
-                  </div>
-                )}
+                <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                  <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Units</div>
+                  <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{totals.totalUnits ? formatComma(totals.totalUnits) : "—"}</div>
+                </div>
+                <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                  <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
+                  <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{totals.totalSales ? formatComma(totals.totalSales) : "—"}</div>
+                </div>
+                <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                  <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Streams</div>
+                  <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{totals.totalStreams ? formatStreams(totals.totalStreams) : "—"}</div>
+                </div>
               </div>
             )}
           </div>
