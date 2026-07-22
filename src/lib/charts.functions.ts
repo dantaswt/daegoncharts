@@ -625,7 +625,7 @@ const artistChartMapping: { chartId: string; label: string }[] = [
 function matchesArtist(entryArtist: string, artistName: string): boolean {
   const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   const target = normalize(artistName);
-  const parts = entryArtist.split(/[,&+]/).map((p) => normalize(p.trim())).filter(Boolean);
+  const parts = entryArtist.replace(/\b(?:feat\.?|ft\.?|featuring|with)\b/gi, ",").split(/[,&+]/).map((p) => normalize(p.trim())).filter(Boolean);
   return parts.some((p) => p === target);
 }
 
@@ -652,7 +652,10 @@ export const getArtistChartHistory = createServerFn({ method: "GET" })
 
           for (const date of dates) {
             for (const e of entriesByDate[date]) {
-              if (!matchesArtist(e.artist, artistName)) continue;
+              const nameArtistMatch = matchesArtist(e.artist, artistName);
+              const songFeatMatch = e.name.match(/\((?:feat\.?|ft\.?|featuring|with)\s+([^)]+)\)/i);
+              const songFeat = songFeatMatch ? matchesArtist(songFeatMatch[1], artistName) : false;
+              if (!nameArtistMatch && !songFeat) continue;
               const key = e.name.toLowerCase();
               if (!seen[key]) {
                 seen[key] = {
