@@ -583,11 +583,15 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
     }
 
     for (const { artist, chart, entry } of allRows) {
-      const featMatch = entry.item.match(/\(feat\.?\s+([^)]+)\)/i)
+      const itemFeat = entry.item.match(/\(feat\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(ft\.?\s+([^)]+)\)/i)
         || entry.item.match(/\(featuring\s+([^)]+)\)/i)
         || entry.item.match(/\(with\s+([^)]+)\)/i);
-      if (!featMatch) continue;
+      const artistFeat = artist.match(/\bfeat\.?\s+/i)
+        || artist.match(/\bft\.?\s+/i)
+        || artist.match(/\bfeaturing\s+/i)
+        || artist.match(/\bwith\s+/i);
+      if (!itemFeat && !artistFeat) continue;
       const apiFeats = await verifyFeatViaApi(entry.item, artist);
       for (const apiFeat of apiFeats) {
         const existingKey = Object.keys(map).find(k => normalize(k) === normalize(apiFeat));
