@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllArtistStats, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
+import { getAllArtistStats, getArtistChartHistory, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile, getSpotifyFeaturedOn } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 import React, { useState } from "react";
@@ -73,15 +73,30 @@ export const Route = createFileRoute("/artist/$slug")({
     let profile = null;
     let goatData = null;
     let featuredOn = null;
+    let chartHistory = null;
     if (match) {
-      [profile, featuredOn] = await Promise.all([
+      [profile, featuredOn, chartHistory] = await Promise.all([
         getSpotifyArtistProfile({ data: { artistName: match.name } }),
         getSpotifyFeaturedOn({ data: { artistName: match.name } }),
+        getArtistChartHistory({ data: { artistName: match.name } }),
       ]);
       const goatArtists = await getGoatChart({ data: { chartId: "goatArtists" } }).catch(() => null);
       const foundInGoat = goatArtists?.entries.find(e => e.name === match.name);
       if (foundInGoat) {
         goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
+      }
+
+      if (chartHistory) {
+        for (const [label, entries] of Object.entries(chartHistory)) {
+          const existing = match.chartsByKind[label] || [];
+          const existingKeys = new Set(existing.map((e: any) => e.item.toLowerCase()));
+          for (const entry of entries) {
+            if (!existingKeys.has(entry.item.toLowerCase())) {
+              (match.chartsByKind[label] ||= []).push(entry);
+            }
+          }
+          match.chartsByKind[label]?.sort((a: any, b: any) => a.peak - b.peak || b.weeks - a.weeks);
+        }
       }
     }
 
@@ -375,19 +390,19 @@ function ArtistPage() {
               </div>
             </div>
 
-            {/* Sales / Units / Streams */}
-            {totals && (totals.totalSales || totals.totalUnits || totals.totalStreams) && (
+            {/* Units / Sales / Streams */}
+            {totals && (totals.totalUnits || totals.totalSales || totals.totalStreams) && (
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-3">
-                {totals.totalSales && (
-                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
-                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalSales)}</div>
-                  </div>
-                )}
                 {totals.totalUnits && (
                   <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
                     <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Units</div>
                     <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalUnits)}</div>
+                  </div>
+                )}
+                {totals.totalSales && (
+                  <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
+                    <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
+                    <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{formatComma(totals.totalSales)}</div>
                   </div>
                 )}
                 {totals.totalStreams && (
