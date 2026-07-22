@@ -632,7 +632,7 @@ export const getSpotifyFeaturedOn = createServerFn({ method: "GET" })
     if (featuredOnCache.has(data.artistName)) return featuredOnCache.get(data.artistName);
 
     const token = await getAccessToken();
-    if (!token) return null;
+    if (!token) { featuredOnCache.set(data.artistName, null); return null; }
 
     try {
       const results: FeaturedOnTrack[] = [];
@@ -674,17 +674,80 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
   .validator((d: { artistName: string }) => d)
   .handler(async ({ data }) => {
     if (profileCache.has(data.artistName)) return profileCache.get(data.artistName);
+
+    const isAnitta = comparable(data.artistName ?? "") === "anitta";
+    const searchArtist = isAnitta ? `${data.artistName} cantora` : data.artistName;
+
+    let imageUrl: string | null = null;
+    let followers = 0;
+    let genres: string[] = [];
     const token = await getAccessToken();
-    if (!token) return null;
+
+    // 1. Last.fm (no auth)
     try {
-      const artist = comparable(data.artistName) === "jao"
-        ? await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
-        : (await spotifySearch(token, `artist:"${data.artistName}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(exactMatch(b.name ?? "", data.artistName)) - Number(exactMatch(a.name ?? "", data.artistName)))[0];
-      if (!artist) return null;
-      const profile = { imageUrl: artist.images?.[0]?.url ?? null, followers: artist.followers?.total ?? 0, genres: artist.genres ?? [] };
-      profileCache.set(data.artistName, profile);
-      return profile;
-    } catch {
-      return null;
+      const d = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(searchArtist)}&format=json`);
+      const images = d?.artist?.image ?? [];
+      for (const img of [...images].reverse()) {
+        if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+          imageUrl = img["#text"];
+          break;
+        }
+      }
+    } catch {}
+
+    // 2. iTunes (no auth)
+    if (!imageUrl) {
+      try {
+        const d = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(searchArtist)}&entity=musicArtist&limit=5`);
+        for (const r of d?.results ?? []) {
+          if (r.artistViewUrl && r.artworkUrl100) {
+            imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+            break;
+          }
+        }
+      } catch {}
     }
+
+    // 3. Deezer (no auth)
+    if (!imageUrl) {
+      try {
+        const d = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(searchArtist)}&limit=5`);
+        for (const a of d?.data ?? []) {
+          if ((exactMatch(a.name ?? "", data.artistName) || exactMatch(a.name ?? "", searchArtist)) && (a.picture_xl || a.picture_big)) {
+            imageUrl = a.picture_xl || a.picture_big;
+            break;
+          }
+        }
+      } catch {}
+    }
+
+    // 4. Wikipedia (no auth)
+    if (!imageUrl) {
+      try {
+        const d = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchArtist)}`);
+        if (d?.thumbnail?.source) imageUrl = d.thumbnail.source;
+      } catch {}
+    }
+
+    // 5. Spotify (needs token)
+    if (token) {
+      try {
+        const artist = comparable(data.artistName) === "jao"
+          ? await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
+          : (await spotifySearch(token, `artist:"${searchArtist}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(exactMatch(b.name ?? "", data.artistName)) - Number(exactMatch(a.name ?? "", data.artistName)))[0];
+        if (artist) {
+          if (!imageUrl && artist.images?.[0]?.url) imageUrl = artist.images[0].url;
+          followers = artist.followers?.total ?? 0;
+          genres = artist.genres ?? [];
+        }
+      } catch {}
+    }
+
+    if (!imageUrl) {
+      imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
+    }
+
+    const profile = { imageUrl, followers, genres };
+    profileCache.set(data.artistName, profile);
+    return profile;
   });
