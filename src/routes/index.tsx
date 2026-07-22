@@ -127,6 +127,10 @@ function TopChartsSection({ charts }: { charts: any }) {
                   <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
                     {e.name}
                   </Link>
+                ) : cfg.kind === "album" ? (
+                  <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
+                    {stripFeatFromTitle(e.name)}
+                  </Link>
                 ) : (
                   <span>{stripFeatFromTitle(e.name)}</span>
                 )}

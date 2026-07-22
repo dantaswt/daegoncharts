@@ -51,6 +51,8 @@ export interface AlbumDetails {
     peak: number;
     weeks: number;
     points?: string;
+    sales?: string;
+    streams?: string;
     certification?: string;
     totalUnits?: string;
   }[];
@@ -65,7 +67,25 @@ export interface AlbumDetails {
   peak: number;
   weeks: number;
   totalUnits?: string;
+  totalSales?: string;
+  totalStreams?: string;
   certification?: string;
+  goatPosition?: number;
+  goatWeeks?: number;
+  yecEntries: Array<{
+    year: string;
+    chartId: string;
+    chartTitle: string;
+    position: number;
+    peak: number;
+    weeks: number;
+    totalUnits?: string;
+  }>;
+  statsRecords: Array<{
+    category: string;
+    value: string;
+    details?: string;
+  }>;
 }
 
 export interface GoatChartData {
@@ -325,8 +345,13 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   let totalUnits: string | undefined;
   let certification: string | undefined;
 
+  const totalSales = { raw: 0, formatted: "" };
+  const totalStreams = { raw: 0, formatted: "" };
+
   for (const chartId of albumChartIds) {
     const chartData = await loadWeekly(chartId);
+    let chartSales = 0;
+    let chartStreams = 0;
     for (const date of chartData.dates) {
       for (const entry of chartData.entriesByDate[date]) {
         if (slugify(entry.name) !== slug) continue;
@@ -336,6 +361,10 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         bestWeeks = Math.max(bestWeeks, entry.weeks);
         totalUnits ||= entry.totalUnits;
         certification ||= entry.certification;
+        const s = toInt(entry.sales);
+        const st = toInt(entry.streams);
+        chartSales += s;
+        chartStreams += st;
         albumRuns.push({
           chartId,
           chartTitle: chartsConfig[chartId].title,
@@ -344,16 +373,23 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
           peak: entry.peak,
           weeks: entry.weeks,
           points: entry.points,
+          sales: entry.sales,
+          streams: entry.streams,
           certification: entry.certification,
           totalUnits: entry.totalUnits,
         });
       }
     }
+    totalSales.raw += chartSales;
+    totalStreams.raw += chartStreams;
   }
 
   if (!albumName) {
     return null;
   }
+
+  totalSales.formatted = totalSales.raw > 0 ? formatMetric(totalSales.raw, "albums") : "";
+  totalStreams.formatted = totalStreams.raw > 0 ? formatMetric(totalStreams.raw, "topStreamingAlbums") : "";
 
   const songData = await loadWeekly("songs");
   for (const date of songData.dates) {
@@ -375,17 +411,68 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
     }
   }
 
-  const yearEndAlbums = await loadYearEnd("yearEndAlbums");
-  for (const year of yearEndAlbums.years) {
-    for (const entry of yearEndAlbums.entriesByYear[year]) {
+  // YEC entries
+  const yecEntries: AlbumDetails["yecEntries"] = [];
+  const yecChartIds = ["yearEndAlbums", "yearEndTopStreamingAlbums", "yearEndTopAlbumSales"];
+  for (const yecId of yecChartIds) {
+    const cfg = chartsConfig[yecId];
+    if (!cfg || cfg.url.endsWith("&gid=0")) continue;
+    try {
+      const yearEndData = await loadYearEnd(yecId);
+      for (const year of yearEndData.years) {
+        for (const entry of yearEndData.entriesByYear[year]) {
+          if (slugify(entry.name) === slug) {
+            yecEntries.push({
+              year,
+              chartId: yecId,
+              chartTitle: cfg.title,
+              position: entry.position,
+              peak: entry.peak,
+              weeks: entry.weeks,
+              totalUnits: entry.totalUnits,
+            });
+            if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+            bestWeeks = Math.max(bestWeeks, entry.weeks);
+          }
+        }
+      }
+    } catch {}
+  }
+  yecEntries.sort((a, b) => Number(b.year) - Number(a.year) || a.position - b.position);
+
+  // GOAT position
+  let goatPosition: number | undefined;
+  let goatWeeks: number | undefined;
+  try {
+    const goatData = await loadGoat("goatAlbums");
+    for (const entry of goatData.entries) {
       if (slugify(entry.name) === slug) {
-        totalUnits ||= entry.totalUnits;
-        certification ||= entry.certification;
-        if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
-        bestWeeks = Math.max(bestWeeks, entry.weeks);
+        goatPosition = entry.position;
+        goatWeeks = entry.weeks;
+        break;
       }
     }
-  }
+  } catch {}
+
+  // Stats records
+  const statsRecords: AlbumDetails["statsRecords"] = [];
+  try {
+    const statsCfg = chartsConfig.statsData;
+    const rows = await fetchCsv(statsCfg.url);
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const catIdx = findIdx(header, ["stats", "category"]);
+    const itemIdx = findIdx(header, ["artist/song", "item", "title", "name"]);
+    const numIdx = findIdx(header, ["number", "value", "total", "count"]);
+    for (const r of rows.slice(1)) {
+      const item = (r[itemIdx] ?? "").trim();
+      if (slugify(item) === slug) {
+        statsRecords.push({
+          category: (r[catIdx] ?? "").trim(),
+          value: (r[numIdx] ?? "").trim(),
+        });
+      }
+    }
+  } catch {}
 
   return {
     name: albumName,
@@ -393,7 +480,13 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
     peak: bestPeak === Number.MAX_SAFE_INTEGER ? 0 : bestPeak,
     weeks: bestWeeks,
     totalUnits,
+    totalSales: totalSales.formatted || undefined,
+    totalStreams: totalStreams.formatted || undefined,
     certification,
+    goatPosition,
+    goatWeeks,
+    yecEntries,
+    statsRecords,
     chartRuns: albumRuns.sort((a, b) => a.date.localeCompare(b.date)),
     songs: Array.from(songMap.values()).sort((a, b) => a.peak - b.peak || b.weeks - a.weeks),
   };

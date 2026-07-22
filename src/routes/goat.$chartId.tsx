@@ -229,6 +229,8 @@ function GoatPage() {
                     <div className={`font-bold group-hover:text-[var(--accent)] transition-colors break-words ${isAlbum ? "text-base" : "text-sm"}`}>
                       {data.kind === "artist" ? (
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
+                      ) : data.kind === "album" ? (
+                        <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                       ) : (
                         stripFeatFromTitle(e.name)
                       )}

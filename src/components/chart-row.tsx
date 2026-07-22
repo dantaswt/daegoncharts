@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ChartEntry } from "@/lib/charts.functions";
-import { slugifyArtist, chartsConfig } from "@/lib/charts-config";
+import { slugifyArtist, slugify as slugifyAlbum, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
@@ -401,7 +401,13 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         </div>
         <div className="min-w-0 flex flex-col flex-1">
           <div className="font-bold text-base break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
-            {stripFeatFromTitle(entry.name)}
+            {kind === "album" ? (
+              <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
+                {stripFeatFromTitle(entry.name)}
+              </Link>
+            ) : (
+              stripFeatFromTitle(entry.name)
+            )}
             {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
               <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
                 {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
@@ -419,7 +425,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-gray-500" />}
           </div>
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-            <div className="text-[11px] text-gray-500 break-words">{entry.album}</div>
+            <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{entry.album}</Link>
           )}
           <ChartMetrics entry={entry} showDiff={showDiff} />
         </div>
@@ -458,7 +464,13 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
-              {stripFeatFromTitle(entry.name)}
+              {kind === "album" ? (
+                <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
+                  {stripFeatFromTitle(entry.name)}
+                </Link>
+              ) : (
+                stripFeatFromTitle(entry.name)
+              )}
               {entry.position !== 1 && (entry.weeksAt1 ?? 0) > 0 && (
                 <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded whitespace-nowrap uppercase">
                   {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
