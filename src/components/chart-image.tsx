@@ -236,11 +236,11 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       <div
                         style={{
                           width: 70,
-                          fontSize: 15,
+                          fontSize: 13,
                           fontWeight: 800,
                           color: theme.accent,
                           textTransform: "uppercase",
-                          letterSpacing: "0.1em",
+                          letterSpacing: "0.05em",
                           textAlign: "center",
                           flexShrink: 0,
                           marginRight: 24,
