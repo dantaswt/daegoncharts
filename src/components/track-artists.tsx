@@ -12,7 +12,7 @@ export function stripFeatFromTitle(name: string): string {
     .replace(/\s*[\(\[]featuring\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]with\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]duet\s+with\s+[^)\]]+[\)\]]/gi, "")
-    .replace(/\s+\+\s+.*$/, "")
+    .replace(/\s+\+\s+[a-zA-Z][a-zA-Z\s&]*$/, "")
     .trim();
 }
 
@@ -25,7 +25,7 @@ export function getFeatArtistsFromTitle(name: string): { artists: string; prefix
   match = name.match(/\(?with\s+([^)]+)\)?/i);
   if (match) return { artists: match[1].trim(), prefix: "&" };
 
-  match = name.match(/\+\s+(.+)$/);
+  match = name.match(/\+\s+([a-zA-Z][a-zA-Z\s&]+)$/);
   if (match) return { artists: match[1].trim(), prefix: "&" };
 
   return null;
