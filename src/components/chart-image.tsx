@@ -197,48 +197,57 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               }}
             >
               <div style={{ width: 70, flexShrink: 0 }} />
-              <div style={{ flex: 1 }} />
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 800,
-                  color: theme.accent,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  textAlign: "right",
-                  flexShrink: 0,
-                  marginRight: 24,
-                }}
-              >
-                LAST WEEK
+               <div style={{ flex: 1 }} />
               </div>
-            </div>
 
             {/* Entries */}
             {topEntries.map((entry, i) => {
               const isNumberOne = entry.position === 1;
               return (
                 <div key={`${entry.position}-${entry.name}-${entry.artist}`}>
-                  {/* Weeks at #1 badge - directly above the #1 entry */}
-                  {isNumberOne && weeksAt1 && (
+                  {/* Weeks at #1 badge + Last Week header - same line (only at #1 entry) */}
+                  {isNumberOne && (
                     <div
                       style={{
                         display: "flex",
-                        justifyContent: "flex-start",
-                        background: theme.accent,
-                        color: "#000",
-                        fontSize: 15,
-                        fontWeight: 800,
-                        padding: "6px 18px",
-                        borderRadius: 4,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
+                        alignItems: "center",
                         marginBottom: 8,
-                        width: "fit-content",
-                        marginLeft: 70,
                       }}
                     >
-                      {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
+                      {weeksAt1 ? (
+                        <div
+                          style={{
+                            background: theme.accent,
+                            color: "#000",
+                            fontSize: 15,
+                            fontWeight: 800,
+                            padding: "6px 18px",
+                            borderRadius: 4,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            width: "fit-content",
+                            marginLeft: 70,
+                          }}
+                        >
+                          {weeksAt1} {weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT NO. 1
+                        </div>
+                      ) : <div style={{ marginLeft: 70 }} />}
+                      <div style={{ flex: 1 }} />
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 800,
+                          color: theme.accent,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.1em",
+                          textAlign: "right",
+                          flexShrink: 0,
+                          marginRight: 24,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        LAST<br />WEEK
+                      </div>
                     </div>
                   )}
 
@@ -308,7 +317,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         >
                           <div
                             style={{
-                              fontSize: isNumberOne ? 22 : 20,
+                              fontSize: isNumberOne ? 30 : 26,
                               color: "rgba(255,255,255,0.45)",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
