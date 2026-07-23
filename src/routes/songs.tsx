@@ -10,7 +10,7 @@ export const Route = createFileRoute("/songs")({
   },
   head: () => ({
     meta: [
-      { title: "All Songs — daegon charts" },
+      { title: "Songs — daegon charts" },
       { name: "description", content: "Every song that has ever appeared on daegon charts." },
     ],
   }),
@@ -74,7 +74,7 @@ function AllSongsPage() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">SONGS</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">All Songs</h1>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">Songs</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{list.length} songs tracked across all charts</p>
       </div>
 

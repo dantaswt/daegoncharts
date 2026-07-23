@@ -11,7 +11,7 @@ export const Route = createFileRoute("/artists")({
   },
   head: () => ({
     meta: [
-      { title: "All Artists — daegon charts" },
+      { title: "Artists — daegon charts" },
       { name: "description", content: "Every artist that has ever appeared on daegon charts." },
     ],
   }),
@@ -75,7 +75,7 @@ function AllArtistsPage() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">ARTISTS</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">All Artists</h1>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">Artists</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{list.length} artists tracked across all charts</p>
       </div>
 
