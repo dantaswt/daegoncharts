@@ -126,10 +126,21 @@ function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boole
   const weeks = entry.weeks > 0 ? String(entry.weeks) : "-";
 
   return (
-    <div className="flex items-center gap-x-3 md:gap-x-4 text-[11px] md:text-[12px] text-muted-foreground">
-      {showDiff && <span>LW: <span className="font-semibold text-[var(--foreground)]">{lastWeek}</span></span>}
-      <span>Peak: <span className="font-semibold text-[var(--foreground)]">{peak}</span></span>
-      <span>Weeks: <span className="font-semibold text-[var(--foreground)]">{weeks}</span></span>
+    <div className="flex flex-col items-end gap-0.5 text-[11px] leading-tight">
+      {showDiff && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400 uppercase tracking-wide">LW</span>
+          <span className="font-bold text-black w-6 text-right">{lastWeek}</span>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <span className="text-gray-400 uppercase tracking-wide">Peak</span>
+        <span className="font-bold text-black w-6 text-right">{peak.replace("#", "")}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-400 uppercase tracking-wide">Weeks</span>
+        <span className="font-bold text-black w-6 text-right">{weeks}</span>
+      </div>
     </div>
   );
 }
@@ -431,14 +442,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
             <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{entry.album}</Link>
           )}
-          <div className="mt-1">
-            <ChartMetrics entry={entry} showDiff={showDiff} />
-          </div>
         </div>
-        <div className="flex flex-row items-center gap-4 flex-shrink-0 justify-end">
-          {metric && (
-            <div className="text-right text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
-          )}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <ChartMetrics entry={entry} showDiff={showDiff} />
           <div className="flex flex-row gap-2">
             <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
