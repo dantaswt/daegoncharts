@@ -446,11 +446,11 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         <div className="flex items-center gap-6 flex-shrink-0">
           <ChartMetrics entry={entry} showDiff={showDiff} />
           <div className="flex flex-col gap-2">
-            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
-              {showDetails ? "−" : "+"}
-            </button>
             <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
+            </button>
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              {showDetails ? "−" : "+"}
             </button>
           </div>
         </div>
