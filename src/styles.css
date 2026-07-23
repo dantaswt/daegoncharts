@@ -81,7 +81,7 @@
   }
   @media (min-width: 768px) { .rank-num { font-size: 1.75rem; width: 5rem; } }
 
-  .diff-new { color: #FFD600; font-weight: 700; }
+  .diff-new { color: #000; background: var(--accent); font-weight: 800; padding: 2px 4px; border-radius: 3px; }
   .diff-steady { color: var(--muted-foreground); }
   .diff-arrow {
     width: 1rem;
