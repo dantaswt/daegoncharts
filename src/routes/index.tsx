@@ -187,16 +187,12 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                       {stripFeatFromTitle(n.entry.name)}
                     </Link>
                   )}</div>
-                  {n.kind !== "artist" ? (
+                  {n.kind !== "artist" && n.entry.artist && (
                     <div className="text-xs text-muted-foreground whitespace-normal break-words">
                       <Link to="/artist/$slug" params={{ slug: slugifyArtist(n.entry.artist) }} className="hover:text-[var(--accent)] hover:underline">
                         {n.entry.artist}
                       </Link>
                       <TrackArtists song={n.entry.name} artist={n.entry.artist} className="text-xs text-muted-foreground" />
-                    </div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground whitespace-normal break-words">
-                      {n.entry.artist}
                     </div>
                   )}
                   {n.kind === "artist" && (
