@@ -16,16 +16,16 @@ import { BackToTop } from "@/components/chart-nav";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-extrabold gold">404</h1>
-        <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This chart week or page doesn't exist.
-        </p>
-        <div className="mt-6">
-          <Link to="/" className="btn-gold">Go home</Link>
+        <div className="w-20 h-20 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mx-auto mb-6">
+          <i className="fas fa-question text-3xl text-[var(--accent)]" />
         </div>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Page not found</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">This chart week or page doesn't exist.</p>
+        <Link to="/" className="px-6 py-2.5 rounded-full bg-[var(--accent)] text-white font-semibold hover:opacity-90 transition-opacity inline-block">
+          Go home
+        </Link>
       </div>
     </div>
   );
@@ -38,16 +38,23 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">This page didn't load</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Try again in a moment.</p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+          <i className="fas fa-exclamation-triangle text-3xl text-red-500" />
+        </div>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">This page didn't load</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Try again in a moment.</p>
+        <div className="flex flex-wrap justify-center gap-3">
           <button
             onClick={() => { router.invalidate(); reset(); }}
-            className="btn-gold"
-          >Try again</button>
-          <a href="/" className="btn-nav">Go home</a>
+            className="px-6 py-2.5 rounded-full bg-[var(--accent)] text-white font-semibold hover:opacity-90 transition-opacity"
+          >
+            <i className="fas fa-redo mr-2" />Try again
+          </button>
+          <a href="/" className="px-6 py-2.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+            Go home
+          </a>
         </div>
       </div>
     </div>
