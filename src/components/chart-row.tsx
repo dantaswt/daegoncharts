@@ -384,23 +384,23 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       className="chart-card w-full"
     >
       {/* Desktop layout */}
-      <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
-        <div className="flex flex-col items-center justify-center w-16">
-          <div className="rank-num text-3xl font-black">{entry.position}</div>
+      <div className={`hidden md:grid gap-3 ${entry.position === 1 ? "chart-row-1" : ""}`} style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
+        <div className={`flex flex-col items-center justify-center ${entry.position === 1 ? "w-24" : "w-16"}`}>
+          <div className={`rank-num font-black ${entry.position === 1 ? "text-5xl" : "text-3xl"}`}>{entry.position}</div>
           {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
             <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
               {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
             </div>
           )}
         </div>
-        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-24 h-24 flex-shrink-0">
+        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none flex-shrink-0 ${entry.position === 1 ? "w-36 h-36" : "w-24 h-24"}`}>
           <SpotifyImage entry={entry} kind={kind} />
         </div>
         <div className="flex items-center justify-center w-8 flex-shrink-0">
           {showDiff && <DiffIndicator diff={entry.diff} />}
         </div>
         <div className="min-w-0 flex flex-col flex-1">
-          <div className="font-bold text-base break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+          <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${entry.position === 1 ? "text-xl" : "text-base"}`}>
             {kind === "album" ? (
               <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
                 {stripFeatFromTitle(entry.name)}
@@ -418,7 +418,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               </span>
             )}
           </div>
-          <div className="text-sm text-gray-500 break-words line-clamp-2">
+          <div className={`break-words line-clamp-2 ${entry.position === 1 ? "text-base text-gray-400" : "text-sm text-gray-500"}`}>
             <Link
               to="/artist/$slug"
               params={{ slug }}
