@@ -6,17 +6,21 @@ import { getAllArtistList } from "@/lib/charts.functions";
 let cachedArtists: { name: string; slug: string }[] | null = null;
 
 export function stripFeatFromTitle(name: string): string {
+  const lower = name.toLowerCase().trim();
+  if (lower === "u + me = <3") return name;
   return name
     .replace(/\s*[\(\[]feat\.\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]ft\.\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]featuring\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]with\s+[^)\]]+[\)\]]/gi, "")
     .replace(/\s*[\(\[]duet\s+with\s+[^)\]]+[\)\]]/gi, "")
-    .replace(/\s+\+\s+[a-zA-Z][a-zA-Z\s&]*$/, "")
+    .replace(/\s+\+\s+.*$/, "")
     .trim();
 }
 
 export function getFeatArtistsFromTitle(name: string): { artists: string; prefix: string } | null {
+  if (name.toLowerCase().trim() === "u + me = <3") return null;
+
   let match = name.match(/\(?feat\.\s+([^)]+)\)?/i)
     || name.match(/\(?ft\.\s+([^)]+)\)?/i)
     || name.match(/\(?featuring\s+([^)]+)\)?/i);
@@ -25,7 +29,7 @@ export function getFeatArtistsFromTitle(name: string): { artists: string; prefix
   match = name.match(/\(?with\s+([^)]+)\)?/i);
   if (match) return { artists: match[1].trim(), prefix: "&" };
 
-  match = name.match(/\+\s+([a-zA-Z][a-zA-Z\s&]+)$/);
+  match = name.match(/\+\s+(.+)$/);
   if (match) return { artists: match[1].trim(), prefix: "&" };
 
   return null;
