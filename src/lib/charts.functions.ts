@@ -236,7 +236,7 @@ function formatTotalUnits(v: string | undefined): string | undefined {
   return n > 0 ? n.toLocaleString("en-US") : undefined;
 }
 
-function getCertificationLevel(units: number, type: "song" | "album"): string | undefined {
+export function getCertificationLevel(units: number, type: "song" | "album"): string | undefined {
   if (type === "song") {
     if (units >= 6_000_000) return "Diamond";
     if (units >= 600_000) {

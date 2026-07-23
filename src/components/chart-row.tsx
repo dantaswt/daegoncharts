@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ChartEntry } from "@/lib/charts.functions";
+import { getCertificationLevel } from "@/lib/charts.functions";
 import { slugifyArtist, slugify as slugifyAlbum, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
@@ -166,7 +167,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   const isGoat = chartId?.startsWith("goat");
 
   const awards = useMemo(() => {
-    if (!date || !chartEntriesByDate || isGoat) return { gainer: false, performance: false };
+    if (!date || !chartEntriesByDate || isGoat) return { gainer: false, performance: false, hasStar: false };
+    if (chartId !== "songs" && chartId !== "albums") return { gainer: false, performance: false, hasStar: false };
+
+    const isUpOrReOrNew = entry.diff.startsWith("▲") || entry.diff === "RE" || entry.diff === "NEW";
+    if (!isUpOrReOrNew) return { gainer: false, performance: false, hasStar: false };
+
     const currentEntries = chartEntriesByDate[date] || [];
     const prevIdx = chartDates?.indexOf(date);
     const prevDate = prevIdx !== undefined && prevIdx > 0 ? chartDates[prevIdx - 1] : undefined;
@@ -193,30 +199,19 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
     let maxGain = 0;
     let perfKey = "";
-    const myPrev = prevEntries.find((e) => `${e.name}|${e.artist}` === myKey);
-    const myCurrentUnits = parseEuropeanNumber(entry.units);
-    const myPrevUnits = myPrev ? parseEuropeanNumber(myPrev.units) : 0;
-    const myGain = myCurrentUnits - myPrevUnits;
     for (const e of currentEntries) {
       const ek = `${e.name}|${e.artist}`;
       const ep = prevEntries.find((pe) => `${pe.name}|${pe.artist}` === ek);
       const eGain = parseEuropeanNumber(e.units) - (ep ? parseEuropeanNumber(ep.units) : 0);
       if (eGain > maxGain) { maxGain = eGain; perfKey = ek; }
     }
-    const isPerf = maxGain > 0 && perfKey === myKey && !isGainer;
+    const isPerf = maxGain > 0 && perfKey === myKey;
 
-    return { gainer: isGainer, performance: isPerf };
-  }, [date, chartEntriesByDate, chartDates, entry, isGoat]);
+    return { gainer: isGainer, performance: isPerf && !isGainer, hasStar: true };
+  }, [date, chartEntriesByDate, chartDates, entry, isGoat, chartId]);
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
-
-    if (awards.gainer) {
-      items.push({ label: "Greatest Gainer This Week", value: "★ #1 in Sales/Streams" });
-    }
-    if (awards.performance) {
-      items.push({ label: "Gains In Performance", value: "★ Biggest increase in units" });
-    }
 
     if (chartId === "artists") {
       const salesVal = parseEuropeanNumber(entry.sales);
@@ -326,6 +321,16 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId, true) : "-" });
     }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+    else if (entry.totalUnits) {
+      const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
+      const certLevel = getCertificationLevel(totalUnitsVal, kind === "album" ? "album" : "song");
+      if (certLevel) items.push({ label: "Certification", value: certLevel });
+    }
+    if (awards.gainer) {
+      items.push({ label: "Award", value: "Greatest Gainer This Week" });
+    } else if (awards.performance) {
+      items.push({ label: "Award", value: "Gains In Performance" });
+    }
     return items;
   }, [awards, chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalStreams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
 
