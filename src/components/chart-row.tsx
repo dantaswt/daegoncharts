@@ -384,20 +384,20 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       className="chart-card w-full"
     >
       {/* Desktop layout */}
-      <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto minmax(0,1fr) auto" }}>
-        <div className={`flex items-start gap-3 ${entry.position === 1 ? "w-[250px]" : "w-[130px]"}`}>
-          <div className="flex flex-col items-center w-16 flex-shrink-0">
-            <div className={`rank-num font-black ${entry.position === 1 ? "text-6xl" : "text-3xl"}`}>{entry.position}</div>
-            {showDiff && <DiffIndicator diff={entry.diff} />}
-            {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
-              <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
-                {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
-              </div>
-            )}
-          </div>
-          <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px]" : "w-24 h-24"}`}>
-            <SpotifyImage entry={entry} kind={kind} />
-          </div>
+      <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
+        <div className="flex flex-col items-center w-16 flex-shrink-0">
+          <div className={`rank-num font-black ${entry.position === 1 ? "text-6xl" : "text-3xl"}`}>{entry.position}</div>
+          {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
+            <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
+              {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
+            </div>
+          )}
+        </div>
+        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px]" : "w-24 h-24"}`}>
+          <SpotifyImage entry={entry} kind={kind} />
+        </div>
+        <div className="flex items-center justify-center w-8 flex-shrink-0">
+          {showDiff && <DiffIndicator diff={entry.diff} />}
         </div>
         <div className="min-w-0 flex flex-col flex-1">
           <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${entry.position === 1 ? "text-xl" : "text-base"}`}>
