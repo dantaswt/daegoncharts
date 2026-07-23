@@ -126,7 +126,7 @@ function SongPage() {
                         if (gapWeeks > 0) {
                           items.push(
                             <div key={`out-${date}`} className="flex items-center justify-center h-8 sm:h-9 px-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold border border-red-200 dark:border-red-800" title={`Out for ${gapWeeks} week${gapWeeks > 1 ? "s" : ""}`}>
-                              OUT {gapWeeks}x
+                              OUT {gapWeeks >= 2 ? `${gapWeeks}x` : ""}
                             </div>
                           );
                         }
