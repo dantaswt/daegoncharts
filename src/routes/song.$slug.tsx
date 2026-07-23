@@ -110,8 +110,8 @@ function SongPage() {
                     <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Peak #{grid.stats.weeksAt1 > 0 ? "1" : grid.dateMap.size > 0 ? Math.min(...[...grid.dateMap.values()].map((v) => v.position)) : "—"}</span>
                     <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.dateMap.size} weeks</span>
                     {grid.stats.weeksAt1 > 0 && <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 font-semibold text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">{grid.stats.weeksAt1} #1's</span>}
-                    {grid.stats.top5 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top5} top 5</span>}
-                    {grid.stats.top10 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top10} top 10</span>}
+                    {grid.stats.top5 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Top 5: {grid.stats.top5}</span>}
+                    {grid.stats.top10 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Top 10: {grid.stats.top10}</span>}
                   </div>
                 )}
                 <div className="flex flex-wrap gap-1.5 items-center">
