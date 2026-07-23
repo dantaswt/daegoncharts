@@ -6,9 +6,8 @@ import {
   useRouter,
   HeadContent,
   Scripts,
-  useNavigation,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode, useState } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -66,14 +65,24 @@ function PendingComponent() {
 }
 
 function LoadingBar() {
-  const navigation = useNavigation();
-  const isLoading = navigation.state === "loading";
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = router.subscribe("onBeforeNavigate", () => {
+      setLoading(true);
+    });
+    const unsub2 = router.subscribe("onResolved", () => {
+      setLoading(false);
+    });
+    return () => { unsub(); unsub2(); };
+  }, [router]);
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 h-1 overflow-hidden">
       <div
         className={`h-full bg-[var(--accent)] transition-all duration-300 ${
-          isLoading
+          loading
             ? "w-3/4 animate-loading-bar"
             : "w-0"
         }`}
