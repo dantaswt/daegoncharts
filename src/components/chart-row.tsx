@@ -126,7 +126,7 @@ function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boole
   const weeks = entry.weeks > 0 ? String(entry.weeks) : "-";
 
   return (
-    <div className="mt-1.5 md:mt-2 flex flex-wrap gap-x-3 md:gap-x-4 gap-y-0.5 text-[11px] md:text-[12px] text-muted-foreground">
+    <div className="flex items-center gap-x-3 md:gap-x-4 text-[11px] md:text-[12px] text-muted-foreground">
       {showDiff && <span>LW: <span className="font-semibold text-[var(--foreground)]">{lastWeek}</span></span>}
       <span>Peak: <span className="font-semibold text-[var(--foreground)]">{peak}</span></span>
       <span>Weeks: <span className="font-semibold text-[var(--foreground)]">{weeks}</span></span>
@@ -384,8 +384,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       className="chart-card w-full"
     >
       {/* Desktop layout */}
-      <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
-        <div className="flex flex-col items-center w-16 flex-shrink-0">
+      <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
+        <div className={`flex flex-col items-center justify-center ${entry.position === 1 ? "w-24" : "w-16"}`}>
           <div className={`rank-num font-black ${entry.position === 1 ? "text-6xl" : "text-3xl"}`}>{entry.position}</div>
           {entry.position === 1 && (entry.weeksAt1 ?? 0) > 0 && (
             <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
@@ -431,17 +431,19 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
             <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{entry.album}</Link>
           )}
-          <ChartMetrics entry={entry} showDiff={showDiff} />
+          <div className="mt-1">
+            <ChartMetrics entry={entry} showDiff={showDiff} />
+          </div>
         </div>
         <div className="flex flex-row items-center gap-4 flex-shrink-0 justify-end">
           {metric && (
             <div className="text-right text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
           )}
-          <div className="flex flex-row gap-4">
-            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+          <div className="flex flex-row gap-2">
+            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
             </button>
-            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
               {showDetails ? "−" : "+"}
             </button>
           </div>
@@ -501,10 +503,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
             )}
             <div className="flex flex-row gap-1.5">
-              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
               </button>
-              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                 {showDetails ? "−" : "+"}
               </button>
             </div>
