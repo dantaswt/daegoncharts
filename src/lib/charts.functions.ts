@@ -457,8 +457,10 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         if (slugify(entry.name) !== slug) continue;
         albumName ||= entry.name;
         albumArtist ||= entry.artist;
-        if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
-        bestWeeks = Math.max(bestWeeks, entry.weeks);
+        if (chartId === "albums") {
+          if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+          bestWeeks = Math.max(bestWeeks, entry.weeks);
+        }
         certification ||= entry.certification;
         if (chartId === "albums") { totalUnits = entry.totalUnits; totalUnitsRaw = toInt(entry.totalUnits); }
         const s = toInt(entry.sales);
@@ -635,8 +637,10 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
         if (slugify(entry.name) !== slug) continue;
         songName ||= entry.name;
         songArtist ||= entry.artist;
-        if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
-        bestWeeks = Math.max(bestWeeks, entry.weeks);
+        if (chartId === "songs") {
+          if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+          bestWeeks = Math.max(bestWeeks, entry.weeks);
+        }
         certification ||= entry.certification;
         if (chartId === "songs") { totalUnits = entry.totalUnits; totalUnitsRaw = toInt(entry.totalUnits); }
         const p = toInt(entry.points);
