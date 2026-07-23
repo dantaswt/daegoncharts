@@ -60,14 +60,14 @@ function formatValue(v: string | undefined, chartId?: string, isStream?: boolean
 function AwardIcon({ type }: { type: "gainer" | "performance" }) {
   if (type === "gainer") {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--foreground)]" title="Greatest gainer this week">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--foreground)]" title="Greatest Gainer of the Week">
         <i className="fas fa-star text-[10px] text-[var(--foreground)]" />
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center justify-center w-6 h-6" title="Gains in performance">
-      <i className="fas fa-star text-[var(--foreground)]" />
+    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--foreground)]" title="Gains In Performance">
+      <i className="fas fa-arrow-up text-[10px] text-[var(--foreground)]" />
     </span>
   );
 }
@@ -167,34 +167,31 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   const isGoat = chartId?.startsWith("goat");
 
   const awards = useMemo(() => {
-    if (!date || !chartEntriesByDate || isGoat) return { gainer: false, performance: false, hasStar: false };
-    if (chartId !== "songs" && chartId !== "albums") return { gainer: false, performance: false, hasStar: false };
+    if (!date || !chartEntriesByDate || isGoat) return { gainerStreams: false, gainerSales: false, performance: false, hasStar: false };
+    if (chartId !== "songs" && chartId !== "albums") return { gainerStreams: false, gainerSales: false, performance: false, hasStar: false };
 
     const isUpOrReOrNew = entry.diff.startsWith("▲") || entry.diff === "RE" || entry.diff === "NEW";
-    if (!isUpOrReOrNew) return { gainer: false, performance: false, hasStar: false };
+    if (!isUpOrReOrNew) return { gainerStreams: false, gainerSales: false, performance: false, hasStar: false };
 
     const currentEntries = chartEntriesByDate[date] || [];
+    const myKey = `${entry.name}|${entry.artist}`;
 
-    const metricKey = (e: ChartEntry) => {
-      const u = parseEuropeanNumber(e.units);
-      if (u > 0) return u;
-      const s = parseEuropeanNumber(e.sales);
-      if (s > 0) return s;
-      const st = parseEuropeanNumber(e.streams);
-      return st;
-    };
-
-    let maxMetric = 0;
-    let gainerKey = "";
+    let maxStreams = 0;
+    let streamsKey = "";
+    let maxSales = 0;
+    let salesKey = "";
     for (const e of currentEntries) {
-      const v = metricKey(e);
-      if (v > maxMetric) { maxMetric = v; gainerKey = `${e.name}|${e.artist}`; }
+      const st = parseEuropeanNumber(e.streams);
+      if (st > maxStreams) { maxStreams = st; streamsKey = `${e.name}|${e.artist}`; }
+      const sa = parseEuropeanNumber(e.sales);
+      if (sa > maxSales) { maxSales = sa; salesKey = `${e.name}|${e.artist}`; }
     }
 
-    const myKey = `${entry.name}|${entry.artist}`;
-    const isGainer = maxMetric > 0 && gainerKey === myKey;
+    const isGainerStreams = maxStreams > 0 && streamsKey === myKey;
+    const isGainerSales = maxSales > 0 && salesKey === myKey;
+    const isGainer = isGainerStreams || isGainerSales;
 
-    return { gainer: isGainer, performance: !isGainer, hasStar: true };
+    return { gainerStreams: isGainerStreams, gainerSales: isGainerSales, performance: !isGainer, hasStar: true };
   }, [date, chartEntriesByDate, entry, isGoat, chartId]);
 
   const detailFields = useMemo(() => {
@@ -313,9 +310,13 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       const certLevel = getCertificationLevel(totalUnitsVal, kind === "album" ? "album" : "song");
       if (certLevel) items.push({ label: "Certification", value: certLevel });
     }
-    if (awards.gainer) {
-      items.push({ label: "Award", value: "Greatest Gainer This Week" });
-    } else if (awards.performance) {
+    if (awards.gainerStreams) {
+      items.push({ label: "Award", value: "Greatest Gainer of the Week — Streams" });
+    }
+    if (awards.gainerSales) {
+      items.push({ label: "Award", value: "Greatest Gainer of the Week — Sales" });
+    }
+    if (awards.performance) {
       items.push({ label: "Award", value: "Gains In Performance" });
     }
     return items;
@@ -501,9 +502,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
-          {(awards.gainer || awards.performance) && (
+          {awards.hasStar && (
             <div className="flex items-center">
-              <AwardIcon type={awards.gainer ? "gainer" : "performance"} />
+              <AwardIcon type={(awards.gainerStreams || awards.gainerSales) ? "gainer" : "performance"} />
             </div>
           )}
           <ChartMetrics entry={entry} showDiff={showDiff} />
@@ -571,8 +572,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
             )}
             <div className="flex flex-row items-center gap-1.5">
-              {(awards.gainer || awards.performance) && (
-                <AwardIcon type={awards.gainer ? "gainer" : "performance"} />
+              {awards.hasStar && (
+                <AwardIcon type={(awards.gainerStreams || awards.gainerSales) ? "gainer" : "performance"} />
               )}
               <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
