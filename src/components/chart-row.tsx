@@ -174,9 +174,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     if (!isUpOrReOrNew) return { gainer: false, performance: false, hasStar: false };
 
     const currentEntries = chartEntriesByDate[date] || [];
-    const prevIdx = chartDates?.indexOf(date);
-    const prevDate = prevIdx !== undefined && prevIdx > 0 ? chartDates[prevIdx - 1] : undefined;
-    const prevEntries = prevDate ? (chartEntriesByDate[prevDate] || []) : [];
 
     const metricKey = (e: ChartEntry) => {
       const u = parseEuropeanNumber(e.units);
@@ -197,18 +194,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const myKey = `${entry.name}|${entry.artist}`;
     const isGainer = maxMetric > 0 && gainerKey === myKey;
 
-    let maxGain = 0;
-    let perfKey = "";
-    for (const e of currentEntries) {
-      const ek = `${e.name}|${e.artist}`;
-      const ep = prevEntries.find((pe) => `${pe.name}|${pe.artist}` === ek);
-      const eGain = parseEuropeanNumber(e.units) - (ep ? parseEuropeanNumber(ep.units) : 0);
-      if (eGain > maxGain) { maxGain = eGain; perfKey = ek; }
-    }
-    const isPerf = maxGain > 0 && perfKey === myKey;
-
-    return { gainer: isGainer, performance: isPerf && !isGainer, hasStar: true };
-  }, [date, chartEntriesByDate, chartDates, entry, isGoat, chartId]);
+    return { gainer: isGainer, performance: !isGainer, hasStar: true };
+  }, [date, chartEntriesByDate, entry, isGoat, chartId]);
 
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
