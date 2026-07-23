@@ -440,10 +440,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             <div className="text-right text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
           )}
           <div className="flex flex-row gap-2">
-            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
             </button>
-            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
               {showDetails ? "−" : "+"}
             </button>
           </div>
@@ -503,10 +503,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
             )}
             <div className="flex flex-row gap-1.5">
-              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
               </button>
-              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                 {showDetails ? "−" : "+"}
               </button>
             </div>
@@ -522,32 +522,32 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
       {/* Details panel (shared) */}
       {showDetails && (
-        <div className="mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm text-muted-foreground animate-fade-in">
+        <div className="mt-3 w-full rounded-xl bg-black p-3 border border-gray-800 text-sm animate-fade-in">
           {detailFields.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               {detailFields.map((item) => (
-                <div key={item.label} className="rounded-3xl bg-[var(--muted)] p-4">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">{item.label}</div>
-                  <div className="mt-2 text-sm font-semibold text-white">{item.value}</div>
+                <div key={item.label} className="rounded-3xl bg-gray-900 p-4">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">{item.label}</div>
+                  <div className="mt-2 text-sm font-semibold text-[var(--accent)]">{item.value}</div>
                 </div>
               ))}
             </div>
           )}
           {runEntries.length > 0 ? (
             <div>
-              <div className="font-semibold mb-2">Chart run</div>
+              <div className="font-semibold mb-2 text-gray-300">Chart run</div>
               <div className="space-y-2">
                 {runEntries.map((run) => (
                   <a
                     key={`${run.date}-${run.position}`}
                     href={`/chart/${chartId}/${run.date}`}
-                    className="block rounded-3xl border border-[var(--border-dark)] bg-[var(--muted)] p-3 transition hover:border-[var(--accent)] hover:bg-[rgba(255,255,255,0.03)]"
+                    className="block rounded-3xl border border-gray-800 bg-gray-900 p-3 transition hover:border-[var(--accent)] hover:bg-gray-800"
                   >
-                    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between gap-3 text-sm text-gray-400">
                       <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                      <span className="font-semibold">{run.position}</span>
+                      <span className="font-semibold text-[var(--accent)]">{run.position}</span>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-300">
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
                       <span>Peak: {run.peak}</span>
                       <span>Weeks: {run.weeks}</span>
                       {run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
@@ -558,7 +558,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">Details shown. Press + again to close.</div>
+            <div className="text-sm text-gray-500">Details shown. Press + again to close.</div>
           )}
         </div>
       )}
