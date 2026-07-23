@@ -111,30 +111,47 @@ function AlbumPage() {
                     {grid.stats.top10 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top10} top 10</span>}
                   </div>
                 )}
-                <div className="flex flex-wrap gap-1.5">
-                  {[...grid.dateMap.entries()]
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([date, { position }]) => (
-                      <Link
-                        key={date}
-                        to="/chart/$chartId/$date"
-                        params={{ chartId: grid.chartId, date }}
-                        className="group relative"
-                        title={`${grid.title} — ${formatDateShort(date)} — #${position}`}
-                      >
-                        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-110 ${
-                          position <= 10 ? "bg-emerald-500 text-white" :
-                          position <= 25 ? "bg-emerald-500/70 text-white" :
-                          position <= 50 ? "bg-emerald-500/30 text-emerald-700 dark:text-emerald-300" :
-                          "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
-                        }`}>
-                          {position}
-                        </div>
-                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 dark:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                          {formatDateShort(date)}
-                        </div>
-                      </Link>
-                    ))}
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {(() => {
+                    const sorted = [...grid.dateMap.entries()].sort(([a], [b]) => a.localeCompare(b));
+                    const items: React.ReactNode[] = [];
+                    sorted.forEach(([date, { position }], i) => {
+                      if (i > 0) {
+                        const prevDate = new Date(sorted[i - 1][0] + "T00:00:00");
+                        const currDate = new Date(date + "T00:00:00");
+                        const gapWeeks = Math.round((currDate.getTime() - prevDate.getTime()) / (7 * 86400000)) - 1;
+                        if (gapWeeks > 0) {
+                          items.push(
+                            <div key={`out-${date}`} className="flex items-center justify-center h-8 sm:h-9 px-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold border border-red-200 dark:border-red-800" title={`Out for ${gapWeeks} week${gapWeeks > 1 ? "s" : ""}`}>
+                              OUT {gapWeeks}x
+                            </div>
+                          );
+                        }
+                      }
+                      items.push(
+                        <Link
+                          key={date}
+                          to="/chart/$chartId/$date"
+                          params={{ chartId: grid.chartId, date }}
+                          className="group relative"
+                          title={`${grid.title} — ${formatDateShort(date)} — #${position}`}
+                        >
+                          <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-110 ${
+                            position <= 10 ? "bg-emerald-500 text-white" :
+                            position <= 25 ? "bg-emerald-500/70 text-white" :
+                            position <= 50 ? "bg-emerald-500/30 text-emerald-700 dark:text-emerald-300" :
+                            "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
+                          }`}>
+                            {position}
+                          </div>
+                          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 dark:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            {formatDateShort(date)}
+                          </div>
+                        </Link>
+                      );
+                    });
+                    return items;
+                  })()}
                 </div>
               </div>
             ))}
