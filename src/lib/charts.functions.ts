@@ -71,6 +71,7 @@ export interface AlbumDetails {
   totalSales?: string;
   totalStreams?: string;
   certification?: string;
+  certificationLevel?: string;
   goatPosition?: number;
   goatWeeks?: number;
   yecEntries: Array<{
@@ -118,11 +119,13 @@ export interface SongDetails {
   }>;
   peak: number;
   weeks: number;
+  totalUnits?: string;
   totalPoints?: string;
   totalSales?: string;
   totalStreams?: string;
   totalAudience?: string;
   certification?: string;
+  certificationLevel?: string;
   goatPosition?: number;
   goatWeeks?: number;
   yecEntries: Array<{
@@ -207,6 +210,42 @@ function toInt(v: string | undefined): number {
   s = s.replace(/,/g, "");
   const n = parseInt(s, 10);
   return isNaN(n) ? 0 : n;
+}
+
+function formatTotalUnits(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  const n = toInt(v);
+  return n > 0 ? n.toLocaleString("en-US") : undefined;
+}
+
+function getCertificationLevel(units: number, type: "song" | "album"): string | undefined {
+  if (type === "song") {
+    if (units >= 6_000_000) return "Diamond";
+    if (units >= 600_000) {
+      const x = Math.floor(units / 600_000);
+      return x >= 2 ? `${x}x Platinum` : "Platinum";
+    }
+    if (units >= 400_000) return "Gold";
+    if (units >= 200_000) return "Silver";
+  } else {
+    if (units >= 10_000_000) return "Diamond";
+    if (units >= 1_000_000) {
+      const x = Math.floor(units / 1_000_000);
+      return x >= 2 ? `${x}x Platinum` : "Platinum";
+    }
+    if (units >= 500_000) return "Gold";
+  }
+  return undefined;
+}
+
+export function getCertificationMeta(level: string | undefined): { color: string; bg: string; border: string } | undefined {
+  if (!level) return undefined;
+  if (level === "Diamond") return { color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-900/20", border: "border-cyan-200 dark:border-cyan-800" };
+  if (level === "Platinum") return { color: "text-gray-600 dark:text-gray-300", bg: "bg-gray-100 dark:bg-gray-800", border: "border-gray-300 dark:border-gray-700" };
+  if (level === "Gold") return { color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-yellow-900/20", border: "border-yellow-200 dark:border-yellow-800" };
+  if (level === "Silver") return { color: "text-gray-500 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-900", border: "border-gray-200 dark:border-gray-700" };
+  // Nx Platinum
+  return { color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-900/20", border: "border-violet-200 dark:border-violet-800" };
 }
 
 const mbCharts = new Set(["radioSongs", "topStreamingAlbums", "streamingSongs"]);
@@ -396,9 +435,11 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   let bestWeeks = 0;
   let totalUnits: string | undefined;
   let certification: string | undefined;
+  let totalUnitsRaw = 0;
 
-  const totalSales = { raw: 0, formatted: "" };
-  const totalStreams = { raw: 0, formatted: "" };
+  let albumUnitsRaw = 0;
+  let albumStreamsRaw = 0;
+  let albumSalesRaw = 0;
 
   // Per-chart stats accumulator
   const chartStatsAcc: Record<string, { weeksAt1: number; top5: number; top10: number; totalEntries: number; totalUnits: number; totalSales: number; totalStreams: number }> = {};
@@ -418,8 +459,8 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         albumArtist ||= entry.artist;
         if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
         bestWeeks = Math.max(bestWeeks, entry.weeks);
-        totalUnits ||= entry.totalUnits;
         certification ||= entry.certification;
+        if (chartId === "albums") { totalUnits = entry.totalUnits; totalUnitsRaw = toInt(entry.totalUnits); }
         const s = toInt(entry.sales);
         const st = toInt(entry.streams);
         chartSales += s;
@@ -443,17 +484,14 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         });
       }
     }
-    totalSales.raw += chartSales;
-    totalStreams.raw += chartStreams;
+    if (chartId === "topStreamingAlbums") albumStreamsRaw = chartStreams;
+    if (chartId === "topAlbumSales") albumSalesRaw = chartSales;
     chartStatsAcc[chartId] = { weeksAt1, top5, top10, totalEntries, totalUnits: chartSales + chartStreams, totalSales: chartSales, totalStreams: chartStreams };
   }
 
   if (!albumName) {
     return null;
   }
-
-  totalSales.formatted = totalSales.raw > 0 ? formatMetric(totalSales.raw, "albums") : "";
-  totalStreams.formatted = totalStreams.raw > 0 ? formatMetric(totalStreams.raw, "topStreamingAlbums") : "";
 
   // YEC entries
   const yecEntries: AlbumDetails["yecEntries"] = [];
@@ -523,10 +561,11 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
     artist: albumArtist,
     peak: bestPeak === Number.MAX_SAFE_INTEGER ? 0 : bestPeak,
     weeks: bestWeeks,
-    totalUnits,
-    totalSales: totalSales.formatted || undefined,
-    totalStreams: totalStreams.formatted || undefined,
+    totalUnits: formatTotalUnits(totalUnits),
+    totalSales: albumSalesRaw > 0 ? formatMetric(albumSalesRaw, "topAlbumSales") : undefined,
+    totalStreams: albumStreamsRaw > 0 ? formatMetric(albumStreamsRaw, "topStreamingAlbums") : undefined,
     certification,
+    certificationLevel: getCertificationLevel(totalUnitsRaw, "album"),
     goatPosition,
     goatWeeks,
     yecEntries,
@@ -571,6 +610,8 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
   let bestPeak = Number.MAX_SAFE_INTEGER;
   let bestWeeks = 0;
   let certification: string | undefined;
+  let totalUnits: string | undefined;
+  let totalUnitsRaw = 0;
 
   const totalPoints = { raw: 0, formatted: "" };
   const totalSales = { raw: 0, formatted: "" };
@@ -597,6 +638,7 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
         if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
         bestWeeks = Math.max(bestWeeks, entry.weeks);
         certification ||= entry.certification;
+        if (chartId === "songs") { totalUnits = entry.totalUnits; totalUnitsRaw = toInt(entry.totalUnits); }
         const p = toInt(entry.points);
         const s = toInt(entry.sales);
         const st = toInt(entry.streams);
@@ -625,10 +667,10 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
         });
       }
     }
-    totalPoints.raw += chartPoints;
-    totalSales.raw += chartSales;
-    totalStreams.raw += chartStreams;
-    totalAudience.raw += chartAudience;
+    if (chartId === "songs") totalPoints.raw = chartPoints;
+    if (chartId === "digitalSongsSales") totalSales.raw = chartSales;
+    if (chartId === "streamingSongs") totalStreams.raw = chartStreams;
+    if (chartId === "radioSongs") totalAudience.raw = chartAudience;
     chartStatsAcc[chartId] = { weeksAt1, top5, top10, totalEntries, totalPoints: chartPoints, totalSales: chartSales, totalStreams: chartStreams, totalAudience: chartAudience };
   }
 
@@ -707,11 +749,13 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
     artist: songArtist,
     peak: bestPeak === Number.MAX_SAFE_INTEGER ? 0 : bestPeak,
     weeks: bestWeeks,
+    totalUnits: formatTotalUnits(totalUnits),
     totalPoints: totalPoints.formatted || undefined,
     totalSales: totalSales.formatted || undefined,
     totalStreams: totalStreams.formatted || undefined,
     totalAudience: totalAudience.formatted || undefined,
     certification,
+    certificationLevel: getCertificationLevel(totalUnitsRaw, "song"),
     goatPosition,
     goatWeeks,
     yecEntries,
@@ -803,6 +847,60 @@ export const getAllArtistList = createServerFn({ method: "GET" }).handler(async 
           if (!e.artist) continue;
           const slug = slugify(e.artist);
           if (!map[slug]) map[slug] = { name: e.artist, slug, entries: 0 };
+          map[slug].entries++;
+        }
+      }
+    }
+
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+  });
+});
+
+export const getAllAlbumList = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("albumList", async () => {
+    const map: Record<string, { name: string; artist: string; slug: string; entries: number }> = {};
+
+    const charts = ["albums", "topAlbumSales", "topStreamingAlbums"];
+    const allCharts = await Promise.all(
+      charts.map(async (chartId) => {
+        try { return await getWeeklyChart({ data: { chartId } }); } catch { return null; }
+      })
+    );
+
+    for (const chart of allCharts) {
+      if (!chart) continue;
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (!e.name) continue;
+          const slug = slugify(e.name);
+          if (!map[slug]) map[slug] = { name: e.name, artist: e.artist, slug, entries: 0 };
+          map[slug].entries++;
+        }
+      }
+    }
+
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+  });
+});
+
+export const getAllSongList = createServerFn({ method: "GET" }).handler(async () => {
+  return cached("songList", async () => {
+    const map: Record<string, { name: string; artist: string; slug: string; entries: number }> = {};
+
+    const charts = ["songs", "digitalSongsSales", "streamingSongs", "radioSongs"];
+    const allCharts = await Promise.all(
+      charts.map(async (chartId) => {
+        try { return await getWeeklyChart({ data: { chartId } }); } catch { return null; }
+      })
+    );
+
+    for (const chart of allCharts) {
+      if (!chart) continue;
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (!e.name) continue;
+          const slug = slugify(e.name);
+          if (!map[slug]) map[slug] = { name: e.name, artist: e.artist, slug, entries: 0 };
           map[slug].entries++;
         }
       }

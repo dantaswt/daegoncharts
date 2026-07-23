@@ -1,13 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getAlbumDetails } from "@/lib/charts.functions";
+import { getAlbumDetails, getCertificationMeta } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
+import { slugifyArtist } from "@/lib/charts-config";
+import React from "react";
 
 export const Route = createFileRoute("/album/$slug")({
   loader: async ({ params }) => {
     const album = await getAlbumDetails({ data: { slug: params.slug } });
     if (!album) throw notFound();
-    const imageUrl = await getSpotifyImage({ data: { query: `${album.name} ${album.artist}`, type: "album" } });
-    return { album, imageUrl };
+    return { album };
   },
   head: ({ loaderData }) => {
     const title = loaderData ? `${loaderData.album.name} — ${loaderData.album.artist} | daegon charts` : "Album | daegon charts";
@@ -22,18 +23,21 @@ export const Route = createFileRoute("/album/$slug")({
 });
 
 function AlbumPage() {
-  const { album, imageUrl } = Route.useLoaderData();
+  const { album } = Route.useLoaderData();
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    getSpotifyImage({ data: { query: `album:"${album.name}" artist:"${album.artist}"`, type: "album" } }).then((url) => {
+      if (active) setImageUrl(url ?? null);
+    });
+    return () => { active = false; };
+  }, [album.name, album.artist]);
 
   const chartLabels: Record<string, string> = {
     albums: "Top 100 Albums",
     topStreamingAlbums: "Top Streaming Albums",
     topAlbumSales: "Top Album Sales",
-  };
-
-  const chartMetricLabel: Record<string, string> = {
-    albums: "Units",
-    topStreamingAlbums: "Streams",
-    topAlbumSales: "Sales",
   };
 
   const chartRunsByChart: Record<string, typeof album.chartRuns> = {};
@@ -67,8 +71,10 @@ function AlbumPage() {
             </div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">{album.artist}</div>
+        <div className="flex-1 min-w-0 text-center sm:text-left">
+          <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">
+            <Link to="/artist/$slug" params={{ slug: slugifyArtist(album.artist) }} className="hover:text-[var(--accent)] transition-colors">{album.artist}</Link>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 break-words text-gray-900 dark:text-white">{album.name}</h1>
           {album.goatPosition && (
             <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-4 py-1.5 text-sm font-semibold mb-4 border border-amber-500/20">
@@ -76,18 +82,14 @@ function AlbumPage() {
               GOAT Albums #{album.goatPosition} · {album.goatWeeks} total weeks
             </div>
           )}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             <StatBox label="Peak" value={`#${album.peak}`} />
             <StatBox label="Weeks" value={String(album.weeks)} />
             <StatBox label="Total Units" value={album.totalUnits || "—"} />
             <StatBox label="Sales" value={album.totalSales || "—"} />
             <StatBox label="Streams" value={album.totalStreams || "—"} />
+            {album.certificationLevel && <CertificationBox level={album.certificationLevel} />}
           </div>
-          {album.certification && (
-            <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-              Certification: <span className="text-gray-900 dark:text-white font-semibold">{album.certification}</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -107,7 +109,6 @@ function AlbumPage() {
                     {grid.stats.weeksAt1 > 0 && <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 font-semibold text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">{grid.stats.weeksAt1} #1's</span>}
                     {grid.stats.top5 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top5} top 5</span>}
                     {grid.stats.top10 > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{grid.stats.top10} top 10</span>}
-                    {grid.stats.totalUnits > 0 && <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">{formatNum(grid.stats.totalUnits)} {chartMetricLabel[grid.chartId] || "Units"}</span>}
                   </div>
                 )}
                 <div className="flex flex-wrap gap-1.5">
@@ -198,15 +199,22 @@ function StatBox({ label, value }: { label: string; value: string }) {
   );
 }
 
+function CertificationBox({ level }: { level: string }) {
+  const meta = getCertificationMeta(level);
+  if (!meta) return null;
+  return (
+    <div className={`rounded-2xl p-3 text-center border ${meta.bg} ${meta.border}`}>
+      <div className="uppercase tracking-[0.2em] text-[10px] text-gray-500 dark:text-gray-400">Certification</div>
+      <div className={`text-xl font-bold mt-1 uppercase ${meta.color}`}>
+        {level}
+      </div>
+    </div>
+  );
+}
+
 function formatDateShort(date: string): string {
   const d = new Date(date + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function formatNum(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (v >= 1_000) return `${Math.round(v / 1_000)}K`;
-  return String(v);
 }
 
 function albumChartIds(): string[] {

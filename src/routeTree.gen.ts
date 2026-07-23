@@ -9,10 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SongsRouteImport } from './routes/songs'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as NumberOnesRouteImport } from './routes/number-ones'
 import { Route as ChartBattleRouteImport } from './routes/chart-battle'
 import { Route as ArtistsRouteImport } from './routes/artists'
+import { Route as AlbumsRouteImport } from './routes/albums'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as YearEndIndexRouteImport } from './routes/year-end.index'
 import { Route as StatsIndexRouteImport } from './routes/stats.index'
@@ -30,6 +32,11 @@ import { Route as ChartChartIdDateRouteImport } from './routes/chart.$chartId.$d
 import { Route as ChartBeatBlogSlugRouteImport } from './routes/chart-beat.$blog.$slug'
 import { Route as ChartBeat2ChartIdDateRouteImport } from './routes/chart-beat-2.$chartId.$date'
 
+const SongsRoute = SongsRouteImport.update({
+  id: '/songs',
+  path: '/songs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -48,6 +55,11 @@ const ChartBattleRoute = ChartBattleRouteImport.update({
 const ArtistsRoute = ArtistsRouteImport.update({
   id: '/artists',
   path: '/artists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlbumsRoute = AlbumsRouteImport.update({
+  id: '/albums',
+  path: '/albums',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -133,10 +145,12 @@ const ChartBeat2ChartIdDateRoute = ChartBeat2ChartIdDateRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/albums': typeof AlbumsRoute
   '/artists': typeof ArtistsRoute
   '/chart-battle': typeof ChartBattleRoute
   '/number-ones': typeof NumberOnesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/songs': typeof SongsRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
@@ -155,10 +169,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/albums': typeof AlbumsRoute
   '/artists': typeof ArtistsRoute
   '/chart-battle': typeof ChartBattleRoute
   '/number-ones': typeof NumberOnesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/songs': typeof SongsRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
@@ -177,10 +193,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/albums': typeof AlbumsRoute
   '/artists': typeof ArtistsRoute
   '/chart-battle': typeof ChartBattleRoute
   '/number-ones': typeof NumberOnesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/songs': typeof SongsRoute
   '/album/$slug': typeof AlbumSlugRoute
   '/artist/$slug': typeof ArtistSlugRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
@@ -201,10 +219,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/albums'
     | '/artists'
     | '/chart-battle'
     | '/number-ones'
     | '/sitemap.xml'
+    | '/songs'
     | '/album/$slug'
     | '/artist/$slug'
     | '/chart-beat/$blog'
@@ -223,10 +243,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/albums'
     | '/artists'
     | '/chart-battle'
     | '/number-ones'
     | '/sitemap.xml'
+    | '/songs'
     | '/album/$slug'
     | '/artist/$slug'
     | '/chart-beat/$blog'
@@ -244,10 +266,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/albums'
     | '/artists'
     | '/chart-battle'
     | '/number-ones'
     | '/sitemap.xml'
+    | '/songs'
     | '/album/$slug'
     | '/artist/$slug'
     | '/chart-beat/$blog'
@@ -267,10 +291,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlbumsRoute: typeof AlbumsRoute
   ArtistsRoute: typeof ArtistsRoute
   ChartBattleRoute: typeof ChartBattleRoute
   NumberOnesRoute: typeof NumberOnesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SongsRoute: typeof SongsRoute
   AlbumSlugRoute: typeof AlbumSlugRoute
   ArtistSlugRoute: typeof ArtistSlugRoute
   ChartBeatBlogRoute: typeof ChartBeatBlogRouteWithChildren
@@ -287,6 +313,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/songs': {
+      id: '/songs'
+      path: '/songs'
+      fullPath: '/songs'
+      preLoaderRoute: typeof SongsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -313,6 +346,13 @@ declare module '@tanstack/react-router' {
       path: '/artists'
       fullPath: '/artists'
       preLoaderRoute: typeof ArtistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/albums': {
+      id: '/albums'
+      path: '/albums'
+      fullPath: '/albums'
+      preLoaderRoute: typeof AlbumsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -458,10 +498,12 @@ const ChartChartIdRouteWithChildren = ChartChartIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlbumsRoute: AlbumsRoute,
   ArtistsRoute: ArtistsRoute,
   ChartBattleRoute: ChartBattleRoute,
   NumberOnesRoute: NumberOnesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SongsRoute: SongsRoute,
   AlbumSlugRoute: AlbumSlugRoute,
   ArtistSlugRoute: ArtistSlugRoute,
   ChartBeatBlogRoute: ChartBeatBlogRouteWithChildren,

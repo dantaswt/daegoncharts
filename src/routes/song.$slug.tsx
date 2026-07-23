@@ -1,13 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getSongDetails } from "@/lib/charts.functions";
+import { getSongDetails, getCertificationMeta } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
+import { slugifyArtist } from "@/lib/charts-config";
+import React from "react";
 
 export const Route = createFileRoute("/song/$slug")({
   loader: async ({ params }) => {
     const song = await getSongDetails({ data: { slug: params.slug } });
     if (!song) throw notFound();
-    const imageUrl = await getSpotifyImage({ data: { query: `${song.name} ${song.artist}`, type: "track" } });
-    return { song, imageUrl };
+    return { song };
   },
   head: ({ loaderData }) => {
     const title = loaderData ? `${loaderData.song.name} — ${loaderData.song.artist} | daegon charts` : "Song | daegon charts";
@@ -22,20 +23,22 @@ export const Route = createFileRoute("/song/$slug")({
 });
 
 function SongPage() {
-  const { song, imageUrl } = Route.useLoaderData();
+  const { song } = Route.useLoaderData();
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    getSpotifyImage({ data: { query: `track:"${song.name}" artist:"${song.artist}"`, type: "track" } }).then((url) => {
+      if (active) setImageUrl(url ?? null);
+    });
+    return () => { active = false; };
+  }, [song.name, song.artist]);
 
   const chartLabels: Record<string, string> = {
     songs: "Hot 100",
     digitalSongsSales: "Digital Songs Sales",
     streamingSongs: "Streaming Songs",
     radioSongs: "Radio Songs",
-  };
-
-  const chartMetricLabel: Record<string, string> = {
-    songs: "Points",
-    digitalSongsSales: "Sales",
-    streamingSongs: "Streams",
-    radioSongs: "Audience",
   };
 
   const chartRunsByChart: Record<string, typeof song.chartRuns> = {};
@@ -69,8 +72,10 @@ function SongPage() {
             </div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">{song.artist}</div>
+        <div className="flex-1 min-w-0 text-center sm:text-left">
+          <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">
+            <Link to="/artist/$slug" params={{ slug: slugifyArtist(song.artist) }} className="hover:text-[var(--accent)] transition-colors">{song.artist}</Link>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 break-words text-gray-900 dark:text-white">{song.name}</h1>
           {song.goatPosition && (
             <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-4 py-1.5 text-sm font-semibold mb-4 border border-amber-500/20">
@@ -78,18 +83,16 @@ function SongPage() {
               GOAT Songs #{song.goatPosition} · {song.goatWeeks} total weeks
             </div>
           )}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             <StatBox label="Peak" value={`#${song.peak}`} />
             <StatBox label="Weeks" value={String(song.weeks)} />
-            {song.totalPoints && <StatBox label="Total Points" value={song.totalPoints} />}
+            {song.totalPoints && <StatBox label="Points" value={song.totalPoints} />}
+            {song.totalUnits && <StatBox label="Total Units" value={song.totalUnits} />}
             {song.totalSales && <StatBox label="Sales" value={song.totalSales} />}
             {song.totalStreams && <StatBox label="Streams" value={song.totalStreams} />}
+            {song.totalAudience && <StatBox label="Audience" value={song.totalAudience} />}
+            {song.certificationLevel && <CertificationBox level={song.certificationLevel} />}
           </div>
-          {song.certification && (
-            <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-              Certification: <span className="text-gray-900 dark:text-white font-semibold">{song.certification}</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -195,6 +198,19 @@ function StatBox({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3 text-center border border-gray-200 dark:border-gray-800">
       <div className="uppercase tracking-[0.2em] text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
       <div className="text-xl font-bold text-gray-900 dark:text-white mt-1">{value}</div>
+    </div>
+  );
+}
+
+function CertificationBox({ level }: { level: string }) {
+  const meta = getCertificationMeta(level);
+  if (!meta) return null;
+  return (
+    <div className={`rounded-2xl p-3 text-center border ${meta.bg} ${meta.border}`}>
+      <div className="uppercase tracking-[0.2em] text-[10px] text-gray-500 dark:text-gray-400">Certification</div>
+      <div className={`text-xl font-bold mt-1 uppercase ${meta.color}`}>
+        {level}
+      </div>
     </div>
   );
 }

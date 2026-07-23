@@ -328,13 +328,13 @@ function ArtistPage() {
           </div>
 
           {/* Info */}
-          <div className="flex-1 p-6 md:p-8 flex flex-col justify-center min-w-0">
+          <div className="flex-1 p-6 md:p-8 flex flex-col justify-center min-w-0 text-center sm:text-left">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 text-[var(--foreground)]">
               {artist.name}
             </h1>
 
             {profile && (
-              <div className="flex flex-wrap items-center gap-2 text-xs mb-5">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs mb-5">
                 {profile.followers > 0 && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-[var(--foreground)]">
                     <i className="fas fa-users text-[var(--accent)]" />
