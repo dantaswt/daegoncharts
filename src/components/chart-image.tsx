@@ -256,20 +256,45 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      padding: "14px 0",
+                      padding: isNumberOne ? "20px 0" : "14px 0",
                       borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.08)` : "none",
+                      position: "relative",
+                      overflow: "hidden",
                     }}
                   >
+                    {/* Background number for #1 */}
+                    {isNumberOne && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: -10,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          fontSize: 160,
+                          fontWeight: 900,
+                          color: theme.accent,
+                          opacity: 0.12,
+                          lineHeight: 1,
+                          pointerEvents: "none",
+                          zIndex: 0,
+                        }}
+                      >
+                        1
+                      </div>
+                    )}
+
                     {/* Rank */}
                     <div
                       style={{
-                        width: 70,
-                        fontSize: 44,
+                        width: isNumberOne ? 90 : 70,
+                        fontSize: isNumberOne ? 64 : 44,
                         fontWeight: 900,
                         color: isNumberOne ? theme.accent : "#fff",
                         lineHeight: 1,
                         textAlign: "center",
                         flexShrink: 0,
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       {entry.position}
@@ -281,11 +306,13 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         flex: 1,
                         minWidth: 0,
                         textAlign: "left",
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       <div
                         style={{
-                          fontSize: 26,
+                          fontSize: isNumberOne ? 34 : 26,
                           fontWeight: 900,
                           color: "#fff",
                           textTransform: "uppercase",
@@ -313,11 +340,13 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                             marginLeft: 16,
                             marginRight: 24,
                             maxWidth: 340,
+                            position: "relative",
+                            zIndex: 1,
                           }}
                         >
                           <div
                             style={{
-                              fontSize: 26,
+                              fontSize: isNumberOne ? 28 : 26,
                               color: "rgba(255,255,255,0.45)",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
@@ -329,7 +358,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                           {featInfo && (
                             <div
                               style={{
-                                fontSize: 26,
+                                fontSize: isNumberOne ? 28 : 26,
                                 color: "rgba(255,255,255,0.45)",
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
@@ -351,11 +380,13 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                     <div
                       style={{
                         width: 70,
-                        fontSize: 22,
+                        fontSize: isNumberOne ? 26 : 22,
                         fontWeight: 800,
                         color: theme.accent,
                         textAlign: "center",
                         flexShrink: 0,
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       {lastWeekDisplay(entry)}
