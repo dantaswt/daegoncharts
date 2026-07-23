@@ -60,15 +60,13 @@ function formatValue(v: string | undefined, chartId?: string, isStream?: boolean
 function AwardIcon({ type }: { type: "gainer" | "performance" }) {
   if (type === "gainer") {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--foreground)]" title="Greatest Gainer of the Week">
-        <i className="fas fa-star text-[10px] text-[var(--foreground)]" />
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-black" title="Greatest Gainer of the Week">
+        <svg viewBox="0 0 24 24" fill="black" className="w-3.5 h-3.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--foreground)]" title="Gains In Performance">
-      <i className="fas fa-arrow-up text-[10px] text-[var(--foreground)]" />
-    </span>
+    <svg viewBox="0 0 24 24" fill="black" className="w-5 h-5" title="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
   );
 }
 
