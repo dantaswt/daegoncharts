@@ -163,15 +163,32 @@ export interface ChartBeatPost {
 
 // simple in-memory cache with TTL
 const cache = new Map<string, { at: number; data: unknown }>();
-const TTL = 5 * 60 * 1000;
+const TTL = 10 * 60 * 1000;
 
-async function fetchCsv(url: string): Promise<string[][]> {
-  const res = await fetch(`${url}&_=${Date.now()}`, { headers: { "cache-control": "no-cache" } });
-  if (!res.ok) throw new Error(`CSV fetch failed ${res.status}`);
-  let text = await res.text();
-  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-  const parsed = Papa.parse<string[]>(text, { skipEmptyLines: true });
-  return parsed.data as string[][];
+async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" } });
+      if (res.status === 429) {
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+      }
+      if (!res.ok) throw new Error(`CSV fetch failed ${res.status}`);
+      let text = await res.text();
+      if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+      const parsed = Papa.parse<string[]>(text, { skipEmptyLines: true });
+      return parsed.data as string[][];
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("CSV fetch failed after retries");
 }
 
 function normalizeDate(d: string): string {
