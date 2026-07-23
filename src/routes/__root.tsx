@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useNavigation,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -54,12 +55,22 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 function PendingComponent() {
+  return null;
+}
+
+function LoadingBar() {
+  const navigation = useNavigation();
+  const isLoading = navigation.state === "loading";
+
   return (
-    <div className="flex min-h-[50vh] items-center justify-center px-4">
-      <div className="text-center">
-        <i className="fas fa-circle-notch fa-spin text-4xl gold mb-4" />
-        <div className="text-muted-foreground font-semibold">Loading...</div>
-      </div>
+    <div className="fixed top-0 left-0 right-0 z-50 h-1 overflow-hidden">
+      <div
+        className={`h-full bg-[var(--accent)] transition-all duration-300 ${
+          isLoading
+            ? "w-3/4 animate-loading-bar"
+            : "w-0"
+        }`}
+      />
     </div>
   );
 }
@@ -151,6 +162,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
+      <LoadingBar />
       <div className="flex flex-col min-h-screen">
         <SiteHeader />
         <main className="flex-grow container mx-auto p-3 md:p-6">
