@@ -243,7 +243,6 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                           letterSpacing: "0.05em",
                           textAlign: "center",
                           flexShrink: 0,
-                          marginRight: 24,
                           lineHeight: 1.2,
                         }}
                       >
