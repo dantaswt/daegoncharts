@@ -56,6 +56,21 @@ function formatValue(v: string | undefined, chartId?: string, isStream?: boolean
   return num.toLocaleString("en-US");
 }
 
+function AwardIcon({ type }: { type: "gainer" | "performance" }) {
+  if (type === "gainer") {
+    return (
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-[var(--foreground)]" title="Greatest gainer this week">
+        <i className="fas fa-star text-[10px] text-[var(--foreground)]" />
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center justify-center w-6 h-6" title="Gains in performance">
+      <i className="fas fa-star text-[var(--foreground)]" />
+    </span>
+  );
+}
+
 function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
@@ -150,8 +165,58 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
   const slug = slugifyArtist(entry.artist);
   const isGoat = chartId?.startsWith("goat");
 
+  const awards = useMemo(() => {
+    if (!date || !chartEntriesByDate || isGoat) return { gainer: false, performance: false };
+    const currentEntries = chartEntriesByDate[date] || [];
+    const prevIdx = chartDates?.indexOf(date);
+    const prevDate = prevIdx !== undefined && prevIdx > 0 ? chartDates[prevIdx - 1] : undefined;
+    const prevEntries = prevDate ? (chartEntriesByDate[prevDate] || []) : [];
+
+    const metricKey = (e: ChartEntry) => {
+      const u = parseEuropeanNumber(e.units);
+      if (u > 0) return u;
+      const s = parseEuropeanNumber(e.sales);
+      if (s > 0) return s;
+      const st = parseEuropeanNumber(e.streams);
+      return st;
+    };
+
+    let maxMetric = 0;
+    let gainerKey = "";
+    for (const e of currentEntries) {
+      const v = metricKey(e);
+      if (v > maxMetric) { maxMetric = v; gainerKey = `${e.name}|${e.artist}`; }
+    }
+
+    const myKey = `${entry.name}|${entry.artist}`;
+    const isGainer = maxMetric > 0 && gainerKey === myKey;
+
+    let maxGain = 0;
+    let perfKey = "";
+    const myPrev = prevEntries.find((e) => `${e.name}|${e.artist}` === myKey);
+    const myCurrentUnits = parseEuropeanNumber(entry.units);
+    const myPrevUnits = myPrev ? parseEuropeanNumber(myPrev.units) : 0;
+    const myGain = myCurrentUnits - myPrevUnits;
+    for (const e of currentEntries) {
+      const ek = `${e.name}|${e.artist}`;
+      const ep = prevEntries.find((pe) => `${pe.name}|${pe.artist}` === ek);
+      const eGain = parseEuropeanNumber(e.units) - (ep ? parseEuropeanNumber(ep.units) : 0);
+      if (eGain > maxGain) { maxGain = eGain; perfKey = ek; }
+    }
+    const isPerf = maxGain > 0 && perfKey === myKey && !isGainer;
+
+    return { gainer: isGainer, performance: isPerf };
+  }, [date, chartEntriesByDate, chartDates, entry, isGoat]);
+
   const detailFields = useMemo(() => {
     const items: Array<{ label: string; value: string | undefined }> = [];
+
+    if (awards.gainer) {
+      items.push({ label: "Greatest Gainer This Week", value: "★ #1 in Sales/Streams" });
+    }
+    if (awards.performance) {
+      items.push({ label: "Gains In Performance", value: "★ Biggest increase in units" });
+    }
 
     if (chartId === "artists") {
       const salesVal = parseEuropeanNumber(entry.sales);
@@ -262,7 +327,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     }
     if (entry.certification) items.push({ label: "Certification", value: entry.certification });
     return items;
-  }, [chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalStreams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
+  }, [awards, chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalStreams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
 
@@ -443,7 +508,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{entry.album}</Link>
           )}
         </div>
-        <div className="flex items-center gap-6 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0">
+          {(awards.gainer || awards.performance) && (
+            <div className="flex items-center">
+              <AwardIcon type={awards.gainer ? "gainer" : "performance"} />
+            </div>
+          )}
           <ChartMetrics entry={entry} showDiff={showDiff} />
           <div className="flex flex-col gap-2">
             <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
@@ -508,7 +578,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             {metric && (
               <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
             )}
-            <div className="flex flex-row gap-1.5">
+            <div className="flex flex-row items-center gap-1.5">
+              {(awards.gainer || awards.performance) && (
+                <AwardIcon type={awards.gainer ? "gainer" : "performance"} />
+              )}
               <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
               </button>
