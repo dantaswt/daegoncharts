@@ -438,10 +438,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             <div className="text-right text-2xl font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
           )}
           <div className="flex flex-row gap-2">
-            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+            <button type="button" onClick={handleCopy} className="w-10 h-10 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
             </button>
-            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-10 h-10 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
               {showDetails ? "−" : "+"}
             </button>
           </div>
@@ -501,10 +501,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
             )}
             <div className="flex flex-row gap-1.5">
-              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--accent)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+              <button type="button" onClick={handleCopy} className="w-9 h-9 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
               </button>
-              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-md bg-[var(--muted)] text-sm text-muted-foreground hover:text-[var(--foreground)] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-9 h-9 rounded-xl bg-[#2a2a2a] text-sm text-gray-300 hover:text-white hover:bg-[#3a3a3a] active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                 {showDetails ? "−" : "+"}
               </button>
             </div>
