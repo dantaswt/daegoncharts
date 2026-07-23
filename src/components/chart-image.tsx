@@ -235,12 +235,13 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       <div style={{ flex: 1 }} />
                       <div
                         style={{
+                          width: 70,
                           fontSize: 15,
                           fontWeight: 800,
                           color: theme.accent,
                           textTransform: "uppercase",
                           letterSpacing: "0.1em",
-                          textAlign: "right",
+                          textAlign: "center",
                           flexShrink: 0,
                           marginRight: 24,
                           lineHeight: 1.2,
@@ -264,7 +265,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                     <div
                       style={{
                         width: 70,
-                        fontSize: isNumberOne ? 52 : 44,
+                        fontSize: 44,
                         fontWeight: 900,
                         color: isNumberOne ? theme.accent : "#fff",
                         lineHeight: 1,
@@ -280,22 +281,22 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       style={{
                         flex: 1,
                         minWidth: 0,
-                        overflow: "hidden",
                         textAlign: "left",
                       }}
                     >
                       <div
                         style={{
-                          fontSize: isNumberOne ? 30 : 26,
+                          fontSize: 26,
                           fontWeight: 900,
                           color: "#fff",
                           textTransform: "uppercase",
                           letterSpacing: "-0.01em",
                           lineHeight: 1.2,
                           textAlign: "left",
-                          whiteSpace: "nowrap",
                           overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
                         }}
                       >
                         {isArtist ? entry.name : stripFeatFromTitle(entry.name)}
@@ -317,7 +318,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         >
                           <div
                             style={{
-                              fontSize: isNumberOne ? 30 : 26,
+                              fontSize: 26,
                               color: "rgba(255,255,255,0.45)",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
@@ -325,14 +326,21 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                             }}
                           >
                             {entry.artist}
-                            {featInfo && (
-                              <span style={{ color: theme.accent, fontWeight: 700 }}>
-                                {" "}
-                                {featInfo.prefix === "&" ? "&" : "feat."}{" "}
-                                {featInfo.artists}
-                              </span>
-                            )}
                           </div>
+                          {featInfo && (
+                            <div
+                              style={{
+                                fontSize: 26,
+                                color: "rgba(255,255,255,0.45)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {featInfo.prefix === "&" ? "&" : "feat."}{" "}
+                              {featInfo.artists}
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
