@@ -202,8 +202,9 @@ function normalizeDate(d: string): string {
 }
 
 function findIdx(header: string[], keys: string[]): number {
+  const lower = header.map((h) => h.toLowerCase().trim());
   for (const k of keys) {
-    const i = header.indexOf(k);
+    const i = lower.indexOf(k.toLowerCase());
     if (i !== -1) return i;
   }
   return -1;
@@ -309,7 +310,7 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     song: findIdx(header, ["song", "title", "track"]),
     album: findIdx(header, ["album"]),
     artist: findIdx(header, ["artist", "artists"]),
-    lastWeek: findIdx(header, ["last week", "lw"]),
+    lastWeek: findIdx(header, ["last week", "lw", "last wk", "prev week", "previous week"]),
     peak: findIdx(header, ["peak"]),
     weeks: findIdx(header, ["weeks", "wks"]),
     weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "week at 1", "weeks at #1"]),
