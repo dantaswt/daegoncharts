@@ -44,6 +44,7 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
   const next = i >= 0 && i < dates.length - 1 ? dates[i + 1] : null;
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -52,6 +53,15 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  React.useEffect(() => {
+    if (open && listRef.current) {
+      const selected = listRef.current.querySelector("[data-selected]");
+      if (selected) {
+        selected.scrollIntoView({ block: "center" });
+      }
+    }
+  }, [open]);
 
   return (
     <div className="flex flex-col items-center gap-2 md:gap-3 mb-4">
@@ -73,10 +83,11 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
             <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
-            <div className="absolute top-full left-0 right-0 z-50 bg-black border border-[var(--border)] max-h-[300px] overflow-y-auto">
+            <div ref={listRef} className="absolute top-full left-0 right-0 z-50 bg-black border border-[var(--border)] max-h-[300px] overflow-y-auto">
               {dates.map((d) => (
                 <button
                   key={d}
+                  data-selected={d === currentDate || undefined}
                   onClick={() => {
                     setOpen(false);
                     if (d !== currentDate) {
