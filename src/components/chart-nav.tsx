@@ -42,8 +42,16 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
   const i = dates.indexOf(currentDate);
   const prev = i > 0 ? dates[i - 1] : null;
   const next = i >= 0 && i < dates.length - 1 ? dates[i + 1] : null;
-  const datesSet = React.useMemo(() => new Set(dates), [dates]);
-  const dateLabel = formatDate(currentDate);
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-2 md:gap-3 mb-4">
@@ -56,22 +64,37 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
         ) : (
           <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
         )}
-        <select
-          value={currentDate}
-          onChange={(e) => {
-            const iso = e.target.value;
-            if (datesSet.has(iso)) {
-              navigate({ to: "/chart/$chartId/$date", params: { chartId, date: iso } });
-            }
-          }}
-          className="border text-sm font-bold px-4 py-2 min-w-[140px] text-center focus:outline-none cursor-pointer"
-        >
-          {dates.map((d) => (
-            <option key={d} value={d}>
-              {formatDate(d)}
-            </option>
-          ))}
-        </select>
+        <div ref={ref} className="relative">
+          <button
+            onClick={() => setOpen(!open)}
+            className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
+          >
+            {formatDate(currentDate)}
+            <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+          {open && (
+            <div className="absolute top-full left-0 right-0 z-50 bg-black border border-[var(--border)] max-h-[300px] overflow-y-auto">
+              {dates.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => {
+                    setOpen(false);
+                    if (d !== currentDate) {
+                      navigate({ to: "/chart/$chartId/$date", params: { chartId, date: d } });
+                    }
+                  }}
+                  className={`w-full text-center text-sm font-bold px-4 py-2 border-b border-white/20 cursor-pointer transition-colors ${
+                    d === currentDate
+                      ? "bg-[var(--accent)] text-black"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  {formatDate(d)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {next ? (
           <Link to="/chart/$chartId/$date" params={{ chartId, date: next }} className="btn-gold">
             Next <i className="fas fa-chevron-right" />
