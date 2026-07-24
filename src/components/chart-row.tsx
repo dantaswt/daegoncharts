@@ -371,6 +371,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const isRePeak = atPeak && isUp && !isNew && entry.position === 1 && w1 > 1;
     const isWeeksAt1 = entry.position === 1 && w1 > 1 && !isRePeak;
 
+    const weeksAtPeak = runEntries.filter((r) => r.position === entry.peak).length;
+
     if (isRePeak) {
       annotation = `*re-peak; ${wordOrdinal(w1)} week at #1*`;
     } else if (isWeeksAt1) {
@@ -379,8 +381,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       annotation = `*new peak*`;
     } else if (entry.peak === 1 && w1 >= 1) {
       annotation = w1 > 1 ? `*peak: #1 for ${w1} weeks*` : `*peak: #1*`;
-    } else if (entry.peak > 0 && entry.weeks > 1) {
-      annotation = `*peak: #${entry.peak} for ${entry.weeks} weeks*`;
+    } else if (entry.peak > 0 && weeksAtPeak > 1) {
+      annotation = `*peak: #${entry.peak} for ${weeksAtPeak} weeks*`;
     } else {
       annotation = `*peak: #${entry.peak}*`;
     }
@@ -457,14 +459,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       {/* Desktop layout */}
       <div className="hidden md:grid gap-3 items-center" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
         <div className={`flex flex-col items-center justify-center ${entry.position === 1 ? "w-16" : "w-16"}`}>
-          <div className={`rank-num font-black ${entry.position === 1 ? "text-4xl" : "text-3xl"}`}>{entry.position}</div>
+          <div className={`rank-num font-black ${entry.position === 1 ? "text-4xl bg-[var(--accent)] text-black px-3 py-1 rounded-md" : "text-3xl"}`}>{entry.position}</div>
           {entry.position === 1 && (entry.weeksAt1 ?? 0) >= 2 && (
             <div className="mt-0.5 px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
               {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"}
             </div>
           )}
         </div>
-        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px]" : "w-24 h-24"}`}>
+        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)]" : "w-24 h-24"}`}>
           <SpotifyImage entry={entry} kind={kind} />
         </div>
         <div className="flex items-center justify-center w-8 flex-shrink-0">
@@ -526,7 +528,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         {/* Top row: rank + image + name/artist + buttons */}
         <div className="flex items-start gap-2">
           <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
-            <div className="rank-num text-lg font-black">{entry.position}</div>
+            <div className={`rank-num text-lg font-black ${entry.position === 1 ? "bg-[var(--accent)] text-black px-2 py-0.5 rounded-md" : ""}`}>{entry.position}</div>
             <div className="flex items-center justify-center h-4">
               {showDiff && <DiffIndicator diff={entry.diff} />}
             </div>
