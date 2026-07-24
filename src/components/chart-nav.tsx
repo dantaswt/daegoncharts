@@ -46,16 +46,16 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
   const dateLabel = formatDate(currentDate);
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4">
-      {prev ? (
-        <Link to="/chart/$chartId/$date" params={{ chartId, date: prev }} className="btn-gold">
-          <i className="fas fa-chevron-left" /> Prev
-        </Link>
-      ) : (
-        <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
-      )}
-      <div className="text-center">
-        <div className="text-xs text-muted-foreground mb-1">Chart week</div>
+    <div className="flex flex-col items-center gap-2 md:gap-3 mb-4">
+      <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Chart Week</div>
+      <div className="flex flex-wrap items-center gap-2 md:gap-3">
+        {prev ? (
+          <Link to="/chart/$chartId/$date" params={{ chartId, date: prev }} className="btn-gold">
+            <i className="fas fa-chevron-left" /> Prev
+          </Link>
+        ) : (
+          <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
+        )}
         <select
           value={currentDate}
           onChange={(e) => {
@@ -64,7 +64,7 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
               navigate({ to: "/chart/$chartId/$date", params: { chartId, date: iso } });
             }
           }}
-          className="border text-sm font-bold px-3 py-1.5 focus:outline-none cursor-pointer"
+          className="border text-sm font-bold px-4 py-2 min-w-[140px] text-center focus:outline-none cursor-pointer"
         >
           {dates.map((d) => (
             <option key={d} value={d}>
@@ -72,14 +72,14 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
             </option>
           ))}
         </select>
+        {next ? (
+          <Link to="/chart/$chartId/$date" params={{ chartId, date: next }} className="btn-gold">
+            Next <i className="fas fa-chevron-right" />
+          </Link>
+        ) : (
+          <button className="btn-gold" disabled>Next <i className="fas fa-chevron-right" /></button>
+        )}
       </div>
-      {next ? (
-        <Link to="/chart/$chartId/$date" params={{ chartId, date: next }} className="btn-gold">
-          Next <i className="fas fa-chevron-right" />
-        </Link>
-      ) : (
-        <button className="btn-gold" disabled>Next <i className="fas fa-chevron-right" /></button>
-      )}
     </div>
   );
 }
