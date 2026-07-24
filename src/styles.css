@@ -297,7 +297,26 @@
 }
 button[aria-label="Copy info"],
 button[aria-label="Toggle details"],
+button[aria-label="Back to top"],
 button[aria-label="Scroll to top"],
- AwardIcon span {
+span.award-icon {
   border-radius: 9999px !important;
+}
+
+select {
+  text-align: center;
+  text-align-last: center;
+  background-color: #000 !important;
+  color: #fff !important;
+  border-color: var(--border) !important;
+  font-weight: 700;
+}
+select option {
+  text-align: center;
+  background-color: #000;
+  color: #fff;
+}
+select option:checked {
+  background-color: var(--accent) !important;
+  color: #000 !important;
 }
