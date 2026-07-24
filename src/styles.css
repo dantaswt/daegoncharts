@@ -295,3 +295,9 @@
 *, *::before, *::after {
   border-radius: 0 !important;
 }
+button[aria-label="Copy info"],
+button[aria-label="Toggle details"],
+button[aria-label="Scroll to top"],
+ AwardIcon span {
+  border-radius: 9999px !important;
+}

@@ -528,7 +528,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         {/* Top row: rank + image + name/artist + buttons */}
         <div className="flex items-start gap-2">
           <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
-            <div className={`rank-num text-lg font-black ${entry.position === 1 ? "bg-[var(--accent)] text-black px-2 py-0.5 rounded-md" : ""}`}>{entry.position}</div>
+            <div className="rank-num text-lg font-black">{entry.position}</div>
             <div className="flex items-center justify-center h-4">
               {showDiff && <DiffIndicator diff={entry.diff} />}
             </div>
