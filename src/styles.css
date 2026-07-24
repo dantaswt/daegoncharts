@@ -291,3 +291,7 @@
     animation: loadingBar 1.5s ease-in-out infinite;
   }
 }
+
+*, *::before, *::after {
+  border-radius: 0 !important;
+}
