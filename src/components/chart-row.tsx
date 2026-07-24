@@ -377,8 +377,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       annotation = `*${wordOrdinal(w1)} week at #1*`;
     } else if (atPeak && (isUp || isReEntry) && !isNew) {
       annotation = `*new peak*`;
+    } else if (entry.peak === 1 && w1 >= 1) {
+      annotation = w1 > 1 ? `*peak: #1 for ${w1} weeks*` : `*peak: #1*`;
+    } else if (entry.peak > 0 && entry.weeks > 1) {
+      annotation = `*peak: #${entry.peak} for ${entry.weeks} weeks*`;
     } else {
-      annotation = w1 > 0 ? `*peak: #${entry.peak} for ${w1} weeks*` : `*peak: #${entry.peak}*`;
+      annotation = `*peak: #${entry.peak}*`;
     }
 
     // Chart date
