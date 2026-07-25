@@ -65,6 +65,7 @@ function WeeklyChartPage() {
   const loader = Route.useLoaderData() as any;
   const { data, date, chartId, originalRequestedDate } = loader;
   const cfg = chartsConfig[chartId];
+  const [filter, setFilter] = useState<string>("all");
   // if loader normalized the date, replace the URL so it always shows the Saturday
   useEffect(() => {
     if (originalRequestedDate && originalRequestedDate !== date) {
@@ -85,6 +86,34 @@ function WeeklyChartPage() {
       )
     : [];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  const filters = [
+    { key: "all", label: "ALL" },
+    { key: "debut", label: "DEBUTS" },
+    { key: "re", label: "RE-ENTRIES" },
+    { key: "rising", label: "RISING" },
+    { key: "falling", label: "FALLING" },
+    { key: "static", label: "STATIC" },
+  ];
+
+  const filteredEntries = entries.filter((e: typeof entries[number]) => {
+    if (filter === "all") return true;
+    if (filter === "debut") return e.diff === "NEW";
+    if (filter === "re") return e.diff === "RE";
+    if (filter === "rising") return e.diff.startsWith("▲");
+    if (filter === "falling") return e.diff.startsWith("▼");
+    if (filter === "static") return e.diff === "=" || e.diff === "" || e.diff === "-";
+    return true;
+  });
+
+  const filterCounts = {
+    all: entries.length,
+    debut: entries.filter((e: typeof entries[number]) => e.diff === "NEW").length,
+    re: entries.filter((e: typeof entries[number]) => e.diff === "RE").length,
+    rising: entries.filter((e: typeof entries[number]) => e.diff.startsWith("▲")).length,
+    falling: entries.filter((e: typeof entries[number]) => e.diff.startsWith("▼")).length,
+    static: entries.filter((e: typeof entries[number]) => e.diff === "=" || e.diff === "" || e.diff === "-").length,
+  };
 
   return (
     <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -112,18 +141,40 @@ function WeeklyChartPage() {
           </div>
         </div>
         <WeekNavigator chartId={chartId} dates={data.dates} currentDate={date} />
-        <div className="space-y-2 md:space-y-3 max-w-4xl mx-auto">
-          {entries.map((e: typeof entries[number]) => (
-            <ChartRow
-              key={`${e.position}-${e.name}-${e.artist}`}
-              entry={e}
-              kind={cfg.kind}
-              chartId={chartId}
-              date={date}
-              chartDates={data.dates}
-              chartEntriesByDate={data.entriesByDate}
-            />
+        <div className="flex flex-wrap gap-2 mb-4 max-w-4xl mx-auto">
+          {filters.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 border transition-all ${
+                filter === f.key
+                  ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+                  : "bg-black text-white border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              }`}
+            >
+              {f.label}
+              {filterCounts[f.key as keyof typeof filterCounts] > 0 && (
+                <span className="ml-1 opacity-70">({filterCounts[f.key as keyof typeof filterCounts]})</span>
+              )}
+            </button>
           ))}
+        </div>
+        <div className="space-y-2 md:space-y-3 max-w-4xl mx-auto">
+          {filteredEntries.length > 0 ? (
+            filteredEntries.map((e: typeof entries[number]) => (
+              <ChartRow
+                key={`${e.position}-${e.name}-${e.artist}`}
+                entry={e}
+                kind={cfg.kind}
+                chartId={chartId}
+                date={date}
+                chartDates={data.dates}
+                chartEntriesByDate={data.entriesByDate}
+              />
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground text-sm">No entries match this filter.</div>
+          )}
         </div>
         {dropouts.length > 0 && (
           <div className="mt-8 max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
