@@ -4,7 +4,7 @@ import { chartsConfig, yearEndChartIds, slugifyArtist } from "@/lib/charts-confi
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/year-end/$chartId")({
@@ -49,6 +49,82 @@ function formatMetric(v: number, metricKey: string): string {
   return v.toLocaleString("en-US");
 }
 
+function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; selectedYear: string; onSelect: (y: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const yearIdx = years.indexOf(selectedYear);
+  const prevYear = yearIdx > 0 ? years[yearIdx - 1] : null;
+  const nextYear = yearIdx >= 0 && yearIdx < years.length - 1 ? years[yearIdx + 1] : null;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (open && listRef.current) {
+      const selected = listRef.current.querySelector("[data-selected]");
+      if (selected) selected.scrollIntoView({ block: "center" });
+    }
+  }, [open]);
+
+  return (
+    <div className="flex flex-col items-center gap-2 md:gap-3 mb-4">
+      <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Year</div>
+      <div className="flex flex-wrap items-center gap-2 md:gap-3">
+        {prevYear ? (
+          <button onClick={() => onSelect(prevYear)} className="btn-gold">
+            <i className="fas fa-chevron-left" /> Prev
+          </button>
+        ) : (
+          <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
+        )}
+        <div ref={ref} className="relative">
+          <button
+            onClick={() => setOpen(!open)}
+            className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
+          >
+            {selectedYear}
+            <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+          {open && (
+            <div ref={listRef} className="absolute top-full left-0 right-0 z-50 bg-black border border-[var(--border)] max-h-[300px] overflow-y-auto">
+              {years.map((y) => (
+                <button
+                  key={y}
+                  data-selected={y === selectedYear || undefined}
+                  onClick={() => {
+                    setOpen(false);
+                    if (y !== selectedYear) onSelect(y);
+                  }}
+                  className={`w-full text-center text-sm font-bold px-4 py-2 border-b border-white/20 cursor-pointer transition-colors ${
+                    y === selectedYear
+                      ? "bg-[var(--accent)] text-black"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {nextYear ? (
+          <button onClick={() => onSelect(nextYear)} className="btn-gold">
+            Next <i className="fas fa-chevron-right" />
+          </button>
+        ) : (
+          <button className="btn-gold" disabled>Next <i className="fas fa-chevron-right" /></button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function YearEndChartPage() {
   const { data, chartId, mappedId } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
@@ -62,15 +138,12 @@ function YearEndChartPage() {
   const metricIcon = metricKey === "points" ? "fa-star" : metricKey === "streams" ? "fa-headphones" : metricKey === "audience" ? "fa-broadcast-tower" : metricKey === "sales" ? "fa-shopping-cart" : "fa-chart-bar";
 
   const years = data.years;
-  const yearIdx = years.indexOf(selectedYear);
-  const prevYear = yearIdx > 0 ? years[yearIdx - 1] : null;
-  const nextYear = yearIdx >= 0 && yearIdx < years.length - 1 ? years[yearIdx + 1] : null;
 
   return (
     <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
       {/* Fixed chart type nav sidebar */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
-        <div className="flex flex-wrap md:flex-col gap-2 justify-center md:justify-start mb-6">
+        <div className="flex flex-col gap-2 justify-center md:justify-start mb-6">
           {yearEndChartIds.map((id) => {
             const c = chartsConfig[id];
             return (
@@ -117,34 +190,7 @@ function YearEndChartPage() {
         </div>
 
         {/* Year navigator */}
-        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4">
-          {prevYear ? (
-            <button onClick={() => setSelectedYear(prevYear)} className="btn-gold">
-              <i className="fas fa-chevron-left" /> Prev
-            </button>
-          ) : (
-            <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
-          )}
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">Year</div>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-[var(--card)] border border-[var(--border)] text-sm font-bold text-[var(--foreground)] px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-          {nextYear ? (
-            <button onClick={() => setSelectedYear(nextYear)} className="btn-gold">
-              Next <i className="fas fa-chevron-right" />
-            </button>
-          ) : (
-            <button className="btn-gold" disabled>Next <i className="fas fa-chevron-right" /></button>
-          )}
-        </div>
+        <YearDropdown years={years} selectedYear={selectedYear} onSelect={setSelectedYear} />
 
         {/* Entries */}
         {entries.length > 0 ? (
@@ -206,34 +252,7 @@ function YearEndChartPage() {
 
         {/* Year navigator bottom */}
         <div className="mt-8">
-          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-            {prevYear ? (
-              <button onClick={() => setSelectedYear(prevYear)} className="btn-gold">
-                <i className="fas fa-chevron-left" /> Prev
-              </button>
-            ) : (
-              <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
-            )}
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Year</div>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-[var(--card)] border border-[var(--border)] text-sm font-bold text-[var(--foreground)] px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            {nextYear ? (
-              <button onClick={() => setSelectedYear(nextYear)} className="btn-gold">
-                Next <i className="fas fa-chevron-right" />
-              </button>
-            ) : (
-              <button className="btn-gold" disabled>Next <i className="fas fa-chevron-right" /></button>
-            )}
-          </div>
+          <YearDropdown years={years} selectedYear={selectedYear} onSelect={setSelectedYear} />
         </div>
       </main>
     </div>

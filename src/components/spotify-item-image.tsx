@@ -39,6 +39,8 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
         alt={name}
         width={size}
         height={size}
+        loading="lazy"
+        decoding="async"
         className={`object-cover rounded-lg shrink-0 ${className}`}
       />
     );

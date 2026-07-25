@@ -126,6 +126,8 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
       <img
         src={imageUrl}
         alt={entry.name}
+        loading="lazy"
+        decoding="async"
         className="w-full h-full object-cover shadow-sm rounded-none"
       />
     );

@@ -14,7 +14,7 @@ function ArticleImage({ artist }: { artist: string | null }) {
     return () => { active = false; };
   }, [artist]);
   if (!imageUrl) return null;
-  return <img src={imageUrl} alt="" className="w-full h-52 md:h-72 object-cover rounded-xl border border-[var(--border)] mb-5" />;
+  return <img src={imageUrl} alt="" loading="lazy" decoding="async" className="w-full h-52 md:h-72 object-cover rounded-xl border border-[var(--border)] mb-5" />;
 }
 
 function highlightText(text: string, artistName?: string | null) {
