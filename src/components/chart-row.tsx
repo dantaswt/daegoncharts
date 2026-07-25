@@ -352,7 +352,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       const unitsStr = unitsRaw > 0 ? unitsRaw.toLocaleString("en-US") : "";
       const streamsRaw = parseEuropeanNumber(entry.streams);
       const salesRaw = parseEuropeanNumber(entry.sales);
-      const streamsStr = streamsRaw > 0 ? `${streamsRaw.toLocaleString("en-US")} million on-demand streams` : "";
+      const streamsStr = streamsRaw > 0 ? `${(streamsRaw / 1000).toLocaleString("en-US")} million on-demand streams` : "";
       const salesStr = salesRaw > 0 ? `${salesRaw.toLocaleString("en-US")} pure sales` : "";
       const bracketParts = [];
       if (streamsStr) bracketParts.push(streamsStr);
