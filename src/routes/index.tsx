@@ -498,20 +498,20 @@ function LandingPage() {
 
       {/* Bottom nav (moved from header) */}
       <div className="mt-14 border-t border-[var(--border)] pt-8 pb-4">
-        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-          <Link to="/artists" className="hover:text-[var(--accent)] transition-colors font-semibold">Artists</Link>
+        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground uppercase font-semibold tracking-wide">
+          <Link to="/artists" className="hover:text-[var(--accent)] transition-colors">Artists</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Year-End</Link>
+          <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="hover:text-[var(--accent)] transition-colors">Year-End</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="hover:text-[var(--accent)] transition-colors font-semibold">GOAT</Link>
+          <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="hover:text-[var(--accent)] transition-colors">Greatest of All Time</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: "2026-07-06" }} className="hover:text-[var(--accent)] transition-colors font-semibold">Chart Beat</Link>
+          <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: "2026-07-06" }} className="hover:text-[var(--accent)] transition-colors">Chart Beat</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/stats" className="hover:text-[var(--accent)] transition-colors font-semibold">Stats</Link>
+          <Link to="/stats" className="hover:text-[var(--accent)] transition-colors">Stats</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors font-semibold">#1's</Link>
+          <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors">#1's</Link>
           <span className="text-muted-foreground">|</span>
-          <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors font-semibold gold">Chart Battle</Link>
+          <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors">Chart Battle Game</Link>
         </div>
       </div>
     </div>
