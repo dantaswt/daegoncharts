@@ -87,13 +87,17 @@ function WeeklyChartPage() {
     : [];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
+  const arrowUp = <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg>;
+  const arrowDown = <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13V3M4 9l4 4 4-4"/></svg>;
+  const arrowRight = <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>;
+
   const filters = [
     { key: "all", label: "ALL" },
     { key: "debut", label: "NEW" },
     { key: "re", label: "RE" },
-    { key: "rising", label: "▲" },
-    { key: "falling", label: "▼" },
-    { key: "static", label: "=" },
+    { key: "rising", label: arrowUp },
+    { key: "falling", label: arrowDown },
+    { key: "static", label: arrowRight },
   ];
 
   const filteredEntries = entries.filter((e: typeof entries[number]) => {
