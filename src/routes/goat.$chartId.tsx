@@ -95,7 +95,6 @@ function GoatPage() {
                     onClick={() => { setSortBy(opt.key); setCurrentPage(1); }}
                     className={`sidebar-link w-full text-left ${sortBy === opt.key ? "active" : ""}`}
                   >
-                    <i className={`fas ${opt.icon} text-xs text-muted-foreground w-4`} />
                     {opt.label}
                   </button>
                 ))}
@@ -133,9 +132,9 @@ function GoatPage() {
           {/* Header */}
           <div className="relative text-center py-8 md:py-10 mb-6 overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-              <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">Greatest of All Time</span>
+              <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">Greatest of All Time</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10 uppercase">
               <i className={`fas ${cfg?.icon ?? "fa-trophy"} mr-2`} />
               {cfg?.title ?? "Greatest of All Time"}
             </h1>

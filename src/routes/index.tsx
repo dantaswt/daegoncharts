@@ -333,7 +333,6 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
             const cfg = chartsConfig[id];
             return (
               <Link key={id} to="/chart/$chartId" params={{ chartId: id }} className="sidebar-link">
-                <i className={`fas ${cfg.icon} text-xs text-muted-foreground w-4`} />
                 {cfg.title}
               </Link>
             );
@@ -349,10 +348,10 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
         </button>
         {goatOpen && (
           <div className="mt-3 space-y-1">
-            <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="sidebar-link"><i className="fas fa-music text-xs text-muted-foreground w-4" /> Songs</Link>
-            <Link to="/goat/$chartId" params={{ chartId: "goatArtists" }} className="sidebar-link"><i className="fas fa-user text-xs text-muted-foreground w-4" /> Artists</Link>
-            <Link to="/goat/$chartId" params={{ chartId: "goatAlbums" }} className="sidebar-link"><i className="fas fa-compact-disc text-xs text-muted-foreground w-4" /> Albums</Link>
-            <Link to="/goat/$chartId" params={{ chartId: "goatRadio" }} className="sidebar-link"><i className="fas fa-broadcast-tower text-xs text-muted-foreground w-4" /> Radio</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="sidebar-link">Songs</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatArtists" }} className="sidebar-link">Artists</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatAlbums" }} className="sidebar-link">Albums</Link>
+            <Link to="/goat/$chartId" params={{ chartId: "goatRadio" }} className="sidebar-link">Radio</Link>
           </div>
         )}
       </div>
@@ -365,22 +364,22 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
         </button>
         {yeOpen && (
           <div className="mt-3 space-y-1">
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="sidebar-link"><i className="fas fa-music text-xs text-muted-foreground w-4" /> Hot 100</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="sidebar-link"><i className="fas fa-user text-xs text-muted-foreground w-4" /> Artist 50</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="sidebar-link"><i className="fas fa-compact-disc text-xs text-muted-foreground w-4" /> Top 100 Albums</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="sidebar-link"><i className="fas fa-broadcast-tower text-xs text-muted-foreground w-4" /> Radio Songs</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndStreamingSongs" }} className="sidebar-link"><i className="fas fa-headphones text-xs text-muted-foreground w-4" /> Streaming Songs</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndTopStreamingAlbums" }} className="sidebar-link"><i className="fas fa-headphones text-xs text-muted-foreground w-4" /> Top Streaming Albums</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndTopAlbumSales" }} className="sidebar-link"><i className="fas fa-chart-simple text-xs text-muted-foreground w-4" /> Top Album Sales</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndDigitalSongsSales" }} className="sidebar-link"><i className="fas fa-download text-xs text-muted-foreground w-4" /> Digital Songs Sales</Link>
-            <Link to="/year-end/$chartId" params={{ chartId: "yearEndNewArtists" }} className="sidebar-link"><i className="fas fa-user-plus text-xs text-muted-foreground w-4" /> New Artists</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="sidebar-link">Hot 100</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndArtists" }} className="sidebar-link">Artist 50</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndAlbums" }} className="sidebar-link">Top 100 Albums</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndRadio" }} className="sidebar-link">Radio Songs</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndStreamingSongs" }} className="sidebar-link">Streaming Songs</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndTopStreamingAlbums" }} className="sidebar-link">Top Streaming Albums</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndTopAlbumSales" }} className="sidebar-link">Top Album Sales</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndDigitalSongsSales" }} className="sidebar-link">Digital Songs Sales</Link>
+            <Link to="/year-end/$chartId" params={{ chartId: "yearEndNewArtists" }} className="sidebar-link">New Artists</Link>
           </div>
         )}
       </div>
 
       {/* Stats */}
       <Link to="/stats" className="sidebar-section block hover:border-[var(--accent)] transition-all">
-        <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest"><i className="fas fa-chart-line mr-2" />Stats</div>
+        <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Stats</div>
       </Link>
     </aside>
   );
@@ -396,7 +395,7 @@ function LandingPage() {
       {/* Hero Title */}
       <div className="text-center py-10 md:py-16 relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[8rem] md:text-[14rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">Charts</span>
+          <span className="text-[8rem] md:text-[14rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">Charts</span>
         </div>
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-[var(--foreground)] tracking-tight relative z-10">daegon charts</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & greatest of all time lists</p>

@@ -164,9 +164,9 @@ function ChartBattlePage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">BATTLE</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">BATTLE</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10"><i className="fas fa-bolt mr-3"></i>Chart Battle</h1>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase"><i className="fas fa-bolt mr-3"></i>Chart Battle</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Select two artists and a chart to see who dominates</p>
       </div>
 

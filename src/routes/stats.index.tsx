@@ -274,9 +274,9 @@ function Stats2Page() {
       {/* Hero Header */}
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.04)] uppercase tracking-tighter leading-none">STATS</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">STATS</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10">Stats</h1>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Stats</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Records, milestones & chart history across every chart</p>
       </div>
 
