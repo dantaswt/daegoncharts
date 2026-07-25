@@ -283,7 +283,7 @@ function PreReleasesSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
             key={i}
-            className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm"
+            className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm flex flex-col"
           >
             <div className="aspect-square relative">
               <SpotifyImg query={`${item.album} ${item.artist}`} type="album" rounded={false} />
@@ -294,7 +294,7 @@ function PreReleasesSection() {
                 </div>
               </div>
             </div>
-            <div className="p-3">
+            <div className="p-3 flex flex-col flex-1">
               <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
                 <Link to="/album/$slug" params={{ slug: slugifyArtist(item.album) }} className="hover:underline">
                   {item.album}
@@ -305,7 +305,7 @@ function PreReleasesSection() {
                   {item.artist}
                 </Link>
               </div>
-              <div className="text-[10px] text-muted-foreground mt-1 font-semibold">
+              <div className="text-[10px] text-muted-foreground mt-auto pt-2 font-semibold border-t border-[var(--border)]">
                 <i className="fas fa-calendar-alt mr-1" />{formatReleaseDate(item.releaseDate)}
               </div>
             </div>
