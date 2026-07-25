@@ -151,9 +151,12 @@ function YearEndChartPage() {
                 key={id}
                 to="/year-end/$chartId"
                 params={{ chartId: id }}
-                className={`btn-nav ${id === chartId ? "active" : ""}`}
+                className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
+                  id === chartId
+                    ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+                    : "bg-black text-white hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+                }`}
               >
-                <i className={`fas ${c.icon} mr-1`} />
                 {c.title}
               </Link>
             );

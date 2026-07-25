@@ -12,9 +12,12 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
             key={id}
             to={date ? "/chart/$chartId/$date" : "/chart/$chartId"}
             params={date ? { chartId: id, date } : { chartId: id }}
-            className={`btn-nav ${activeId === id ? "active" : ""}`}
+            className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
+              activeId === id
+                ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+                : "bg-black text-white hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+            }`}
           >
-            <i className={`fas ${cfg.icon} mr-1`} />
             {cfg.title}
           </Link>
         );
