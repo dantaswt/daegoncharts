@@ -84,9 +84,9 @@ function SpotifyImg({ query, type, rounded }: { query: string; type: "artist" | 
 function TopChartsSection({ charts }: { charts: any }) {
   const [active, setActive] = useState<"songs" | "albums" | "artists">("songs");
   const labels: { key: "songs" | "albums" | "artists"; label: string }[] = [
-    { key: "songs", label: "Hot 100" },
-    { key: "albums", label: "Top 100 Albums" },
-    { key: "artists", label: "Top 50 Artists" },
+    { key: "songs", label: "HOT 100" },
+    { key: "albums", label: "TOP 100 ALBUMS" },
+    { key: "artists", label: "TOP 50 ARTISTS" },
   ];
 
   const { data, latestDate } = charts[active];
@@ -287,10 +287,8 @@ function PreReleasesSection() {
           >
             <div className="aspect-square relative">
               <SpotifyImg query={`${item.album} ${item.artist}`} type="album" rounded={false} />
-              <div className="absolute top-2 left-2 bg-[var(--accent)] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
-                #{i + 1}
-              </div>
-              <div className="absolute bottom-2 left-2 right-2">
+              <div className="rank-badge">{i + 1}</div>
+              <div className="absolute top-2 right-2">
                 <div className="bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md text-center">
                   {daysUntil(item.releaseDate)}
                 </div>
