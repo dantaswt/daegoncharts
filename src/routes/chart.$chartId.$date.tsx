@@ -89,11 +89,11 @@ function WeeklyChartPage() {
 
   const filters = [
     { key: "all", label: "ALL" },
-    { key: "debut", label: "DEBUTS" },
-    { key: "re", label: "RE-ENTRIES" },
-    { key: "rising", label: "RISING" },
-    { key: "falling", label: "FALLING" },
-    { key: "static", label: "STATIC" },
+    { key: "debut", label: "NEW" },
+    { key: "re", label: "RE" },
+    { key: "rising", label: "▲" },
+    { key: "falling", label: "▼" },
+    { key: "static", label: "=" },
   ];
 
   const filteredEntries = entries.filter((e: typeof entries[number]) => {
@@ -141,19 +141,19 @@ function WeeklyChartPage() {
           </div>
         </div>
         <WeekNavigator chartId={chartId} dates={data.dates} currentDate={date} />
-        <div className="flex flex-wrap gap-2 mb-4 max-w-4xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-2 mb-4 max-w-4xl mx-auto">
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 border transition-all ${
+              className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 border transition-all ${
                 filter === f.key
                   ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                  : "bg-black text-white border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  : "bg-black text-white border-black hover:border-[var(--accent)] hover:text-[var(--accent)]"
               }`}
             >
               {f.label}
-              {filterCounts[f.key as keyof typeof filterCounts] > 0 && (
+              {filterCounts[f.key as keyof typeof filterCounts] > 0 && filter !== "all" && (
                 <span className="ml-1 opacity-70">({filterCounts[f.key as keyof typeof filterCounts]})</span>
               )}
             </button>

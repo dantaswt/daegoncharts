@@ -73,7 +73,7 @@ function AwardIcon({ type }: { type: "gainer" | "performance" }) {
 function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
-  if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
+  if (diff === "RE") return <span className="diff-badge diff-new">RE</span>;
   if (diff === "=") return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>;
   if (diff.startsWith("▲")) {
     return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg></span>;
