@@ -87,9 +87,9 @@ function WeeklyChartPage() {
     : [];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
-  const arrowUp = <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg>;
-  const arrowDown = <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13V3M4 9l4 4 4-4"/></svg>;
-  const arrowRight = <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>;
+  const arrowRight = <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>;
+  const arrowUp = <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg>;
+  const arrowDown = <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13V3M4 9l4 4 4-4"/></svg>;
 
   const filters = [
     { key: "all", label: "ALL" },
@@ -109,15 +109,6 @@ function WeeklyChartPage() {
     if (filter === "static") return e.diff === "=" || e.diff === "" || e.diff === "-";
     return true;
   });
-
-  const filterCounts = {
-    all: entries.length,
-    debut: entries.filter((e: typeof entries[number]) => e.diff === "NEW").length,
-    re: entries.filter((e: typeof entries[number]) => e.diff === "RE").length,
-    rising: entries.filter((e: typeof entries[number]) => e.diff.startsWith("▲")).length,
-    falling: entries.filter((e: typeof entries[number]) => e.diff.startsWith("▼")).length,
-    static: entries.filter((e: typeof entries[number]) => e.diff === "=" || e.diff === "" || e.diff === "-").length,
-  };
 
   return (
     <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -157,9 +148,6 @@ function WeeklyChartPage() {
               }`}
             >
               {f.label}
-              {filterCounts[f.key as keyof typeof filterCounts] > 0 && filter !== "all" && (
-                <span className="ml-1 opacity-70">({filterCounts[f.key as keyof typeof filterCounts]})</span>
-              )}
             </button>
           ))}
         </div>
