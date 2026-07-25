@@ -250,6 +250,74 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
   );
 }
 
+/* ────── PRE-RELEASES Section ────── */
+const preReleases = [
+  { artist: "Tyla", album: "A*POP", releaseDate: "2026-07-24" },
+  { artist: "Charli xcx", album: "Music, Fashion, Film", releaseDate: "2026-07-24" },
+  { artist: "Jão", album: "Memórias Póstumas", releaseDate: "2026-07-26" },
+  { artist: "Ariana Grande", album: "petal", releaseDate: "2026-07-31" },
+  { artist: "FLO", album: "THERAPY AT THE CLUB", releaseDate: "2026-08-07" },
+];
+
+function PreReleasesSection() {
+  function formatReleaseDate(d: string) {
+    return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  function daysUntil(d: string) {
+    const diff = Math.ceil((new Date(d + "T00:00:00").getTime() - Date.now()) / 86400000);
+    if (diff < 0) return "Out now";
+    if (diff === 0) return "Releases today!";
+    if (diff === 1) return "Releases tomorrow";
+    return `In ${diff} days`;
+  }
+  return (
+    <section className="mb-14">
+      <div className="section-banner">
+        <span>Pre-Releases</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        {preReleases.map((item, i) => (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.3, delay: i * 0.05 }}
+            key={i}
+            className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm"
+          >
+            <div className="aspect-square relative">
+              <SpotifyImg query={`${item.album} ${item.artist}`} type="album" rounded={false} />
+              <div className="absolute top-2 left-2 bg-[var(--accent)] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                #{i + 1}
+              </div>
+              <div className="absolute bottom-2 left-2 right-2">
+                <div className="bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md text-center">
+                  {daysUntil(item.releaseDate)}
+                </div>
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
+                <Link to="/album/$slug" params={{ slug: slugifyArtist(item.album) }} className="hover:underline">
+                  {item.album}
+                </Link>
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                <Link to="/artist/$slug" params={{ slug: slugifyArtist(item.artist) }} className="hover:text-[var(--accent)] hover:underline">
+                  {item.artist}
+                </Link>
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-1 font-semibold">
+                <i className="fas fa-calendar-alt mr-1" />{formatReleaseDate(item.releaseDate)}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ────── CHART BEAT Section ────── */
 function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
   if (!articles || articles.length === 0) return null;
@@ -412,6 +480,7 @@ function LandingPage() {
           <TopChartsSection charts={charts} />
           <NumberOnesSection numberOnes={numberOnes} />
           <FirstTimersSection firstTimers={firstTimers} />
+          <PreReleasesSection />
           <ChartBeatSection articles={latestArticles} />
           
           {/* Chart Battle Mobile Link */}
