@@ -170,7 +170,9 @@ function ArtistPage() {
   const allCharts = [...chartsToRender, ...otherCharts];
 
   const [selectedChart, setSelectedChart] = useState(allCharts[0] || "");
+  const [expanded, setExpanded] = useState(false);
   const currentEntries = selectedChart ? (artist.chartsByKind[selectedChart] || []) : [];
+  const visibleEntries = expanded ? currentEntries : currentEntries.slice(0, 5);
 
   const no1s = currentEntries.filter((e: any) => e.peak === 1).length;
   const titles = currentEntries.length;
@@ -296,7 +298,7 @@ function ArtistPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentEntries.map((e: any, i: number) => (
+                  {visibleEntries.map((e: any, i: number) => (
                     <tr key={i} className="border-b border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
                       <td className="px-4 py-3">
                         <div className="font-bold whitespace-normal break-words">
@@ -337,6 +339,16 @@ function ArtistPage() {
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground text-sm">No entries found for this chart.</div>
+          )}
+          {currentEntries.length > 5 && (
+            <div className="p-3 text-center border-t border-[var(--border)]">
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="text-[var(--accent)] hover:underline text-sm font-semibold cursor-pointer"
+              >
+                {expanded ? "Show less" : `Show all ${currentEntries.length} entries`}
+              </button>
+            </div>
           )}
         </div>
       )}
