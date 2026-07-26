@@ -55,9 +55,9 @@ function AllArtistsPage() {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return list.filter((a) => {
-      const matchesLetter = !selectedLetter || a.name[0].toUpperCase() === selectedLetter;
+      const matchesLetter = !query || a.name[0].toUpperCase() === selectedLetter;
       const matchesSearch = !query || a.name.toLowerCase().includes(query);
-      return matchesLetter && matchesSearch;
+      return matchesSearch;
     });
   }, [list, search, selectedLetter]);
 
