@@ -283,7 +283,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       display: "flex",
                       alignItems: "center",
                       padding: isNumberOne ? "20px 0" : "14px 0",
-                      borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.08)` : "none",
+                      borderBottom: i < topEntries.length - 1 ? `1px solid rgba(255,255,255,0.15)` : "none",
                       position: "relative",
                       overflow: "hidden",
                     }}
