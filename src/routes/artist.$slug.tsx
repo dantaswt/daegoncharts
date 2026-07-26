@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAllArtistStats, getArtistChartHistory, getGoatChart, getArtist50TotalUnits, getArtist50Totals } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile, getSpotifyFeaturedOn } from "@/lib/spotify.functions";
-import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config";
+import { slugifyArtist, chartsConfig, weeklyChartIds, stripAlbumEdition } from "@/lib/charts-config";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
@@ -290,7 +290,7 @@ function ArtistPage() {
                       <td className="px-4 py-4">
                         <div className="font-bold text-base whitespace-normal break-words">
                           {selectedChart === "Top 50 Artists" ? e.item : isAlbumChart ? (
-                            <Link to="/album/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
+                            <Link to="/album/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(stripFeatFromTitle(e.item))}</Link>
                           ) : (
                             <Link to="/song/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
                           )}
