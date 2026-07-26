@@ -307,8 +307,11 @@ function Stats2Page() {
       )}
 
       {/* Top 5 & Top 10 for Artists with Most #1's and Most Debuts at #1 */}
-      {categories.filter(c => c.id === "artistNumberOnes" || c.id === "artistDebutNumberOnes").map((cat) => (
-        <section key={cat.id} className="mb-8">
+      {(selectedStat === "artistNumberOnes" || selectedStat === "artistDebutNumberOnes") && (() => {
+        const cat = categories.find(c => c.id === selectedStat);
+        if (!cat) return null;
+        return (
+        <section className="mb-8">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">{cat.title}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top 5 */}
@@ -359,7 +362,8 @@ function Stats2Page() {
             </div>
           </div>
         </section>
-      ))}
+        );
+      })()}
 
       {/* Results count */}
       <div className="text-xs text-muted-foreground mb-3">
