@@ -65,6 +65,15 @@ function formatComma(v: string | null | undefined): string {
   return n.toLocaleString("en-US");
 }
 
+function formatDate(d: string) {
+  if (!d) return "—";
+  try {
+    return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
+  } catch {
+    return d;
+  }
+}
+
 export const Route = createFileRoute("/artist/$slug")({
   loader: async ({ params }) => {
     const [all, artist50Units, artist50Totals] = await Promise.all([getAllArtistStats(), getArtist50TotalUnits(), getArtist50Totals()]);
@@ -120,134 +129,9 @@ function DateLink({ chartName, date, children }: { chartName: string; date: stri
   const route = chartNameToRoute[chartName];
   if (!route || !date) return <span>{children}</span>;
   return (
-    <Link to="/chart/$chartId/$date" params={{ chartId: route.chartId, date }} className="text-[var(--accent)] hover:underline">
+    <Link to="/chart/$chartId/$date" params={{ chartId: route.chartId, date }} className="hover:underline">
       {children}
     </Link>
-  );
-}
-
-/* ────── Chart History Table ────── */
-function ChartHistoryTable({ chartName, entries, mainArtist }: { chartName: string; entries: any[]; mainArtist: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const displayChartName = chartName === "Top 40 Radio" ? "Radio Songs" : chartName;
-  const visibleEntries = expanded ? entries : entries.slice(0, 5);
-
-  if (entries.length === 0) return null;
-
-  const no1s = entries.filter(e => e.peak === 1).length;
-  const top5 = entries.filter(e => e.peak >= 1 && e.peak <= 5).length;
-  const top10 = entries.filter(e => e.peak >= 1 && e.peak <= 10).length;
-
-  const chartIcons: Record<string, string> = {
-    "Hot 100 Songs": "fa-music",
-    "Digital Songs Sales": "fa-download",
-    "Streaming Songs": "fa-headphones",
-    "Top 40 Radio": "fa-broadcast-tower",
-    "Top 100 Albums": "fa-compact-disc",
-    "Top Album Sales": "fa-shopping-cart",
-    "Top Streaming Albums": "fa-headphones-alt",
-    "Top 50 Artists": "fa-user",
-  };
-
-  const isAlbumChart = chartName === "Top 100 Albums" || chartName === "Top Album Sales" || chartName === "Top Streaming Albums";
-  const itemLabel = isAlbumChart ? "Album" : "Song";
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-      <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-[var(--border)]">
-          <div className="flex items-center gap-3">
-            <i className={`fas ${chartIcons[chartName] ?? "fa-chart-bar"} text-[var(--accent)] text-lg`} />
-            <div>
-              <h3 className="font-bold text-base sm:text-lg">{displayChartName}</h3>
-              <p className="text-xs text-muted-foreground">{entries.length} {entries.length === 1 ? "entry" : "entries"}</p>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {no1s > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[rgba(255,215,0,0.1)] text-[#FFD700] text-[10px] font-bold rounded-full border border-[rgba(255,215,0,0.3)]">
-                <i className="fas fa-crown" /> #1's: {no1s}
-              </span>
-            )}
-            {top5 > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[rgba(0,230,118,0.08)] text-[var(--accent)] text-[10px] font-bold rounded-full border border-[rgba(0,230,118,0.2)]">
-                Top 5: {top5}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[rgba(56,189,248,0.08)] text-[#38BDF8] text-[10px] font-bold rounded-full border border-[rgba(56,189,248,0.2)]">
-              Top 10: {top10}
-            </span>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase text-muted-foreground tracking-wider">
-                <th className="px-4 sm:px-5 py-3 font-bold">{itemLabel}</th>
-                <th className="px-3 py-3 text-center font-bold">Peak</th>
-                <th className="px-3 py-3 text-center font-bold">Weeks</th>
-                <th className="px-3 py-3 text-center font-bold hidden md:table-cell">First Entry</th>
-                <th className="px-3 py-3 text-center font-bold hidden md:table-cell">Peak Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleEntries.map((e, i: number) => (
-                <tr key={i} className="border-t border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
-                  <td className="px-4 sm:px-5 py-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold whitespace-normal break-words">
-                        {chartName === "Top 50 Artists" ? e.item : isAlbumChart ? (
-                          <Link to="/album/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
-                        ) : (
-                          <Link to="/song/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
-                        )}
-                          {(e.weeksAt1 ?? 0) > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap shrink-0 ml-1.5">
-                              {e.weeksAt1} {e.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
-                            </span>
-                          )}
-                        </div>
-                        {chartName !== "Top 50 Artists" && (
-                          <div className="text-xs text-muted-foreground break-words">
-                            {mainArtist}
-                            {!isAlbumChart && <TrackArtists song={e.item} artist={mainArtist} className="text-xs text-muted-foreground" />}
-                          </div>
-                        )}
-                      </div>
-                  </td>
-                  <td className="px-3 py-3 text-center">
-                    <span className={`font-black ${e.peak === 1 ? "gold text-base" : e.peak <= 3 ? "text-[var(--accent)]" : ""}`}>
-                      #{e.peak}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-center">{e.weeks}</td>
-                  <td className="px-3 py-3 text-center text-xs hidden md:table-cell">
-                    {e.firstEntry ? <DateLink chartName={chartName} date={e.firstEntry}>{e.firstEntry}</DateLink> : "—"}
-                  </td>
-                  <td className="px-3 py-3 text-center text-xs hidden md:table-cell">
-                    {e.peakDate ? <DateLink chartName={chartName} date={e.peakDate}>{e.peakDate}</DateLink> : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {entries.length > 5 && (
-          <div className="p-3 text-center border-t border-[var(--border)]">
-            <button
-              onClick={() => setExpanded((value) => !value)}
-              className="text-[var(--accent)] hover:underline text-sm font-semibold cursor-pointer"
-            >
-              {expanded ? "Show less" : `Show all ${entries.length} entries`}
-            </button>
-          </div>
-        )}
-      </div>
-    </motion.div>
   );
 }
 
@@ -271,9 +155,6 @@ function ArtistPage() {
     );
   }
 
-  const top50 = artist.chartsByKind["Top 50 Artists"]?.[0] || artist.chartsByKind["Artists"]?.[0];
-  const totals = artist50Totals?.[artist.name];
-
   const order = [
     "Hot 100 Songs",
     "Digital Songs Sales",
@@ -286,10 +167,18 @@ function ArtistPage() {
 
   const chartsToRender = order.filter(c => artist.chartsByKind[c] && artist.chartsByKind[c].length > 0);
   const otherCharts = Object.keys(artist.chartsByKind).filter(c => !order.includes(c) && c !== "Top 50 Artists" && c !== "Artists");
+  const allCharts = [...chartsToRender, ...otherCharts];
 
-  const totalEntries = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0);
-  const totalNo1s = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.filter((e: any) => e.peak === 1).length, 0);
-  const totalWeeks = Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.reduce((s: number, e: any) => s + (e.weeks || 0), 0), 0);
+  const [selectedChart, setSelectedChart] = useState(allCharts[0] || "");
+  const currentEntries = selectedChart ? (artist.chartsByKind[selectedChart] || []) : [];
+
+  const no1s = currentEntries.filter((e: any) => e.peak === 1).length;
+  const titles = currentEntries.length;
+  const top10 = currentEntries.filter((e: any) => e.peak >= 1 && e.peak <= 10).length;
+
+  const isAlbumChart = selectedChart === "Top 100 Albums" || selectedChart === "Top Album Sales" || selectedChart === "Top Streaming Albums";
+
+  const totals = artist50Totals?.[artist.name];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
@@ -298,123 +187,168 @@ function ArtistPage() {
         <i className="fas fa-arrow-left" /> All artists
       </Link>
 
-      {/* Hero Card */}
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-lg mb-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,230,118,0.03)] via-transparent to-[rgba(56,189,248,0.03)]" />
+      {/* Hero Header */}
+      <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">EXPLORE</span>
+        </div>
+        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black gold tracking-tight relative z-10 uppercase">{artist.name}</h1>
+      </div>
 
-        <div className="relative flex flex-col md:flex-row items-center md:items-stretch gap-0">
-          {/* Artist Image */}
-          <div className="relative w-full md:w-72 h-64 md:h-auto shrink-0 overflow-hidden">
-            {profile?.imageUrl ? (
-              <>
-                <img
-                  src={profile.imageUrl}
-                  alt={artist.name}
-                  className={`w-full h-full object-cover transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-                  onLoad={() => setImgLoaded(true)}
-                />
-                {!imgLoaded && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
-                    <i className="fas fa-user text-4xl text-muted-foreground" />
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
-                <i className="fas fa-user text-5xl text-muted-foreground" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card)] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[var(--card)]" />
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 p-6 md:p-8 flex flex-col justify-center min-w-0 text-center sm:text-left">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 text-[var(--foreground)]">
-              {artist.name}
-            </h1>
-
-            {profile && (
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs mb-5">
-                {profile.followers > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-[var(--foreground)]">
-                    <i className="fas fa-users text-[var(--accent)]" />
-                    {profile.followers >= 1000000
-                      ? `${(profile.followers / 1000000).toFixed(1)}M`
-                      : profile.followers >= 1000
-                      ? `${(profile.followers / 1000).toFixed(0)}K`
-                      : profile.followers.toLocaleString()} Followers
-                  </span>
-                )}
-                {profile.genres.length > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] capitalize text-[var(--foreground)]">
-                    <i className="fas fa-music text-[var(--accent)]" />
-                    {profile.genres.slice(0, 3).join(", ")}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {goatData && (
-                <div className="text-center p-3 rounded-xl border border-[rgba(255,215,0,0.2)]">
-                  <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Greatest of All Time Rank</div>
-                  <div className="text-xl font-black gold">#{goatData.position}</div>
+      {/* Artist Image + Bio */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col md:flex-row gap-6 mb-10">
+        <div className="w-full md:w-80 shrink-0">
+          {profile?.imageUrl ? (
+            <div className="aspect-square relative overflow-hidden rounded-xl border border-[var(--border)]">
+              <img
+                src={profile.imageUrl}
+                alt={artist.name}
+                className={`w-full h-full object-cover transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+                onLoad={() => setImgLoaded(true)}
+              />
+              {!imgLoaded && (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                  <i className="fas fa-user text-4xl text-muted-foreground" />
                 </div>
               )}
-              <div className="text-center p-3 rounded-xl border border-[var(--border)]">
-                <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Entries</div>
-                <div className="text-xl font-black text-[var(--foreground)]">{totalEntries}</div>
-              </div>
-              <div className="text-center p-3 rounded-xl border border-[var(--border)]">
-                <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">#1's</div>
-                <div className="text-xl font-black gold">{totalNo1s}</div>
-              </div>
-              <div className="text-center p-3 rounded-xl border border-[var(--border)]">
-                <div className="text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Weeks</div>
-                <div className="text-xl font-black text-[var(--foreground)]">{totalWeeks}</div>
-              </div>
             </div>
-
-            {/* Units / Sales / Streams */}
-            {totals && (totals.totalUnits || totals.totalSales || totals.totalStreams) && (
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-3">
-                <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                  <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Units</div>
-                  <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{totals.totalUnits ? formatComma(totals.totalUnits) : "—"}</div>
-                </div>
-                <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                  <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Sales</div>
-                  <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{totals.totalSales ? formatComma(totals.totalSales) : "—"}</div>
-                </div>
-                <div className="text-center p-2 sm:p-3 rounded-xl border border-[var(--border)]">
-                  <div className="text-[8px] sm:text-[9px] uppercase text-muted-foreground font-bold tracking-widest mb-1">Streams</div>
-                  <div className="text-sm sm:text-lg font-black text-[var(--foreground)]">{totals.totalStreams ? formatStreams(totals.totalStreams) : "—"}</div>
-                </div>
-              </div>
-            )}
+          ) : (
+            <div className="aspect-square bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center rounded-xl border border-[var(--border)]">
+              <i className="fas fa-user text-5xl text-muted-foreground" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 flex flex-col justify-center">
+          {profile && (
+            <div className="flex flex-wrap items-center gap-3 text-sm mb-4">
+              {profile.followers > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)]">
+                  <i className="fas fa-users text-[var(--accent)]" />
+                  {profile.followers >= 1000000
+                    ? `${(profile.followers / 1000000).toFixed(1)}M`
+                    : profile.followers >= 1000
+                    ? `${(profile.followers / 1000).toFixed(0)}K`
+                    : profile.followers.toLocaleString()} Followers
+                </span>
+              )}
+              {profile.genres.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] capitalize">
+                  <i className="fas fa-music text-[var(--accent)]" />
+                  {profile.genres.slice(0, 3).join(", ")}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            {profile?.bio ? profile.bio : `${artist.name} has ${Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0)} chart entries across all charts.`}
           </div>
         </div>
       </motion.div>
 
-      {/* Chart History Sections */}
-      <div className="space-y-8">
-        {chartsToRender.map((c) => (
-          <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} mainArtist={artist.name} />
-        ))}
-        {otherCharts.map((c) => (
-          <ChartHistoryTable key={c} chartName={c} entries={artist.chartsByKind[c]} mainArtist={artist.name} />
-        ))}
-      </div>
+      {/* Chart Selector + Summary Cards */}
+      {allCharts.length > 0 && (
+        <div className="mb-8">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-[var(--accent)] text-black p-4 flex items-center justify-center">
+              <div className="text-center">
+                <div className="font-black text-base leading-tight uppercase">{selectedChart || "—"}</div>
+              </div>
+            </div>
+            <div className="border border-[var(--accent)] p-4">
+              <div className="text-center">
+                <div className="text-3xl font-black text-[var(--foreground)]">{no1s}</div>
+                <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-1">NO. 1 HITS</div>
+              </div>
+            </div>
+            <div className="border border-[var(--accent)] p-4">
+              <div className="text-center">
+                <div className="text-3xl font-black text-[var(--foreground)]">{titles}</div>
+                <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-1">TITLES</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart Selector */}
+          <div className="mb-4">
+            <select
+              value={selectedChart}
+              onChange={(e) => setSelectedChart(e.target.value)}
+              className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[200px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+            >
+              {allCharts.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Table Header */}
+          {currentEntries.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase text-muted-foreground tracking-wider border-b border-[var(--border)]">
+                    <th className="px-4 py-3 font-bold">{isAlbumChart ? "Album" : "Song"}</th>
+                    <th className="px-3 py-3 text-center font-bold">Debut Date</th>
+                    <th className="px-3 py-3 text-center font-bold">Peak Pos.</th>
+                    <th className="px-3 py-3 text-center font-bold">Peak Date</th>
+                    <th className="px-3 py-3 text-center font-bold">Wks. on Chart</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentEntries.map((e: any, i: number) => (
+                    <tr key={i} className="border-b border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-bold whitespace-normal break-words">
+                          {selectedChart === "Top 50 Artists" ? e.item : isAlbumChart ? (
+                            <Link to="/album/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
+                          ) : (
+                            <Link to="/song/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
+                          )}
+                        </div>
+                        {selectedChart !== "Top 50 Artists" && (
+                          <div className="text-xs text-muted-foreground break-words">
+                            {artist.name}
+                            {!isAlbumChart && <TrackArtists song={e.item} artist={artist.name} className="text-xs text-muted-foreground" />}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs">
+                        {e.firstEntry ? <DateLink chartName={selectedChart} date={e.firstEntry}>{formatDate(e.firstEntry)}</DateLink> : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <div className="font-black text-base">#{e.peak}</div>
+                        {(e.weeksAt1 ?? 0) > 0 && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 bg-[var(--accent)] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap mt-1">
+                            {e.weeksAt1} WKS
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs">
+                        {e.peakDate ? <DateLink chartName={selectedChart} date={e.peakDate}>{formatDate(e.peakDate)}</DateLink> : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="font-black text-lg">{e.weeks}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground text-sm">No entries found for this chart.</div>
+          )}
+        </div>
+      )}
 
       {/* Featured Collaborations */}
       {featuredOn && featuredOn.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="mt-8">
-          <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
             <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-[var(--border)]">
               <i className="fas fa-handshake text-[var(--accent)] text-lg" />
               <div>
-                <h3 className="font-bold text-base sm:text-lg">Featured Collaborations</h3>
+                <h3 className="font-bold text-base sm:text-lg uppercase">Featured Collaborations</h3>
                 <p className="text-xs text-muted-foreground">{featuredOn.length} {featuredOn.length === 1 ? "track" : "tracks"} where {artist.name} is featured</p>
               </div>
             </div>
