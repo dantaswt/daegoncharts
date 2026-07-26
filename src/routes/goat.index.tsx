@@ -22,8 +22,7 @@ export const Route = createFileRoute("/goat/")({
               params={{ chartId: id }}
               className="bg-[var(--card)] hover:border-[var(--accent)] border border-[var(--border)] rounded-lg p-6 text-center transition-all shadow-sm"
             >
-              <i className={`fas ${cfg.icon} gold text-3xl mb-2`} />
-              <div className="font-bold">{cfg.title}</div>
+              <div className="font-bold uppercase">{cfg.title}</div>
             </Link>
           );
         })}

@@ -91,8 +91,8 @@ function ChartBeat2Page() {
       </aside>
       <main>
         <div className="mb-4 text-center md:text-left">
-          <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
-            <i className={`fas ${cfg.icon}`} /> Chart Beat
+          <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start uppercase">
+            Chart Beat
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
             Auto-generated analysis for {cfg.title} — week of {formatDateShort(date)}

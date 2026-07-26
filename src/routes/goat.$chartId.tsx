@@ -135,7 +135,6 @@ function GoatPage() {
               <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">Greatest of All Time</span>
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10 uppercase">
-              <i className={`fas ${cfg?.icon ?? "fa-trophy"} mr-2`} />
               {cfg?.title ?? "Greatest of All Time"}
             </h1>
             <p className="text-muted-foreground text-sm mt-2 relative z-10">
