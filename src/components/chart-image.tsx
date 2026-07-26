@@ -109,7 +109,13 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
           ref={ref}
           style={{
             width: 1080,
-            background: "#1a1a1a",
+            background: "linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0d0d0d 100%)",
+            backgroundImage: `
+              linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0d0d0d 100%),
+              radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.03) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 40%),
+              radial-gradient(ellipse at 60% 80%, rgba(255,255,255,0.02) 0%, transparent 50%)
+            `,
             fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
             display: "flex",
             flexDirection: "column",
@@ -117,6 +123,21 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
             position: "relative",
           }}
         >
+          {/* Metallic shimmer overlay */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: `
+                linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.02) 25%, transparent 50%, rgba(255,255,255,0.03) 75%, transparent 100%)
+              `,
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
           {/* Header */}
           <div
             style={{
@@ -125,6 +146,8 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               display: "flex",
               flexDirection: "column",
               gap: 6,
+              position: "relative",
+              zIndex: 1,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -184,6 +207,8 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               display: "flex",
               flexDirection: "column",
               gap: 0,
+              position: "relative",
+              zIndex: 1,
             }}
           >
             {/* Column headers */}
@@ -405,6 +430,8 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              position: "relative",
+              zIndex: 1,
             }}
           >
             <div style={{ fontSize: 14, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>

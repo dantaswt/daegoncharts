@@ -306,65 +306,6 @@ function Stats2Page() {
         </section>
       )}
 
-      {/* Top 5 & Top 10 for Artists with Most #1's and Most Debuts at #1 */}
-      {(selectedStat === "artistNumberOnes" || selectedStat === "artistDebutNumberOnes") && (() => {
-        const cat = categories.find(c => c.id === selectedStat);
-        if (!cat) return null;
-        return (
-        <section className="mb-8">
-          <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">{cat.title}</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Top 5 */}
-            <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] p-4 shadow-sm">
-              <div className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] mb-3">Top 5</div>
-              <div className="space-y-2">
-                {cat.records.slice(0, 5).map((record, i) => (
-                  <div key={`${record.artist}-${i}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${i < 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
-                      {i + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-bold text-sm truncate">{record.name}</div>
-                      {record.details && <div className="text-[10px] text-muted-foreground truncate">{record.details}</div>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-black text-sm gold">{record.valueLabel}</div>
-                    </div>
-                  </div>
-                ))}
-                {cat.records.length === 0 && (
-                  <div className="text-xs text-muted-foreground italic py-2">No data available</div>
-                )}
-              </div>
-            </div>
-            {/* Top 10 */}
-            <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] p-4 shadow-sm">
-              <div className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] mb-3">Top 10</div>
-              <div className="space-y-2">
-                {cat.records.slice(0, 10).map((record, i) => (
-                  <div key={`${record.artist}-${i}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${i < 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
-                      {i + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-bold text-sm truncate">{record.name}</div>
-                      {record.details && <div className="text-[10px] text-muted-foreground truncate">{record.details}</div>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-black text-sm gold">{record.valueLabel}</div>
-                    </div>
-                  </div>
-                ))}
-                {cat.records.length === 0 && (
-                  <div className="text-xs text-muted-foreground italic py-2">No data available</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-        );
-      })()}
-
       {/* Results count */}
       <div className="text-xs text-muted-foreground mb-3">
         {filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""} found

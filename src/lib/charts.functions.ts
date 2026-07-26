@@ -1911,6 +1911,76 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         records: artistDebutNo1Records.sort((a, b) => b.value - a.value).slice(0, 1000),
       });
 
+      // 13. Artists with Most Top 5 (unique songs that reached top 5)
+      const artistTop5Map = new Map<string, Map<string, number>>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position >= 1 && e.position <= 5) {
+            if (!artistTop5Map.has(e.artist)) {
+              artistTop5Map.set(e.artist, new Map());
+            }
+            const artistSongs = artistTop5Map.get(e.artist)!;
+            const weeks = artistSongs.get(e.name) || 0;
+            artistSongs.set(e.name, weeks + 1);
+          }
+        }
+      }
+      const artistTop5Records: Stats2Record[] = [];
+      for (const [artist, songs] of artistTop5Map) {
+        const uniqueSongs = songs.size;
+        const topSongs = [...songs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, weeks]) => `${name} (${weeks}w)`).join(", ");
+        artistTop5Records.push({
+          name: artist,
+          artist,
+          value: uniqueSongs,
+          valueLabel: `${uniqueSongs} top 5`,
+          chartId: chart.id,
+          details: `Top: ${topSongs}`,
+        });
+      }
+      categories.push({
+        id: "artistTop5",
+        title: "Artists with Most Top 5",
+        icon: "fa-arrow-up",
+        description: "Artists with the most songs to reach the top 5",
+        records: artistTop5Records.sort((a, b) => b.value - a.value).slice(0, 1000),
+      });
+
+      // 14. Artists with Most Top 10 (unique songs that reached top 10)
+      const artistTop10Map = new Map<string, Map<string, number>>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position >= 1 && e.position <= 10) {
+            if (!artistTop10Map.has(e.artist)) {
+              artistTop10Map.set(e.artist, new Map());
+            }
+            const artistSongs = artistTop10Map.get(e.artist)!;
+            const weeks = artistSongs.get(e.name) || 0;
+            artistSongs.set(e.name, weeks + 1);
+          }
+        }
+      }
+      const artistTop10Records: Stats2Record[] = [];
+      for (const [artist, songs] of artistTop10Map) {
+        const uniqueSongs = songs.size;
+        const topSongs = [...songs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, weeks]) => `${name} (${weeks}w)`).join(", ");
+        artistTop10Records.push({
+          name: artist,
+          artist,
+          value: uniqueSongs,
+          valueLabel: `${uniqueSongs} top 10`,
+          chartId: chart.id,
+          details: `Top: ${topSongs}`,
+        });
+      }
+      categories.push({
+        id: "artistTop10",
+        title: "Artists with Most Top 10",
+        icon: "fa-chart-line",
+        description: "Artists with the most songs to reach the top 10",
+        records: artistTop10Records.sort((a, b) => b.value - a.value).slice(0, 1000),
+      });
+
       chartStats[chart.id] = categories;
     }
 
