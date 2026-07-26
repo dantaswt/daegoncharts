@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { getWeeklyChart, getAllArtistStats, type ChartEntry, type WeeklyChartData } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
-import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
+import { chartsConfig, weeklyChartIds, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
 import { getLatestBeatArticles, type GeneratedBeatArticle } from "@/lib/chart-beat-generator";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 import React, { useState, useEffect, useRef } from "react";
@@ -180,7 +180,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{n.title}</div>
                   <div className="font-bold text-sm whitespace-normal break-words">{n.kind === "artist" ? n.entry.name : n.kind === "album" ? (
                     <Link to="/album/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline">
-                      {stripFeatFromTitle(n.entry.name)}
+                      {stripAlbumEdition(stripFeatFromTitle(n.entry.name))}
                     </Link>
                   ) : (
                     <Link to="/song/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline">

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import type { ChartEntry } from "@/lib/charts.functions";
 import { stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-artists";
+import { stripAlbumEdition } from "@/lib/charts-config";
 
 const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
   songs:          { accent: "#00E676", accentDark: "#00C853" },
@@ -350,7 +351,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                           WebkitBoxOrient: "vertical",
                         }}
                       >
-                        {isArtist ? entry.name : stripFeatFromTitle(entry.name)}
+                        {isArtist ? entry.name : kind === "album" ? stripAlbumEdition(stripFeatFromTitle(entry.name)) : stripFeatFromTitle(entry.name)}
                       </div>
                     </div>
 

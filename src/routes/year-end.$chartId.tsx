@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getYearEndGenerated, getYearEndNewArtists, type YECEntry } from "@/lib/charts.functions";
-import { chartsConfig, yearEndChartIds, slugifyArtist } from "@/lib/charts-config";
+import { chartsConfig, yearEndChartIds, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
@@ -215,7 +215,7 @@ function YearEndChartPage() {
                     {e.kind === "artist" ? (
                       <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                     ) : e.kind === "album" ? (
-                      <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
+                      <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripAlbumEdition(stripFeatFromTitle(e.name))}</Link>
                     ) : (
                       <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                     )}

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAllAlbumList } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
+import { stripAlbumEdition } from "@/lib/charts-config";
 import React, { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/albums")({
@@ -118,7 +119,7 @@ function AllAlbumsPage() {
                 >
                   <AlbumThumbnail name={album.name} artist={album.artist} />
                   <div className="min-w-0">
-                    <div className="font-semibold truncate group-hover:text-[var(--accent)]">{album.name}</div>
+                    <div className="font-semibold truncate group-hover:text-[var(--accent)]">{stripAlbumEdition(album.name)}</div>
                     <div className="text-xs text-muted-foreground mt-1">{album.artist} · {album.entries} entries</div>
                   </div>
                 </Link>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getAlbumDetails, getCertificationMeta } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
-import { slugifyArtist } from "@/lib/charts-config";
+import { slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
 import React from "react";
 
 export const Route = createFileRoute("/album/$slug")({
@@ -75,7 +75,7 @@ function AlbumPage() {
           <div className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 mb-1">
             <Link to="/artist/$slug" params={{ slug: slugifyArtist(album.artist) }} className="hover:text-[var(--accent)] transition-colors">{album.artist}</Link>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 break-words text-gray-900 dark:text-white">{album.name}</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 break-words text-gray-900 dark:text-white">{stripAlbumEdition(album.name)}</h1>
           {album.goatPosition && (
             <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-4 py-1.5 text-sm font-semibold mb-4 border border-amber-500/20">
               <i className="fas fa-trophy" />

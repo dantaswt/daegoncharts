@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ChartEntry } from "@/lib/charts.functions";
 import { getCertificationLevel } from "@/lib/charts.functions";
-import { slugifyArtist, slugify as slugifyAlbum, chartsConfig } from "@/lib/charts-config";
+import { slugifyArtist, slugify as slugifyAlbum, stripAlbumEdition, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
@@ -405,7 +405,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     const parts = [
       `Daegon's ${chartTitle}:`,
       posPart,
-      `${stripFeatFromTitle(entry.name)},`,
+      `${isAlbum ? stripAlbumEdition(stripFeatFromTitle(entry.name)) : stripFeatFromTitle(entry.name)},`,
       artistPart,
       entryDetail,
       weeksPart,
@@ -478,7 +478,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${entry.position === 1 ? "text-xl" : "text-base"}`}>
             {kind === "album" ? (
               <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
-                {stripFeatFromTitle(entry.name)}
+                {stripAlbumEdition(stripFeatFromTitle(entry.name))}
               </Link>
             ) : kind === "song" ? (
               <Link to="/song/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
@@ -504,7 +504,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-gray-500" />}
           </div>
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-            <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{entry.album}</Link>
+            <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(entry.album)}</Link>
           )}
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
@@ -547,7 +547,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
               {kind === "album" ? (
                 <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
-                  {stripFeatFromTitle(entry.name)}
+                  {stripAlbumEdition(stripFeatFromTitle(entry.name))}
                 </Link>
               ) : kind === "song" ? (
                 <Link to="/song/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">

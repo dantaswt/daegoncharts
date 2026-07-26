@@ -57,3 +57,9 @@ export function slugify(text: string): string {
 }
 
 export const slugifyArtist = slugify;
+
+export function stripAlbumEdition(name: string): string {
+  return name
+    .replace(/\s*\((?:Digital Deluxe Version|Special Edition|International Version)\)/gi, "")
+    .trim();
+}

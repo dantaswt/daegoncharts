@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getGoatGenerated, type GOATEntry } from "@/lib/charts.functions";
-import { chartsConfig, goatChartIds, slugifyArtist } from "@/lib/charts-config";
+import { chartsConfig, goatChartIds, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { useState, useMemo } from "react";
@@ -170,7 +170,7 @@ function GoatPage() {
                       {idx + 1}
                     </div>
                     <div className="font-bold text-sm sm:text-base break-words">{data.kind === "artist" ? stripFeatFromTitle(item.name) : data.kind === "album" ? (
-                      <Link to="/album/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
+                      <Link to="/album/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripAlbumEdition(stripFeatFromTitle(item.name))}</Link>
                     ) : (
                       <Link to="/song/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
                     )}</div>
@@ -232,7 +232,7 @@ function GoatPage() {
                       {data.kind === "artist" ? (
                         <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
                       ) : data.kind === "album" ? (
-                        <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
+                        <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripAlbumEdition(stripFeatFromTitle(e.name))}</Link>
                       ) : (
                         <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
                       )}
