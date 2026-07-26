@@ -1840,6 +1840,77 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
         records: gainerRecords.sort((a, b) => b.value - a.value).slice(0, 1000),
       });
 
+      // 11. Artists with Most #1's (unique songs that reached #1)
+      const artistNumberOnesMap = new Map<string, Map<string, number>>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position === 1) {
+            if (!artistNumberOnesMap.has(e.artist)) {
+              artistNumberOnesMap.set(e.artist, new Map());
+            }
+            const artistSongs = artistNumberOnesMap.get(e.artist)!;
+            const weeks = artistSongs.get(e.name) || 0;
+            artistSongs.set(e.name, weeks + 1);
+          }
+        }
+      }
+      const artistNo1Records: Stats2Record[] = [];
+      for (const [artist, songs] of artistNumberOnesMap) {
+        const totalWeeks = [...songs.values()].reduce((sum, w) => sum + w, 0);
+        const uniqueSongs = songs.size;
+        const topSongs = [...songs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, weeks]) => `${name} (${weeks}w)`).join(", ");
+        artistNo1Records.push({
+          name: artist,
+          artist,
+          value: uniqueSongs,
+          valueLabel: `${uniqueSongs} #1's`,
+          chartId: chart.id,
+          details: `${totalWeeks} total weeks at #1 · Top: ${topSongs}`,
+        });
+      }
+      categories.push({
+        id: "artistNumberOnes",
+        title: "Artists with Most #1's",
+        icon: "fa-crown",
+        description: "Artists with the most songs to reach #1",
+        records: artistNo1Records.sort((a, b) => b.value - a.value).slice(0, 1000),
+      });
+
+      // 12. Artists with Most Debuts at #1 (songs that debuted at #1)
+      const artistDebutNo1Map = new Map<string, { count: number; songs: string[]; dates: string[] }>();
+      for (const date of chart.dates) {
+        for (const e of chart.entriesByDate[date]) {
+          if (e.position === 1 && e.diff === "NEW") {
+            if (!artistDebutNo1Map.has(e.artist)) {
+              artistDebutNo1Map.set(e.artist, { count: 0, songs: [], dates: [] });
+            }
+            const info = artistDebutNo1Map.get(e.artist)!;
+            info.count++;
+            info.songs.push(e.name);
+            info.dates.push(date);
+          }
+        }
+      }
+      const artistDebutNo1Records: Stats2Record[] = [];
+      for (const [artist, info] of artistDebutNo1Map) {
+        const recentDebuts = info.songs.slice(0, 5).map((s, i) => `${s} (${new Date(info.dates[i] + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })})`).join(", ");
+        artistDebutNo1Records.push({
+          name: artist,
+          artist,
+          value: info.count,
+          valueLabel: `${info.count} debut #1's`,
+          chartId: chart.id,
+          details: `Top debuts: ${recentDebuts}`,
+        });
+      }
+      categories.push({
+        id: "artistDebutNumberOnes",
+        title: "Artists with Most Debuts at #1",
+        icon: "fa-rocket",
+        description: "Artists with the most songs to debut at #1",
+        records: artistDebutNo1Records.sort((a, b) => b.value - a.value).slice(0, 1000),
+      });
+
       chartStats[chart.id] = categories;
     }
 
