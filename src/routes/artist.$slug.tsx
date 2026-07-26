@@ -251,22 +251,28 @@ function ArtistPage() {
       {allCharts.length > 0 && (
         <div className="mb-8">
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-[var(--accent)] text-black p-4 flex items-center justify-center">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-[var(--accent)] text-black p-4 flex items-center justify-center rounded-xl">
               <div className="text-center">
-                <div className="font-black text-base leading-tight uppercase">{selectedChart || "—"}</div>
+                <div className="font-black text-sm leading-tight uppercase">{selectedChart || "—"}</div>
               </div>
             </div>
-            <div className="border border-[var(--accent)] p-4">
+            <div className="border border-[var(--accent)] p-4 rounded-xl">
               <div className="text-center">
                 <div className="text-3xl font-black text-[var(--foreground)]">{no1s}</div>
                 <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-1">NO. 1 HITS</div>
               </div>
             </div>
-            <div className="border border-[var(--accent)] p-4">
+            <div className="border border-[var(--accent)] p-4 rounded-xl">
               <div className="text-center">
                 <div className="text-3xl font-black text-[var(--foreground)]">{titles}</div>
                 <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-1">TITLES</div>
+              </div>
+            </div>
+            <div className="border border-[var(--accent)] p-4 rounded-xl">
+              <div className="text-center">
+                <div className="text-3xl font-black text-[var(--foreground)]">{top10}</div>
+                <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-1">TOP 10 HITS</div>
               </div>
             </div>
           </div>
@@ -276,7 +282,7 @@ function ArtistPage() {
             <select
               value={selectedChart}
               onChange={(e) => setSelectedChart(e.target.value)}
-              className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[200px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+              className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-3 min-w-[200px] focus:outline-none focus:border-[var(--accent)] cursor-pointer rounded-xl"
             >
               {allCharts.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -289,19 +295,19 @@ function ArtistPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-[10px] uppercase text-muted-foreground tracking-wider border-b border-[var(--border)]">
-                    <th className="px-4 py-3 font-bold">{isAlbumChart ? "Album" : "Song"}</th>
-                    <th className="px-3 py-3 text-center font-bold">Debut Date</th>
-                    <th className="px-3 py-3 text-center font-bold">Peak Pos.</th>
-                    <th className="px-3 py-3 text-center font-bold">Peak Date</th>
-                    <th className="px-3 py-3 text-center font-bold">Wks. on Chart</th>
+                  <tr className="text-left text-[10px] uppercase tracking-wider border-b border-[var(--border)]">
+                    <th className="px-4 py-3 font-bold text-[var(--foreground)]">{isAlbumChart ? "Album" : "Song"}</th>
+                    <th className="px-3 py-3 text-center font-bold text-[var(--accent)]">Debut Date</th>
+                    <th className="px-3 py-3 text-center font-bold text-[var(--accent)]">Peak Pos.</th>
+                    <th className="px-3 py-3 text-center font-bold text-[var(--accent)]">Peak Date</th>
+                    <th className="px-3 py-3 text-center font-bold text-[var(--accent)]">Wks. on Chart</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleEntries.map((e: any, i: number) => (
                     <tr key={i} className="border-b border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="font-bold whitespace-normal break-words">
+                      <td className="px-4 py-4">
+                        <div className="font-bold text-base whitespace-normal break-words">
                           {selectedChart === "Top 50 Artists" ? e.item : isAlbumChart ? (
                             <Link to="/album/$slug" params={{ slug: slugifyArtist(e.item) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.item)}</Link>
                           ) : (
@@ -315,22 +321,22 @@ function ArtistPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-center text-xs">
+                      <td className="px-3 py-4 text-center text-xs">
                         {e.firstEntry ? <DateLink chartName={selectedChart} date={e.firstEntry}>{formatDate(e.firstEntry)}</DateLink> : "—"}
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <div className="font-black text-base">#{e.peak}</div>
+                      <td className="px-3 py-4 text-center">
+                        <div className="font-black text-lg">#{e.peak}</div>
                         {(e.weeksAt1 ?? 0) > 0 && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 bg-[var(--accent)] text-black text-[8px] font-bold rounded uppercase whitespace-nowrap mt-1">
+                          <span className="inline-flex items-center px-2 py-0.5 bg-[var(--accent)] text-black text-[9px] font-bold rounded uppercase whitespace-nowrap mt-1">
                             {e.weeksAt1} WKS
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-center text-xs">
+                      <td className="px-3 py-4 text-center text-xs">
                         {e.peakDate ? <DateLink chartName={selectedChart} date={e.peakDate}>{formatDate(e.peakDate)}</DateLink> : "—"}
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-black text-lg">{e.weeks}</span>
+                      <td className="px-3 py-4 text-center">
+                        <span className="font-black text-xl">{e.weeks}</span>
                       </td>
                     </tr>
                   ))}
