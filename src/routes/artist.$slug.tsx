@@ -5,6 +5,7 @@ import { slugifyArtist, chartsConfig, weeklyChartIds } from "@/lib/charts-config
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
+import { SpotifyItemImage } from "@/components/spotify-item-image";
 
 /* ────── Chart name → route mapping ────── */
 const chartNameToRoute: Record<string, { chartId: string }> = {};
@@ -138,7 +139,6 @@ function DateLink({ chartName, date, children }: { chartName: string; date: stri
 /* ────── ARTIST PAGE ────── */
 function ArtistPage() {
   const { artist, profile, goatData, featuredOn, artist50Units, artist50Totals } = Route.useLoaderData();
-  const [imgLoaded, setImgLoaded] = useState(false);
 
   if (!artist) {
     return (
@@ -191,34 +191,15 @@ function ArtistPage() {
 
       {/* Hero Header */}
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">EXPLORE</span>
-        </div>
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black gold tracking-tight relative z-10 uppercase">{artist.name}</h1>
       </div>
 
       {/* Artist Image + Bio */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col md:flex-row gap-6 mb-10">
         <div className="w-full md:w-80 shrink-0">
-          {profile?.imageUrl ? (
-            <div className="aspect-square relative overflow-hidden rounded-xl border border-[var(--border)]">
-              <img
-                src={profile.imageUrl}
-                alt={artist.name}
-                className={`w-full h-full object-cover transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-                onLoad={() => setImgLoaded(true)}
-              />
-              {!imgLoaded && (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
-                  <i className="fas fa-user text-4xl text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="aspect-square bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center rounded-xl border border-[var(--border)]">
-              <i className="fas fa-user text-5xl text-muted-foreground" />
-            </div>
-          )}
+          <div className="aspect-square relative overflow-hidden rounded-xl border border-[var(--border)]">
+            <SpotifyItemImage name={artist.name} artist={artist.name} kind="artist" size={320} className="w-full h-full" />
+          </div>
         </div>
         <div className="flex-1 flex flex-col justify-center">
           {profile && (
