@@ -1,5 +1,5 @@
 [build]
-  command = "npx vite build"
+  command = "npx vite build && node patch-netlify-manifest.cjs"
   publish = "dist"
   functions = ".netlify/functions-internal"
 
