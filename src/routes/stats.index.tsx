@@ -308,6 +308,13 @@ function Stats2Page() {
     return Array.from(new Set(activeCategory.records.map((r) => r.artist))).sort();
   }, [activeCategory]);
 
+  // Clean up selected artists that don't exist in the new category
+  useEffect(() => {
+    if (selectedArtists.length > 0) {
+      setSelectedArtists((prev) => prev.filter((a) => uniqueArtists.includes(a)));
+    }
+  }, [uniqueArtists]);
+
   const isLowerBetter = false;
 
   const filteredRecords = useMemo(() => {
