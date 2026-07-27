@@ -254,7 +254,7 @@ function MultiArtistFilter({ artists, selected, onChange }: { artists: string[];
                   key={artist}
                   type="button"
                   onClick={() => toggle(artist)}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${selected.includes(artist) ? "text-[var(--accent)] font-bold" : "text-white hover:text-[var(--accent)]"} hover:bg-[var(--muted)]`}
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${selected.includes(artist) ? "text-[var(--accent)] font-bold" : "text-[var(--foreground)] hover:text-[var(--accent)]"} hover:bg-[var(--muted)]`}
                 >
                   <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selected.includes(artist) ? "bg-[var(--accent)] border-[var(--accent)]" : "border-[var(--border)]"}`}>
                     {selected.includes(artist) && <i className="fas fa-check text-[8px] text-black" />}
@@ -363,11 +363,10 @@ function Stats2Page() {
   const totalPages = Math.ceil(filteredRecords.length / PAGE_SIZE);
   const displayedRecords = filteredRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  // Reset state when chart changes
+  // Reset state when chart changes (keep artist filter)
   useEffect(() => {
     setSelectedStat(categories[0]?.id ?? "debuts");
     setSearchQuery("");
-    setSelectedArtists([]);
     setCurrentPage(1);
   }, [selectedChart]);
 
