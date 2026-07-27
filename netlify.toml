@@ -1,10 +1,7 @@
 [build]
-  command = "npx vite build && node -e \"const f=require('./.netlify/functions/manifest.json');f.functions.forEach(fn=>fn.runtimeVersion='nodejs20.x');require('fs').writeFileSync('./.netlify/functions/manifest.json',JSON.stringify(f))\""
+  command = "npx vite build"
   publish = "dist"
   functions = ".netlify/functions-internal"
-
-[build.environment]
-  NODE_VERSION = "20"
 
 [[redirects]]
   from = "/*"
