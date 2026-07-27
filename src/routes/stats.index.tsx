@@ -175,6 +175,100 @@ function SearchFilter({ value, onChange, placeholder }: { value: string; onChang
   );
 }
 
+/* ── Multi Artist Filter ── */
+function MultiArtistFilter({ artists, selected, onChange }: { artists: string[]; selected: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return artists.filter((a) => !q || a.toLowerCase().includes(q));
+  }, [artists, query]);
+
+  const toggle = (artist: string) => {
+    if (selected.includes(artist)) {
+      onChange(selected.filter((a) => a !== artist));
+    } else {
+      onChange([...selected, artist]);
+    }
+  };
+
+  const remove = (artist: string) => {
+    onChange(selected.filter((a) => a !== artist));
+  };
+
+  return (
+    <div className="relative flex-1 min-w-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm font-semibold text-left flex items-center gap-2 focus:border-[var(--accent)] transition-colors cursor-pointer"
+      >
+        {selected.length > 0 ? (
+          <span className="text-[var(--foreground)]">{selected.length} artist{selected.length !== 1 ? "s" : ""} selected</span>
+        ) : (
+          <span className="text-muted-foreground">Filter by artist...</span>
+        )}
+        <i className={`fas fa-chevron-${open ? "up" : "down"} text-[10px] text-muted-foreground ml-auto`} />
+      </button>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {selected.map((a) => (
+            <span key={a} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--accent)] text-black text-[10px] font-bold rounded-full">
+              {a}
+              <button type="button" onClick={() => remove(a)} className="hover:opacity-70">
+                <i className="fas fa-times text-[8px]" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-[var(--border)]">
+            <input
+              type="text"
+              placeholder="Search artists..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded px-2 py-1.5 text-xs text-[var(--foreground)] placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
+              autoFocus
+            />
+          </div>
+          <div className="overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-muted-foreground italic">No artists found</div>
+            ) : (
+              filtered.map((artist) => (
+                <button
+                  key={artist}
+                  type="button"
+                  onClick={() => toggle(artist)}
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-[var(--muted)] transition-colors ${selected.includes(artist) ? "text-[var(--accent)] font-bold" : "text-[var(--foreground)]"}`}
+                >
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selected.includes(artist) ? "bg-[var(--accent)] border-[var(--accent)]" : "border-[var(--border)]"}`}>
+                    {selected.includes(artist) && <i className="fas fa-check text-[8px] text-black" />}
+                  </span>
+                  {artist}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Sort selector ── */
 function SortSelector({ value, onChange, isLowerBetter }: { value: string; onChange: (v: string) => void; isLowerBetter: boolean }) {
   return (
@@ -201,13 +295,18 @@ function Stats2Page() {
   const [selectedStat, setSelectedStat] = useState("debuts");
   const [selectedYear, setSelectedYear] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [artistFilter, setArtistFilter] = useState("");
+  const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("auto");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 50;
 
   const categories = chartStats[selectedChart] ?? [];
   const activeCategory = categories.find((c) => c.id === selectedStat) ?? categories[0];
+
+  const uniqueArtists = useMemo(() => {
+    if (!activeCategory) return [];
+    return Array.from(new Set(activeCategory.records.map((r) => r.artist))).sort();
+  }, [activeCategory]);
 
   const isLowerBetter = false;
 
@@ -221,9 +320,8 @@ function Stats2Page() {
     }
 
     // Artist filter
-    if (artistFilter.trim()) {
-      const q = artistFilter.toLowerCase();
-      records = records.filter((r) => r.artist.toLowerCase().includes(q));
+    if (selectedArtists.length > 0) {
+      records = records.filter((r) => selectedArtists.includes(r.artist));
     }
 
     // Search filter
@@ -252,7 +350,7 @@ function Stats2Page() {
     }
 
     return records;
-  }, [activeCategory, selectedYear, artistFilter, searchQuery, sortBy, isLowerBetter]);
+  }, [activeCategory, selectedYear, selectedArtists, searchQuery, sortBy, isLowerBetter]);
 
   const totalPages = Math.ceil(filteredRecords.length / PAGE_SIZE);
   const displayedRecords = filteredRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -261,13 +359,13 @@ function Stats2Page() {
   useEffect(() => {
     setSelectedStat(categories[0]?.id ?? "debuts");
     setSearchQuery("");
-    setArtistFilter("");
+    setSelectedArtists([]);
     setCurrentPage(1);
   }, [selectedChart]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStat, selectedYear, artistFilter, searchQuery, sortBy]);
+  }, [selectedStat, selectedYear, selectedArtists, searchQuery, sortBy]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
@@ -292,9 +390,7 @@ function Stats2Page() {
           <div className="flex-1 min-w-0">
             <SearchFilter value={searchQuery} onChange={setSearchQuery} placeholder="Search by name..." />
           </div>
-          <div className="flex-1 min-w-0">
-            <SearchFilter value={artistFilter} onChange={setArtistFilter} placeholder="Filter by artist..." />
-          </div>
+          <MultiArtistFilter artists={uniqueArtists} selected={selectedArtists} onChange={setSelectedArtists} />
         </div>
       </section>
 
@@ -310,7 +406,7 @@ function Stats2Page() {
       <div className="text-xs text-muted-foreground mb-3">
         {filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""} found
         {selectedYear !== "all" && ` in ${selectedYear}`}
-        {artistFilter && ` by "${artistFilter}"`}
+        {selectedArtists.length > 0 && ` by ${selectedArtists.length} artist${selectedArtists.length !== 1 ? "s" : ""}`}
         {searchQuery && ` matching "${searchQuery}"`}
       </div>
 
