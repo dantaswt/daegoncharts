@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { getStats2, type Stats2Record, type Stats2Category } from "@/lib/charts.functions";
 import { chartsConfig } from "@/lib/charts-config";
 import { getSpotifyImage } from "@/lib/spotify.functions";
+import { StatsGridImage } from "@/components/stats-grid-image";
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 
@@ -253,7 +254,7 @@ function MultiArtistFilter({ artists, selected, onChange }: { artists: string[];
                   key={artist}
                   type="button"
                   onClick={() => toggle(artist)}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-[var(--muted)] transition-colors ${selected.includes(artist) ? "text-[var(--accent)] font-bold" : "text-[var(--foreground)]"}`}
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${selected.includes(artist) ? "text-[var(--accent)] font-bold" : "text-white hover:text-[var(--accent)]"} hover:bg-[var(--muted)]`}
                 >
                   <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selected.includes(artist) ? "bg-[var(--accent)] border-[var(--accent)]" : "border-[var(--border)]"}`}>
                     {selected.includes(artist) && <i className="fas fa-check text-[8px] text-black" />}
@@ -386,7 +387,7 @@ function Stats2Page() {
       </div>
 
       {/* Filters */}
-      <section className="mb-6 space-y-3">
+      <section className="mb-6 space-y-3 sticky top-0 z-40 bg-[var(--background)] py-3 -mx-4 sm:-mx-6 px-4 sm:px-6 border-b border-[var(--border)]">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <ChartSelector active={selectedChart} onChange={setSelectedChart} />
           <StatTypeTabs categories={categories} active={selectedStat} onChange={setSelectedStat} />
@@ -409,12 +410,22 @@ function Stats2Page() {
         </section>
       )}
 
-      {/* Results count */}
-      <div className="text-xs text-muted-foreground mb-3">
-        {filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""} found
-        {selectedYear !== "all" && ` in ${selectedYear}`}
-        {selectedArtists.length > 0 && ` by ${selectedArtists.length} artist${selectedArtists.length !== 1 ? "s" : ""}`}
-        {searchQuery && ` matching "${searchQuery}"`}
+      {/* Results count + Grid download */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs text-muted-foreground">
+          {filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""} found
+          {selectedYear !== "all" && ` in ${selectedYear}`}
+          {selectedArtists.length > 0 && ` by ${selectedArtists.length} artist${selectedArtists.length !== 1 ? "s" : ""}`}
+          {searchQuery && ` matching "${searchQuery}"`}
+        </div>
+        {filteredRecords.length > 0 && (
+          <StatsGridImage
+            records={filteredRecords}
+            title={activeCategory?.title ?? "Stats"}
+            chartId={selectedChart}
+            kind={chartsConfig[selectedChart]?.kind ?? "song"}
+          />
+        )}
       </div>
 
       {/* Records List */}
