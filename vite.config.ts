@@ -6,15 +6,8 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-const isNetlify = process.env.NETLIFY === "true";
-
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
-  },
-  vite: {
-    ...(isNetlify
-      ? { nitro: { preset: "netlify" } }
-      : {}),
   },
 });
