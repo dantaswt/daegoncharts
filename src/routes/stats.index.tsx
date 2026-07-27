@@ -240,7 +240,7 @@ function MultiArtistFilter({ artists, selected, onChange }: { artists: string[];
               placeholder="Search artists..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded px-2 py-1.5 text-xs text-[var(--foreground)] placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
+              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded px-2 py-1.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
               autoFocus
             />
           </div>
