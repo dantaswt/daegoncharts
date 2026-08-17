@@ -60,20 +60,20 @@ function formatValue(v: string | undefined, chartId?: string, isStream?: boolean
 function AwardIcon({ type }: { type: "gainer" | "performance" }) {
   if (type === "gainer") {
     return (
-      <span className="award-icon inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-black" title="Greatest Gainer of the Week">
-        <svg viewBox="0 0 24 24" fill="black" className="w-3.5 h-3.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+      <span className="award-icon inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-white" title="Greatest Gainer of the Week">
+        <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
       </span>
     );
   }
   return (
-    <svg viewBox="0 0 24 24" fill="black" className="w-5 h-5" title="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+    <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5" title="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
   );
 }
 
 function DiffIndicator({ diff }: { diff: string }) {
   if (!diff) return null;
   if (diff === "NEW") return <span className="diff-badge diff-new">NEW</span>;
-  if (diff === "RE") return <span className="diff-badge diff-new">RE</span>;
+  if (diff === "RE") return <span className="diff-badge diff-new">RE-ENTRY</span>;
   if (diff === "=") return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>;
   if (diff.startsWith("▲")) {
     return <span className="diff-steady flex items-center justify-center"><svg className="diff-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg></span>;
@@ -146,16 +146,16 @@ function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boole
       {showDiff && (
         <div className="flex items-center gap-2">
           <span className="text-gray-400 uppercase tracking-wide">LW</span>
-          <span className="font-bold text-black w-6 text-right">{lastWeek}</span>
+          <span className="font-bold text-white w-6 text-right">{lastWeek}</span>
         </div>
       )}
       <div className="flex items-center gap-2">
         <span className="text-gray-400 uppercase tracking-wide">Peak</span>
-        <span className="font-bold text-black w-6 text-right">{peak.replace("#", "")}</span>
+        <span className="font-bold text-white w-6 text-right">{peak.replace("#", "")}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-gray-400 uppercase tracking-wide">Weeks</span>
-        <span className="font-bold text-black w-6 text-right">{weeks}</span>
+        <span className="font-bold text-white w-6 text-right">{weeks}</span>
       </div>
     </div>
   );
@@ -276,13 +276,17 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
     }
 
     // Fallback for other charts
-    if (entry.units) {
-      const unitsVal = parseEuropeanNumber(entry.units);
-      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
+    if (chartId !== "radioSongs" && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
+      if (entry.units) {
+        const unitsVal = parseEuropeanNumber(entry.units);
+        items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
+      }
     }
-    if (entry.totalUnits) {
-      const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
-      items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
+    if (chartId !== "radioSongs" && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
+      if (entry.totalUnits) {
+        const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
+        items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
+      }
     }
     if (entry.sales) {
       const salesVal = parseEuropeanNumber(entry.sales);
@@ -468,7 +472,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             </div>
           )}
         </div>
-        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)] -ml-3" : "w-24 h-24"}`}>
+        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)] -ml-3" : "w-24 h-24"}`}>
           <SpotifyImage entry={entry} kind={kind} />
         </div>
         <div className="flex items-center justify-center w-8 flex-shrink-0">
@@ -485,7 +489,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                 {stripFeatFromTitle(entry.name)}
               </Link>
             ) : (
-              stripFeatFromTitle(entry.name)
+              <Link to="/artist/$slug" params={{ slug }} className="hover:text-[var(--accent)] hover:underline">{entry.name}</Link>
             )}
             {entry.position !== 1 && (entry.weeksAt1 ?? 0) >= 2 && (
               <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[9px] font-bold rounded whitespace-nowrap uppercase">
@@ -493,16 +497,12 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               </span>
             )}
           </div>
-          <div className={`break-words line-clamp-2 ${entry.position === 1 ? "text-base text-gray-400" : "text-sm text-gray-500"}`}>
-            <Link
-              to="/artist/$slug"
-              params={{ slug }}
-              className="hover:text-[var(--accent)] hover:underline"
-            >
-              {kind === "artist" ? "View Artist Page" : entry.artist}
-            </Link>
-            {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-gray-500" />}
-          </div>
+          {kind !== "artist" && (
+            <div className={`break-words line-clamp-2 ${entry.position === 1 ? "text-base text-gray-400" : "text-sm text-gray-500"}`}>
+              <Link to="/artist/$slug" params={{ slug }} className="hover:text-[var(--accent)] hover:underline">{entry.artist}</Link>
+              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-gray-500" />}
+            </div>
+          )}
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
             <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(entry.album)}</Link>
           )}
@@ -515,10 +515,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
           <ChartMetrics entry={entry} showDiff={showDiff} />
           <div className="flex flex-col gap-2">
-            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
             </button>
-            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
               {showDetails ? "−" : "+"}
             </button>
           </div>
@@ -540,7 +540,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               </div>
             )}
           </div>
-          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-gray-100 rounded-none w-14 h-14 flex-shrink-0">
+          <div className="placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none w-14 h-14 flex-shrink-0">
             <SpotifyImage entry={entry} kind={kind} />
           </div>
           <div className="min-w-0 flex-1">
@@ -554,7 +554,9 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                   {stripFeatFromTitle(entry.name)}
                 </Link>
               ) : (
-                stripFeatFromTitle(entry.name)
+                <Link to="/artist/$slug" params={{ slug }} className="hover:text-[var(--accent)] hover:underline">
+                  {entry.name}
+                </Link>
               )}
             {entry.position !== 1 && (entry.weeksAt1 ?? 0) >= 2 && (
                 <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded whitespace-nowrap uppercase">
@@ -562,16 +564,18 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-gray-500 break-words line-clamp-2">
-              <Link
-                to="/artist/$slug"
-                params={{ slug }}
-                className="hover:text-[var(--accent)] hover:underline"
-              >
-                {kind === "artist" ? "View Artist Page" : entry.artist}
-              </Link>
-              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[10px] text-gray-500" />}
-            </div>
+            {kind !== "artist" && (
+              <div className="text-[10px] text-gray-500 break-words line-clamp-2">
+                <Link
+                  to="/artist/$slug"
+                  params={{ slug }}
+                  className="hover:text-[var(--accent)] hover:underline"
+                >
+                {entry.artist}
+                </Link>
+                {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[10px] text-gray-500" />}
+              </div>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {metric && (
@@ -581,10 +585,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               {awards.hasStar && (
                 <AwardIcon type={(awards.gainerStreams || awards.gainerSales) ? "gainer" : "performance"} />
               )}
-              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
               </button>
-              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-white text-black text-sm hover:bg-gray-200 active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                 {showDetails ? "−" : "+"}
               </button>
             </div>
@@ -600,15 +604,18 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
       {/* Details panel (shared) */}
       {showDetails && (
-        <div className="mt-3 w-full rounded-xl bg-black p-3 border border-white text-sm animate-fade-in">
+        <div className="mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
           {detailFields.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              {detailFields.map((item) => (
-                <div key={item.label} className="rounded-3xl bg-black border border-white p-4">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">{item.label}</div>
-                  <div className="mt-2 text-sm font-semibold text-white">{item.value}</div>
-                </div>
-              ))}
+              {detailFields.map((item) => {
+                const isTotal = item.label.toLowerCase().startsWith("total");
+                return (
+                  <div key={item.label} className={`rounded-3xl border p-4 ${isTotal ? "bg-[rgba(255,215,0,0.06)] border-[rgba(255,215,0,0.15)]" : "bg-[var(--card)] border-[var(--border)]"}`}>
+                    <div className={`text-[10px] uppercase tracking-[0.2em] ${isTotal ? "text-[#FFD600]" : "text-[var(--accent)]"}`}>{item.label}</div>
+                    <div className="mt-2 text-sm font-semibold text-white">{item.value}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
           {runEntries.length > 0 ? (
@@ -619,7 +626,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                   <a
                     key={`${run.date}-${run.position}`}
                     href={`/chart/${chartId}/${run.date}`}
-                    className="block rounded-3xl border border-white bg-black p-3 transition hover:border-[var(--accent)] hover:bg-gray-900"
+                    className="block rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 transition hover:border-[var(--accent)] hover:bg-gray-900"
                   >
                     <div className="flex items-center justify-between gap-3 text-sm text-white">
                       <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>

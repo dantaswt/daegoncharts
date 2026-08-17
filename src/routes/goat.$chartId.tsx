@@ -42,7 +42,7 @@ function GoatPage() {
   const cfg = chartsConfig[chartId];
   const isAlbum = data.kind === "album";
   const isRadio = chartId === "goatRadio";
-  const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales" | "audience">("weeks");
+  const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales" | "audience" | "points">("weeks");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 50;
@@ -53,6 +53,7 @@ function GoatPage() {
     else if (sortBy === "streams") list.sort((a, b) => b.totalStreams - a.totalStreams || a.peak - b.peak);
     else if (sortBy === "sales") list.sort((a, b) => b.totalSales - a.totalSales || a.peak - b.peak);
     else if (sortBy === "audience") list.sort((a, b) => b.totalAudience - a.totalAudience || a.peak - b.peak);
+    else if (sortBy === "points") list.sort((a, b) => b.totalPoints - a.totalPoints || a.peak - b.peak);
     else list.sort((a, b) => b.weeks - a.weeks || a.peak - b.peak);
     return list.map((e, i) => ({ ...e, position: i + 1 }));
   }, [data.entries, sortBy]);
@@ -72,13 +73,14 @@ function GoatPage() {
   const sortOptions = [
     { key: "weeks" as const, label: "Weeks on Chart", icon: "fa-calendar-week" },
     { key: "units" as const, label: "Total Units", icon: "fa-chart-bar" },
+    { key: "points" as const, label: "Total Points", icon: "fa-star" },
     { key: "streams" as const, label: "Total Streams", icon: "fa-headphones" },
     { key: "sales" as const, label: "Total Sales", icon: "fa-shopping-cart" },
     ...(isRadio ? [{ key: "audience" as const, label: "Total Audience", icon: "fa-broadcast-tower" }] : []),
   ];
 
-  const metricLabel = sortBy === "units" ? "Units" : sortBy === "streams" ? "Streams" : sortBy === "sales" ? "Sales" : sortBy === "audience" ? "Audience" : "Weeks";
-  const metricIcon = sortBy === "units" ? "fa-chart-bar" : sortBy === "streams" ? "fa-headphones" : sortBy === "sales" ? "fa-shopping-cart" : sortBy === "audience" ? "fa-broadcast-tower" : "fa-calendar-week";
+  const metricLabel = sortBy === "units" ? "Units" : sortBy === "streams" ? "Streams" : sortBy === "sales" ? "Sales" : sortBy === "audience" ? "Audience" : sortBy === "points" ? "Points" : "Weeks";
+  const metricIcon = sortBy === "units" ? "fa-chart-bar" : sortBy === "streams" ? "fa-headphones" : sortBy === "sales" ? "fa-shopping-cart" : sortBy === "audience" ? "fa-broadcast-tower" : sortBy === "points" ? "fa-star" : "fa-calendar-week";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
@@ -132,7 +134,7 @@ function GoatPage() {
           {/* Header */}
           <div className="relative text-center py-8 md:py-10 mb-6 overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-              <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">Greatest of All Time</span>
+              <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">Greatest of All Time</span>
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10 uppercase">
               {cfg?.title ?? "Greatest of All Time"}
@@ -147,6 +149,9 @@ function GoatPage() {
                 chartId={chartId}
                 date="2025-12-31"
                 kind={data.kind}
+                hideWeeksAt1
+                hideLastWeek
+                displayTitle={chartId === "goatSongs" ? "Greatest Songs of All Time" : undefined}
               />
             </div>
           </div>
@@ -163,7 +168,7 @@ function GoatPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: idx === 0 ? 0.2 : idx === 1 ? 0 : 0.4 }}
-                    className={`relative text-center p-4 sm:p-6 rounded-2xl border overflow-hidden ${isFirst ? "border-[var(--accent)] bg-[rgba(0,230,118,0.03)]" : "border-[var(--border)] bg-[var(--card)]"}`}
+                    className={`relative text-center p-4 sm:p-6 rounded-2xl border overflow-hidden ${isFirst ? "border-[var(--accent)] bg-[rgba(255,109,0,0.05)]" : "border-[var(--border)] bg-[var(--card)]"}`}
                   >
                     {isFirst && <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--accent)]" />}
                     <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${isFirst ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
@@ -182,7 +187,7 @@ function GoatPage() {
                     )}
                     <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-black gold">
                       <i className={`fas ${metricIcon} text-xs`} />
-                      {sortBy === "units" ? `${formatMetric(item.totalUnits, false)} units` : sortBy === "streams" ? `${formatMetric(item.totalStreams, true)} streams` : sortBy === "sales" ? `${formatMetric(item.totalSales, false)} sales` : sortBy === "audience" ? `${formatMetric(item.totalAudience, false)} audience` : `${item.weeks} weeks`}
+                      {sortBy === "units" ? `${formatMetric(item.totalUnits, false)} units` : sortBy === "streams" ? `${formatMetric(item.totalStreams, true)} streams` : sortBy === "sales" ? `${formatMetric(item.totalSales, false)} sales` : sortBy === "audience" ? `${formatMetric(item.totalAudience, false)} audience` : sortBy === "points" ? `${formatMetric(item.totalPoints, false)} points` : `${item.weeks} weeks`}
                     </div>
                   </motion.div>
                 );
@@ -245,7 +250,7 @@ function GoatPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 sm:gap-4 text-xs text-muted-foreground shrink-0">
-                    <div className="text-center hidden sm:block">
+                    <div className="text-center">
                       <div className="text-[9px] uppercase font-bold tracking-wider">Peak</div>
                       <div className="font-black gold text-sm">#{e.peak}</div>
                     </div>
@@ -262,7 +267,7 @@ function GoatPage() {
                           <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
                         </div>
                         <div className="font-black text-[var(--foreground)] text-sm">
-                          {sortBy === "units" ? formatMetric(e.totalUnits, false) : sortBy === "streams" ? formatMetric(e.totalStreams, true) : sortBy === "sales" ? formatMetric(e.totalSales, false) : sortBy === "audience" ? formatMetric(e.totalAudience, false) : e.weeks}
+                          {sortBy === "units" ? formatMetric(e.totalUnits, false) : sortBy === "streams" ? formatMetric(e.totalStreams, true) : sortBy === "sales" ? formatMetric(e.totalSales, false) : sortBy === "audience" ? formatMetric(e.totalAudience, false) : sortBy === "points" ? formatMetric(e.totalPoints, false) : e.weeks}
                         </div>
                       </div>
                     )}

@@ -17,10 +17,10 @@ function getGridDimensions(count: number): { cols: number; rows: number } {
 }
 
 const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
-  songs:          { accent: "#00E676", accentDark: "#00C853" },
-  streamingSongs: { accent: "#00E676", accentDark: "#00C853" },
-  radioSongs:     { accent: "#00E676", accentDark: "#00C853" },
-  digitalSongsSales: { accent: "#00E676", accentDark: "#00C853" },
+  songs:          { accent: "#FF6D00", accentDark: "#E65100" },
+  streamingSongs: { accent: "#FF6D00", accentDark: "#E65100" },
+  radioSongs:     { accent: "#FF6D00", accentDark: "#E65100" },
+  digitalSongsSales: { accent: "#FF6D00", accentDark: "#E65100" },
   albums:         { accent: "#38BDF8", accentDark: "#0EA5E9" },
   topStreamingAlbums: { accent: "#38BDF8", accentDark: "#0EA5E9" },
   topAlbumSales:  { accent: "#38BDF8", accentDark: "#0EA5E9" },
@@ -167,10 +167,26 @@ export function StatsGridImage({ records, title, chartId, kind }: StatsGridImage
   const topRecords = records.slice(0, 16);
   const { cols } = getGridDimensions(topRecords.length);
 
-  // Pre-fetch all images
+  // Pre-fetch all images and convert to base64 for html-to-image
   useEffect(() => {
     let active = true;
     setImagesLoaded(false);
+
+    async function urlToBase64(url: string): Promise<string | null> {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) return null;
+        const blob = await resp.blob();
+        return await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return null;
+      }
+    }
 
     async function loadAll() {
       const urls: Record<number, string | null> = {};
@@ -190,7 +206,12 @@ export function StatsGridImage({ records, title, chartId, kind }: StatsGridImage
           }
           try {
             const url = await getSpotifyImage({ data: { query, type } });
-            if (active) urls[i] = url ?? null;
+            if (active && url) {
+              const base64 = await urlToBase64(url);
+              if (active) urls[i] = base64 ?? url;
+            } else if (active) {
+              urls[i] = null;
+            }
           } catch {
             if (active) urls[i] = null;
           }

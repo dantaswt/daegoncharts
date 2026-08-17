@@ -62,8 +62,8 @@ function SongPage() {
         <i className="fas fa-arrow-left" /> Back to Hot 100
       </Link>
 
-      <div className="flex flex-col sm:flex-row gap-6 bg-white dark:bg-[#111] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-lg">
-        <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0 mx-auto sm:mx-0">
+      <div className="flex flex-col sm:flex-row gap-6 bg-[var(--card)] rounded-3xl p-6 border border-[var(--border)] shadow-lg">
+        <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden bg-[var(--muted)] shrink-0 mx-auto sm:mx-0">
           {imageUrl ? (
             <img src={imageUrl} alt={song.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
@@ -103,7 +103,7 @@ function SongPage() {
         ) : (
           <div className="space-y-6">
             {chartGrids.filter((g) => g.hasData).map((grid) => (
-              <div key={grid.chartId} className="bg-white dark:bg-[#111] rounded-3xl p-5 border border-gray-200 dark:border-gray-800 shadow-lg space-y-4">
+              <div key={grid.chartId} className="bg-[var(--card)] rounded-3xl p-5 border border-[var(--border)] shadow-lg space-y-4">
                 <div className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{grid.title}</div>
                 {grid.stats && (
                   <div className="flex flex-wrap gap-3 text-xs">
@@ -171,7 +171,7 @@ function SongPage() {
                 key={`${e.year}-${e.chartId}`}
                 to="/year-end/$chartId"
                 params={{ chartId: e.chartId }}
-                className="flex items-center gap-3 rounded-2xl bg-white dark:bg-[#111] p-3 border border-gray-200 dark:border-gray-800 hover:border-[var(--accent)]/50 transition-colors shadow-sm"
+                className="flex items-center gap-3 rounded-2xl bg-[var(--card)] p-3 border border-[var(--border)] hover:border-[var(--accent)]/50 transition-colors shadow-sm"
               >
                 <div className="w-12 h-12 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-lg font-extrabold text-[var(--accent)] shrink-0">
                   #{e.position}
@@ -192,7 +192,7 @@ function SongPage() {
           <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">Records</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {song.statsRecords.map((rec, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-2xl bg-white dark:bg-[#111] p-3 border border-gray-200 dark:border-gray-800 shadow-sm">
+              <div key={i} className="flex items-center gap-3 rounded-2xl bg-[var(--card)] p-3 border border-[var(--border)] shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
                   <i className="fas fa-chart-bar text-[var(--accent)] text-sm" />
                 </div>
@@ -212,7 +212,7 @@ function SongPage() {
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3 text-center border border-gray-200 dark:border-gray-800">
+    <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3 text-center border border-[var(--border)]">
       <div className="uppercase tracking-[0.2em] text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
       <div className="text-xl font-bold text-gray-900 dark:text-white mt-1">{value}</div>
     </div>

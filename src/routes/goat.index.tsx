@@ -7,7 +7,7 @@ export const Route = createFileRoute("/goat/")({
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[4rem] md:text-[7rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">Greatest of All Time</span>
+          <span className="text-[4rem] md:text-[7rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">Greatest of All Time</span>
         </div>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10 uppercase">Greatest of All Time</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">The definitive all-time rankings</p>

@@ -37,7 +37,7 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
     <div className="relative w-full text-left">
       <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{label}</label>
       {value ? (
-        <div className="flex items-center justify-between bg-black text-white border border-[var(--accent)] p-3 rounded-lg">
+        <div className="flex items-center justify-between bg-[var(--muted)] text-white border border-[var(--border)] p-3 rounded-lg">
           <span className="font-bold truncate">{value}</span>
           <button onClick={() => onChange(null)} className="text-gray-400 hover:text-white shrink-0 ml-2"><i className="fas fa-times" /></button>
         </div>
@@ -48,7 +48,7 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
             <input
               type="text"
               placeholder="Search artist..."
-              className="w-full bg-black border border-[var(--border)] rounded-lg py-3 pl-9 pr-3 text-white focus:outline-none focus:border-[var(--accent)]"
+              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-lg py-3 pl-9 pr-3 text-white focus:outline-none focus:border-[var(--accent)]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setOpen(true)}
@@ -56,7 +56,7 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
             />
           </div>
           {open && (
-            <div className="absolute z-10 w-full mt-1 bg-black text-white border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-1 bg-[var(--card)] text-white border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto">
               {filtered.map(opt => (
                 <div
                   key={opt}
@@ -164,7 +164,7 @@ function ChartBattlePage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">BATTLE</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">BATTLE</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase"><i className="fas fa-bolt mr-3"></i>Chart Battle</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Select two artists and a chart to see who dominates</p>
@@ -214,11 +214,11 @@ function ChartBattlePage() {
             <div className="flex flex-col md:flex-row items-stretch w-full gap-4 md:gap-0 bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl relative">
               
               {/* P1 Column */}
-              <div className={`flex-1 flex flex-col p-6 items-center border-b md:border-b-0 md:border-r border-[var(--border)] transition-colors duration-500 ${p1 > p2 ? 'bg-green-900/20' : ''}`}>
+              <div className={`flex-1 flex flex-col p-6 items-center border-b md:border-b-0 md:border-r border-[var(--border)] transition-colors duration-500 ${p1 > p2 ? 'bg-orange-900/20' : ''}`}>
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-[var(--border)] shadow-xl mb-4">
                   <ArtistAvatar name={artist1!} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-black">{artist1}</h2>
+                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-white">{artist1}</h2>
                 <div className="text-6xl font-black gold my-4">{p1}</div>
               </div>
 
@@ -246,11 +246,11 @@ function ChartBattlePage() {
               </div>
 
               {/* P2 Column */}
-              <div className={`flex-1 flex flex-col p-6 items-center border-t md:border-t-0 md:border-l border-[var(--border)] transition-colors duration-500 ${p2 > p1 ? 'bg-green-900/20' : ''}`}>
+              <div className={`flex-1 flex flex-col p-6 items-center border-t md:border-t-0 md:border-l border-[var(--border)] transition-colors duration-500 ${p2 > p1 ? 'bg-orange-900/20' : ''}`}>
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-[var(--border)] shadow-xl mb-4">
                   <ArtistAvatar name={artist2!} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-black">{artist2}</h2>
+                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-white">{artist2}</h2>
                 <div className="text-6xl font-black gold my-4">{p2}</div>
               </div>
             </div>

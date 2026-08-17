@@ -15,7 +15,7 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
             className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
               activeId === id
                 ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                : "bg-black text-white hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+                : "bg-[var(--muted)] text-white hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
             }`}
           >
             {cfg.title}
@@ -80,13 +80,13 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
+            className="bg-[var(--muted)] text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
           >
             {formatDate(currentDate)}
             <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
-            <div ref={listRef} className="absolute top-full left-0 right-0 z-50 bg-black border border-[var(--border)] max-h-[300px] overflow-y-auto">
+            <div ref={listRef} className="absolute top-full left-0 right-0 z-50 bg-[var(--card)] border border-[var(--border)] max-h-[300px] overflow-y-auto">
               {dates.map((d) => (
                 <button
                   key={d}

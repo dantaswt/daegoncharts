@@ -144,7 +144,7 @@ function WeeklyChartPage() {
               className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 border transition-all ${
                 filter === f.key
                   ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                  : "bg-black text-white border-black hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                   : "bg-[var(--muted)] text-white border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
               }`}
             >
               {f.label}
@@ -220,7 +220,7 @@ function DropoutChip({ dropout, chartKind }: { dropout: any; chartKind: string }
       </div>
       <div className="min-w-0 flex-1">
         <div className="font-semibold text-white break-words">{dropout.name}</div>
-        <div className="text-[11px] text-gray-400 break-words">{dropout.artist}</div>
+        {chartKind !== "artist" && <div className="text-[11px] text-gray-400 break-words">{dropout.artist}</div>}
         <div className="mt-1 text-[10px] text-gray-400 flex flex-wrap gap-x-2">
           <span>LW: <span className="font-semibold">#{dropout.position}</span></span>
           {dropout.peak && <span>Peak: <span className="font-semibold">#{dropout.peak}</span></span>}

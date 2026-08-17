@@ -1,10 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { getAllArtistList } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import React, { useMemo, useState } from "react";
+import { z } from "zod";
+
+const artistsSearchSchema = z.object({ q: z.string().optional() });
 
 export const Route = createFileRoute("/artists")({
+  validateSearch: (search: Record<string, unknown>) => artistsSearchSchema.parse(search),
   loader: async () => {
     const list = await getAllArtistList();
     return { list };
@@ -42,7 +46,10 @@ function ArtistThumbnail({ name }: { name: string }) {
 
 function AllArtistsPage() {
   const { list } = Route.useLoaderData();
-  const [search, setSearch] = useState("");
+  const { q } = useSearch();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState(q ?? "");
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout>>();
   const letters = useMemo(() => {
     return Array.from(new Set(list.map((a) => a.name[0].toUpperCase()))).sort();
   }, [list]);
@@ -51,6 +58,14 @@ function AllArtistsPage() {
   React.useEffect(() => {
     if (!selectedLetter && letters.length) setSelectedLetter(letters[0]);
   }, [letters]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      navigate({ search: { q: value || undefined }, replace: true });
+    }, 400);
+  };
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -73,7 +88,7 @@ function AllArtistsPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">ARTISTS</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">ARTISTS</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Artists</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{list.length} artists tracked across all charts</p>
@@ -97,7 +112,7 @@ function AllArtistsPage() {
             type="search"
             placeholder="Search artists"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => handleSearchChange(event.target.value)}
             className="w-full sm:w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
           />
         </div>

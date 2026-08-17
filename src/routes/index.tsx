@@ -9,20 +9,24 @@ import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [songsData, albumsData, artistsData, artistStats, latestArticles] = await Promise.all([
+    const remainingIds = weeklyChartIds.filter(id => id !== "songs" && id !== "albums" && id !== "artists");
+
+    const [songsData, albumsData, artistsData, artistStats, latestArticles, ...remainingResults] = await Promise.all([
       getWeeklyChart({ data: { chartId: "songs" } }),
       getWeeklyChart({ data: { chartId: "albums" } }),
       getWeeklyChart({ data: { chartId: "artists" } }),
       getAllArtistStats(),
       getLatestBeatArticles(),
+      ...remainingIds.map(id => getWeeklyChart({ data: { chartId: id } })),
     ]);
 
-    // Load all weekly charts for #1 this week
-    const allWeeklyData = await Promise.all(
-      weeklyChartIds.map(id => getWeeklyChart({ data: { chartId: id } }))
-    );
+    const knownData: Record<string, any> = { songs: songsData, albums: albumsData, artists: artistsData };
+    for (let i = 0; i < remainingIds.length; i++) {
+      knownData[remainingIds[i]] = remainingResults[i];
+    }
 
-    const numberOnes = allWeeklyData.map((chart) => {
+    const numberOnes = weeklyChartIds.map((id) => {
+      const chart = knownData[id];
       const latestDate = chart.dates[chart.dates.length - 1];
       const entries = chart.entriesByDate[latestDate];
       const no1 = entries?.[0] ?? null;
@@ -35,16 +39,16 @@ export const Route = createFileRoute("/")({
 
     // First Timers for Artist 50
     const artistsChartDates = artistsData.dates.slice().reverse(); // newest first
-    const firstTimers: Array<{ artist: string, position: number, date: string }> = [];
+    const firstTimers: Array<{ name: string; artist: string; position: number; date: string; kind: "song" | "album" | "artist"; chartId: string; chartTitle: string }> = [];
     for (const date of artistsChartDates) {
       const entries = artistsData.entriesByDate[date] || [];
       for (const e of entries) {
-        if (e.diff === "NEW" && !firstTimers.find(ft => ft.artist === e.name)) {
-          firstTimers.push({ artist: e.name, position: e.position, date });
-          if (firstTimers.length >= 5) break;
+        if (e.diff === "NEW" && !firstTimers.find(ft => ft.name === e.name && ft.artist === e.artist)) {
+          firstTimers.push({ name: e.name, artist: e.artist, position: e.position, date, kind: "artist", chartId: "artists", chartTitle: chartsConfig["artists"].title });
+          if (firstTimers.length >= 4) break;
         }
       }
-      if (firstTimers.length >= 5) break;
+      if (firstTimers.length >= 4) break;
     }
 
     return {
@@ -178,7 +182,9 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1">{n.title}</div>
-                  <div className="font-bold text-sm whitespace-normal break-words">{n.kind === "artist" ? n.entry.name : n.kind === "album" ? (
+                  <div className="font-bold text-sm whitespace-normal break-words">{n.kind === "artist" ? (
+                    <Link to="/artist/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline hover:text-[var(--accent)]">{n.entry.name}</Link>
+                  ) : n.kind === "album" ? (
                     <Link to="/album/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline">
                       {stripAlbumEdition(stripFeatFromTitle(n.entry.name))}
                     </Link>
@@ -195,16 +201,9 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                       <TrackArtists song={n.entry.name} artist={n.entry.artist} className="text-xs text-muted-foreground" />
                     </div>
                   )}
-                  {n.kind === "artist" && (
-                    <div className="text-xs mt-1">
-                      <Link to="/artist/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="font-semibold text-[var(--accent)] hover:underline">
-                        View Artist Page
-                      </Link>
-                    </div>
-                  )}
                 </div>
               </div>
-              <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(0,230,118,0.05)] transition-colors mt-auto">
+              <Link to="/chart/$chartId/$date" params={{ chartId: n.chartId, date: n.date }} className="block text-center text-xs text-[var(--accent)] font-semibold py-2 border-t border-[var(--border)] hover:bg-[rgba(255,109,0,0.05)] transition-colors mt-auto">
                 View Chart →
               </Link>
             </motion.div>
@@ -226,87 +225,52 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
           View All <i className="fas fa-arrow-right ml-1" />
         </Link>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {firstTimers.map((ft, i) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm">
-            <div className="aspect-square relative">
-              <SpotifyImg query={ft.artist} type="artist" rounded={false} />
-              <div className="rank-badge">{ft.position}</div>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm flex flex-col h-full">
+            <div className="text-center py-2 border-b border-[var(--border)]">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">{ft.chartTitle}</span>
             </div>
-            <div className="p-3">
-              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
-                <Link to="/artist/$slug" params={{ slug: slugifyArtist(ft.artist) }} className="hover:underline">
-                  {ft.artist}
-                </Link>
-              </div>
-              <Link to="/chart/$chartId/$date" params={{ chartId: "artists", date: ft.date }} className="text-xs text-[var(--accent)] hover:underline block mt-1">
-                Week of {new Date(ft.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </Link>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ────── PRE-RELEASES Section ────── */
-const preReleases = [
-  { artist: "Tyla", album: "A*POP", releaseDate: "2026-07-24" },
-  { artist: "Charli xcx", album: "Music, Fashion, Film", releaseDate: "2026-07-24" },
-  { artist: "Jão", album: "Memórias Póstumas", releaseDate: "2026-07-26" },
-  { artist: "Ariana Grande", album: "petal", releaseDate: "2026-07-31" },
-  { artist: "FLO", album: "THERAPY AT THE CLUB", releaseDate: "2026-08-07" },
-];
-
-function PreReleasesSection() {
-  function formatReleaseDate(d: string) {
-    return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  }
-  function daysUntil(d: string) {
-    const diff = Math.ceil((new Date(d + "T00:00:00").getTime() - Date.now()) / 86400000);
-    if (diff < 0) return "Out now";
-    if (diff === 0) return "Releases today!";
-    if (diff === 1) return "Releases tomorrow";
-    return `In ${diff} days`;
-  }
-  return (
-    <section className="mb-14">
-      <div className="section-banner">
-        <span>Pre-Releases</span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-        {preReleases.map((item, i) => (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.3, delay: i * 0.05 }}
-            key={i}
-            className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm flex flex-col"
-          >
             <div className="aspect-square relative">
-              <SpotifyImg query={`${item.album} ${item.artist}`} type="album" rounded={false} />
-              <div className="rank-badge">{i + 1}</div>
-              <div className="absolute top-2 right-2">
-                <div className="bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md text-center">
-                  {daysUntil(item.releaseDate)}
-                </div>
+              <SpotifyImg
+                query={ft.kind === "album" ? `album:"${ft.name}" artist:"${ft.artist}"` : ft.kind === "artist" ? `artist:"${ft.name}"` : `artist:"${ft.artist}" track:"${ft.name}"`}
+                type={ft.kind === "album" ? "album" : ft.kind === "artist" ? "artist" : "track"}
+                rounded={false}
+              />
+              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-[#00E676] text-white text-[9px] font-bold rounded uppercase">
+                DEBUT
               </div>
             </div>
             <div className="p-3 flex flex-col flex-1">
-              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
-                <Link to="/album/$slug" params={{ slug: slugifyArtist(item.album) }} className="hover:underline">
-                  {item.album}
-                </Link>
+              <div className="text-xl font-black text-center mb-1">
+                NO. {ft.position}
               </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                <Link to="/artist/$slug" params={{ slug: slugifyArtist(item.artist) }} className="hover:text-[var(--accent)] hover:underline">
-                  {item.artist}
-                </Link>
+              <div className="font-bold text-sm text-center whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
+                {ft.kind === "artist" ? (
+                  <Link to="/artist/$slug" params={{ slug: slugifyArtist(ft.name) }} className="hover:underline">
+                    {ft.name}
+                  </Link>
+                ) : ft.kind === "album" ? (
+                  <Link to="/album/$slug" params={{ slug: slugifyArtist(ft.name) }} className="hover:underline">
+                    {stripFeatFromTitle(ft.name)}
+                  </Link>
+                ) : (
+                  <Link to="/song/$slug" params={{ slug: slugifyArtist(ft.name) }} className="hover:underline">
+                    {stripFeatFromTitle(ft.name)}
+                  </Link>
+                )}
               </div>
-              <div className="text-[10px] text-muted-foreground mt-auto pt-2 font-semibold border-t border-[var(--border)]">
-                <i className="fas fa-calendar-alt mr-1" />{formatReleaseDate(item.releaseDate)}
+              {ft.kind !== "artist" && ft.artist && (
+                <div className="text-xs text-muted-foreground text-center whitespace-normal break-words mt-0.5">
+                  <Link to="/artist/$slug" params={{ slug: slugifyArtist(ft.artist) }} className="hover:text-[var(--accent)] hover:underline">
+                    {ft.artist}
+                  </Link>
+                </div>
+              )}
+              <div className="mt-auto pt-2 text-center">
+                <Link to="/chart/$chartId/$date" params={{ chartId: ft.chartId, date: ft.date }} className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider hover:text-[var(--accent)] transition-colors">
+                  See Chart
+                </Link>
               </div>
             </div>
           </motion.div>
@@ -461,7 +425,7 @@ function LandingPage() {
       {/* Hero Title */}
       <div className="text-center py-10 md:py-16 relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[8rem] md:text-[14rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">Charts</span>
+          <span className="text-[8rem] md:text-[14rem] font-black font-sans text-[rgba(255,255,255,0.08)] uppercase tracking-tighter leading-none">Charts</span>
         </div>
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-[var(--foreground)] tracking-tight relative z-10">daegon charts</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & greatest of all time lists</p>
@@ -478,12 +442,11 @@ function LandingPage() {
           <TopChartsSection charts={charts} />
           <NumberOnesSection numberOnes={numberOnes} />
           <FirstTimersSection firstTimers={firstTimers} />
-          <PreReleasesSection />
           <ChartBeatSection articles={latestArticles} />
           
           {/* Chart Battle Mobile Link */}
           <div className="md:hidden mt-10">
-            <Link to="/chart-battle" className="block bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(0,230,118,0.3)] p-4 rounded-xl flex items-center justify-center gap-4 group">
+            <Link to="/chart-battle" className="block bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(255,109,0,0.3)] p-4 rounded-xl flex items-center justify-center gap-4 group">
               <div className="bg-[var(--accent)] text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-110 transition-transform">
                 VS
               </div>
@@ -495,30 +458,11 @@ function LandingPage() {
           </div>
         </div>
       </div>
-
-      {/* Bottom nav (moved from header) */}
-      <div className="mt-14 border-t border-[var(--border)] pt-8 pb-4">
-        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground uppercase font-semibold tracking-wide">
-          <Link to="/artists" className="hover:text-[var(--accent)] transition-colors">Artists</Link>
-          <span className="text-muted-foreground">|</span>
-          <Link to="/year-end/$chartId" params={{ chartId: "yearEndSongs" }} className="hover:text-[var(--accent)] transition-colors">Year-End</Link>
-          <span className="text-muted-foreground">|</span>
-          <Link to="/goat/$chartId" params={{ chartId: "goatSongs" }} className="hover:text-[var(--accent)] transition-colors">Greatest of All Time</Link>
-          <span className="text-muted-foreground">|</span>
-          <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: "songs", date: "2026-07-06" }} className="hover:text-[var(--accent)] transition-colors">Chart Beat</Link>
-          <span className="text-muted-foreground">|</span>
-          <Link to="/stats" className="hover:text-[var(--accent)] transition-colors">Stats</Link>
-          <span className="text-muted-foreground">|</span>
-          <Link to="/number-ones" className="hover:text-[var(--accent)] transition-colors">#1's</Link>
-          <span className="text-muted-foreground">|</span>
-          <Link to="/chart-battle" className="hover:text-[var(--accent)] transition-colors">Chart Battle Game</Link>
-        </div>
-      </div>
     </div>
       
       {/* Chart Battle Floating Tooltip */}
       <Link to="/chart-battle" className="fixed bottom-6 left-6 z-50 animate-bounce cursor-pointer group hidden md:block">
-        <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(0,230,118,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
+        <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(255,109,0,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
           <div className="bg-[var(--accent)] text-white w-10 h-10 rounded-full flex items-center justify-center font-black">
             VS
           </div>

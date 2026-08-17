@@ -106,7 +106,7 @@ function ChartBeatPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(0,0,0,0.07)] uppercase tracking-tighter leading-none">BEAT</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">BEAT</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Chart Beat</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Stories, analysis and insights from the charts</p>
@@ -115,7 +115,7 @@ function ChartBeatPage() {
       <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-24 lg:self-start sidebar-section max-h-[calc(100vh-8rem)] overflow-y-auto">
           <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Archive</div>
-          <button onClick={() => setExpandedYears(new Set())} className={`block w-full text-left px-2 py-1.5 rounded text-sm ${expandedYears.size === 0 ? "text-[var(--accent)] font-bold bg-[rgba(0,230,118,0.1)]" : "hover:text-[var(--accent)]"}`}>All articles</button>
+          <button onClick={() => setExpandedYears(new Set())} className={`block w-full text-left px-2 py-1.5 rounded text-sm ${expandedYears.size === 0 ? "text-[var(--accent)] font-bold bg-[rgba(255,109,0,0.1)]" : "hover:text-[var(--accent)]"}`}>All articles</button>
           {yearsData.map(([year, months]) => (
             <div key={year}>
               <button onClick={() => toggleYear(year)} className="flex items-center justify-between w-full text-left px-2 py-1.5 rounded text-sm hover:text-[var(--accent)]">

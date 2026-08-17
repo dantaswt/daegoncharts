@@ -263,7 +263,7 @@ function ArtistPage() {
             <select
               value={selectedChart}
               onChange={(e) => setSelectedChart(e.target.value)}
-              className="bg-black text-white border border-[var(--border)] text-sm font-bold px-4 py-3 min-w-[200px] focus:outline-none focus:border-[var(--accent)] cursor-pointer rounded-xl"
+              className="bg-[var(--muted)] text-white border border-[var(--border)] text-sm font-bold px-4 py-3 min-w-[200px] focus:outline-none focus:border-[var(--accent)] cursor-pointer rounded-xl"
             >
               {allCharts.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -286,7 +286,7 @@ function ArtistPage() {
                 </thead>
                 <tbody>
                   {visibleEntries.map((e: any, i: number) => (
-                    <tr key={i} className="border-b border-[var(--border)] hover:bg-[rgba(0,230,118,0.02)] transition-colors">
+                    <tr key={i} className="border-b border-[var(--border)] hover:bg-[rgba(255,109,0,0.05)] transition-colors">
                       <td className="px-4 py-4">
                         <div className="font-bold text-base whitespace-normal break-words">
                           {selectedChart === "Top 50 Artists" ? e.item : isAlbumChart ? (
@@ -353,7 +353,7 @@ function ArtistPage() {
             </div>
             <div className="divide-y divide-[var(--border)]">
               {featuredOn.map((track, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-[rgba(0,230,118,0.02)] transition-colors">
+                <div key={i} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-[rgba(255,109,0,0.05)] transition-colors">
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm break-words">{track.name}</div>
                     <div className="text-xs text-muted-foreground break-words">

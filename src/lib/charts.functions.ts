@@ -163,7 +163,7 @@ export interface ChartBeatPost {
 
 // simple in-memory cache with TTL
 const cache = new Map<string, { at: number; data: unknown }>();
-const TTL = 10 * 60 * 1000;
+const TTL = 30 * 60 * 1000;
 
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -1208,6 +1208,7 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
 
       const metricKey = data.chartId === "songs" ? "points" : data.chartId === "streamingSongs" || data.chartId === "topStreamingAlbums" ? "streams" : data.chartId === "radioSongs" ? "audience" : data.chartId === "topAlbumSales" || data.chartId === "digitalSongsSales" ? "sales" : "units";
 
+      const seenGlobal = new Set<string>();
       for (const date of chartData.dates) {
         const year = date.slice(0, 4);
         const entries = chartData.entriesByDate[date] || [];
@@ -1231,8 +1232,14 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
           entry.weeks += 1;
           if (e.peak < entry.peak) entry.peak = e.peak;
           entry.weeksAt1 += (e.weeksAt1 ?? 0);
-          const unitsRaw = String(e[metricKey as keyof ChartEntry] ?? e.units ?? "0");
-          entry.totalUnits += toInt(unitsRaw);
+          const isFirstAppearance = !seenGlobal.has(key);
+          seenGlobal.add(key);
+          if (isFirstAppearance && data.chartId === "topStreamingAlbums" && e.totalStreams) {
+            entry.totalUnits += toInt(e.totalStreams);
+          } else {
+            const unitsRaw = String(e[metricKey as keyof ChartEntry] ?? e.units ?? "0");
+            entry.totalUnits += toInt(unitsRaw);
+          }
         }
       }
 
@@ -1327,6 +1334,7 @@ export interface GOATEntry {
   totalStreams: number;
   totalSales: number;
   totalAudience: number;
+  totalPoints: number;
   kind: "song" | "album" | "artist";
 }
 
@@ -1390,6 +1398,7 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
                 totalStreams: 0,
                 totalSales: 0,
                 totalAudience: 0,
+                totalPoints: 0,
                 kind,
               };
             }
@@ -1401,6 +1410,7 @@ export const getGoatGenerated = createServerFn({ method: "GET" })
             entry.totalStreams += toInt(e.streams || "0");
             entry.totalSales += toInt(e.sales || "0");
             entry.totalAudience += toInt(e.audience || "0");
+            entry.totalPoints += toInt(e.points || "0");
           }
         }
       }

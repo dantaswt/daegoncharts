@@ -5,27 +5,27 @@ import { stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-
 import { stripAlbumEdition } from "@/lib/charts-config";
 
 const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
-  songs:          { accent: "#00E676", accentDark: "#00C853" },
-  streamingSongs: { accent: "#00E676", accentDark: "#00C853" },
-  radioSongs:     { accent: "#00E676", accentDark: "#00C853" },
-  digitalSongsSales: { accent: "#00E676", accentDark: "#00C853" },
-  albums:         { accent: "#38BDF8", accentDark: "#0EA5E9" },
-  topStreamingAlbums: { accent: "#38BDF8", accentDark: "#0EA5E9" },
-  topAlbumSales:  { accent: "#38BDF8", accentDark: "#0EA5E9" },
-  artists:        { accent: "#F87171", accentDark: "#EF4444" },
+  songs:          { accent: "#FF6D00", accentDark: "#E65100" },
+  streamingSongs: { accent: "#FF6D00", accentDark: "#E65100" },
+  radioSongs:     { accent: "#FF6D00", accentDark: "#E65100" },
+  digitalSongsSales: { accent: "#FF6D00", accentDark: "#E65100" },
+  albums:         { accent: "#FF6D00", accentDark: "#E65100" },
+  topStreamingAlbums: { accent: "#FF6D00", accentDark: "#E65100" },
+  topAlbumSales:  { accent: "#FF6D00", accentDark: "#E65100" },
+  artists:        { accent: "#FF6D00", accentDark: "#E65100" },
   goatSongs:      { accent: "#FFD700", accentDark: "#FFC107" },
   goatArtists:    { accent: "#FFD700", accentDark: "#FFC107" },
   goatAlbums:     { accent: "#FFD700", accentDark: "#FFC107" },
   goatRadio:      { accent: "#FFD700", accentDark: "#FFC107" },
-  yearEndSongs:   { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndArtists: { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndAlbums:  { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndRadio:   { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndStreamingSongs: { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndTopStreamingAlbums: { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndTopAlbumSales: { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndDigitalSongsSales: { accent: "#A855F7", accentDark: "#9333EA" },
-  yearEndNewArtists: { accent: "#A855F7", accentDark: "#9333EA" },
+  yearEndSongs:   { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndArtists: { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndAlbums:  { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndRadio:   { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndStreamingSongs: { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndTopStreamingAlbums: { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndTopAlbumSales: { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndDigitalSongsSales: { accent: "#FF6D00", accentDark: "#E65100" },
+  yearEndNewArtists: { accent: "#FF6D00", accentDark: "#E65100" },
 };
 
 function lastWeekDisplay(entry: ChartEntry): string {
@@ -41,16 +41,20 @@ interface ChartImageProps {
   chartId: string;
   date: string;
   kind: "song" | "album" | "artist";
+  hideWeeksAt1?: boolean;
+  hideLastWeek?: boolean;
+  displayTitle?: string;
 }
 
-export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartImageProps) {
+export function ChartImage({ entries, chartTitle, chartId, date, kind, hideWeeksAt1 = false, hideLastWeek = false, displayTitle }: ChartImageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
   const theme = COLOR_THEMES[chartId] ?? COLOR_THEMES.songs;
   const topEntries = entries.slice(0, 10);
   const topEntry = topEntries[0];
-  const weeksAt1 = topEntry?.weeksAt1 && topEntry.position === 1 ? topEntry.weeksAt1 : null;
+  const weeksAt1 = hideWeeksAt1 ? null : (topEntry?.weeksAt1 && topEntry.position === 1 ? topEntry.weeksAt1 : null);
   const isArtist = kind === "artist";
+  const titleText = displayTitle ?? chartTitle.toUpperCase();
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", {
     month: "long",
@@ -158,7 +162,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                   fontWeight: 900,
                   color: "#000",
                   letterSpacing: "-0.02em",
-                  textTransform: "uppercase",
+                  textTransform: "lowercase",
                   opacity: 0.5,
                 }}
               >
@@ -197,7 +201,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                 marginTop: 6,
               }}
             >
-              {chartTitle.toUpperCase()}
+              {titleText}
             </div>
           </div>
 
@@ -259,21 +263,23 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                         </div>
                       ) : <div style={{ marginLeft: 70 }} />}
                       <div style={{ flex: 1 }} />
-                      <div
-                        style={{
-                          width: 70,
-                          fontSize: 13,
-                          fontWeight: 800,
-                          color: theme.accent,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          textAlign: "center",
-                          flexShrink: 0,
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        LAST<br />WEEK
-                      </div>
+                      {!hideLastWeek && (
+                        <div
+                          style={{
+                            width: 70,
+                            fontSize: 13,
+                            fontWeight: 800,
+                            color: theme.accent,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            textAlign: "center",
+                            flexShrink: 0,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          LAST<br />WEEK
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -283,7 +289,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                       display: "flex",
                       alignItems: "center",
                       padding: isNumberOne ? "20px 0" : "14px 0",
-                      borderBottom: `1px solid rgba(255,255,255,0.25)`,
+                      borderBottom: `1px solid ${theme.accent}`,
                       position: "relative",
                       overflow: "hidden",
                     }}
@@ -403,20 +409,22 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind }: ChartIm
                     {isArtist && <div style={{ flex: 1 }} />}
 
                     {/* Last Week */}
-                    <div
-                      style={{
-                        width: 70,
-                        fontSize: isNumberOne ? 26 : 22,
-                        fontWeight: 800,
-                        color: theme.accent,
-                        textAlign: "center",
-                        flexShrink: 0,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
-                    >
-                      {lastWeekDisplay(entry)}
-                    </div>
+                    {!hideLastWeek && (
+                      <div
+                        style={{
+                          width: 70,
+                          fontSize: isNumberOne ? 26 : 22,
+                          fontWeight: 800,
+                          color: theme.accent,
+                          textAlign: "center",
+                          flexShrink: 0,
+                          position: "relative",
+                          zIndex: 1,
+                        }}
+                      >
+                        {lastWeekDisplay(entry)}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
