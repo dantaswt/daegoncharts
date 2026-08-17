@@ -5,14 +5,14 @@ import { stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-
 import { stripAlbumEdition } from "@/lib/charts-config";
 
 const COLOR_THEMES: Record<string, { accent: string; accentDark: string }> = {
-  songs:          { accent: "#FF1744", accentDark: "#D50000" },
-  streamingSongs: { accent: "#AA00FF", accentDark: "#7C4DFF" },
-  radioSongs:     { accent: "#00BFA5", accentDark: "#00897B" },
-  digitalSongsSales: { accent: "#2979FF", accentDark: "#1565C0" },
-  albums:         { accent: "#00E676", accentDark: "#00C853" },
-  topStreamingAlbums: { accent: "#7C4DFF", accentDark: "#651FFF" },
-  topAlbumSales:  { accent: "#FF9100", accentDark: "#FF6D00" },
-  artists:        { accent: "#FFD600", accentDark: "#FFC400" },
+  songs:          { accent: "#00E676", accentDark: "#00C853" },
+  streamingSongs: { accent: "#00E676", accentDark: "#00C853" },
+  radioSongs:     { accent: "#00E676", accentDark: "#00C853" },
+  digitalSongsSales: { accent: "#00E676", accentDark: "#00C853" },
+  albums:         { accent: "#2979FF", accentDark: "#1565C0" },
+  topStreamingAlbums: { accent: "#2979FF", accentDark: "#1565C0" },
+  topAlbumSales:  { accent: "#2979FF", accentDark: "#1565C0" },
+  artists:        { accent: "#FF1744", accentDark: "#D50000" },
   goatSongs:      { accent: "#FFD700", accentDark: "#FFC107" },
   goatArtists:    { accent: "#FFD700", accentDark: "#FFC107" },
   goatAlbums:     { accent: "#FFD700", accentDark: "#FFC107" },
