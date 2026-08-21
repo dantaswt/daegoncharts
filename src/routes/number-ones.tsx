@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getWeeklyChart } from "@/lib/charts.functions";
-import { weeklyChartIds, chartsConfig, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
+import { weeklyChartIds, chartsConfig, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -63,7 +63,7 @@ function WeekDropdown({ dates, selectedDate, onSelect }: { dates: string[]; sele
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="bg-[var(--muted)] text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[200px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
+            className="bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[200px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
           >
             {formatDate(selectedDate)}
             <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
@@ -81,7 +81,7 @@ function WeekDropdown({ dates, selectedDate, onSelect }: { dates: string[]; sele
                   className={`w-full text-center text-sm font-bold px-4 py-2 border-b border-[var(--border)] cursor-pointer transition-colors ${
                     d === selectedDate
                       ? "bg-[var(--accent)] text-black"
-                      : "text-white hover:bg-[var(--muted)]"
+                      : "text-[var(--foreground)] hover:bg-[var(--muted)]"
                   }`}
                 >
                   {formatDate(d)}
@@ -130,7 +130,7 @@ function NumberOnesPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black font-sans text-[rgba(255,255,255,0.08)] uppercase tracking-tighter leading-none">#1'S</span>
+          <span className="text-[6rem] md:text-[10rem] font-black font-sans text-[var(--foreground)] opacity-[0.06] uppercase tracking-tighter leading-none">#1'S</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">#1's</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">The #1 hit on every chart this week</p>
@@ -145,7 +145,7 @@ function NumberOnesPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
-            key={n.chartId}
+            key={`${n.chartId}-${selectedDate}`}
             className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex flex-col h-full shadow-sm"
           >
             {n.entry ? (
@@ -171,7 +171,7 @@ function NumberOnesPage() {
                           {stripAlbumEdition(stripFeatFromTitle(n.entry.name))}
                         </Link>
                       ) : (
-                        <Link to="/song/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline hover:text-[var(--accent)]">
+                        <Link to="/song/$slug" params={{ slug: songSlug(n.entry.name, n.entry.artist) }} className="hover:underline hover:text-[var(--accent)]">
                           {stripFeatFromTitle(n.entry.name)}
                         </Link>
                       )}

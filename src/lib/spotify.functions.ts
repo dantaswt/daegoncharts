@@ -7,6 +7,19 @@ let accessToken: string | null = null;
 let tokenExpiresAt = 0;
 const imageCache = new Map<string, string | null>();
 
+const KNOWN_ARTIST_IDS: Record<string, string> = {
+  "jao": "59FrDXDVJz0EKqYg39dnT2",
+  "girls": "6IrnQvYWhXayVvhB4qKUSR",
+  "avalanch": "1tqhcSjAUhQPXd2WsaU6C4",
+  "the_weeknd": "1Xyo4u8uXC1ZmMpatF05PJ",
+  "the_beatles": "3WrFJ7ztbogyGnzhbVl2EY",
+  "bon_jovi": "58lV9VcRSjABXIdehiDU5k",
+  "maroon_5": "04gDigrS5kc9YWfZHwBETP",
+  "coldplay": "4gzpq5DPGxSnKw4USahUn0",
+  "bts": "3Nrfpe0tUJi4K4DXYWgMUX",
+  "sza": "7tYKF4w9nC0nq9CsPZTHyP",
+};
+
 async function getAccessToken() {
   if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
   const response = await fetch("https://accounts.spotify.com/api/token", {
@@ -436,13 +449,95 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const artistName = fieldValue(data.query, "artist") || data.query;
         const title = fieldValue(data.query, "track") || fieldValue(data.query, "album");
 
-        // 1. Spotify (Jão hardcode)
-        if (comparable(artistName) === "jao" && !title && token) {
-          const response = await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } });
-          if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
+        // 1. Spotify known artist IDs (avoids wrong matches for ambiguous names)
+        const normalizedArtist = comparable(artistName).replace(/\s+/g, "_");
+        const knownId = KNOWN_ARTIST_IDS[normalizedArtist];
+        if (knownId && !title && token) {
+          try {
+            const response = await fetch(`https://api.spotify.com/v1/artists/${knownId}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (response.ok) {
+              const data = await response.json();
+              imageUrl = data.images?.[0]?.url ?? null;
+            }
+          } catch (e) { console.error(`Known artist ${artistName} fetch failed`, e); }
         }
 
-        // 2. Last.fm artist image (no auth needed)
+        // 2. Spotify artist search (exact match — most reliable)
+        if (!imageUrl && token) {
+          const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
+          const artists = (result?.artists?.items ?? [])
+            .filter((artist: any) => artist.images?.[0]?.url)
+            .sort((a: any, b: any) => {
+              const nameMatch = Number(exactMatch(b.name ?? "", artistName)) - Number(exactMatch(a.name ?? "", artistName));
+              if (nameMatch !== 0) return nameMatch;
+              return (b.popularity ?? 0) - (a.popularity ?? 0);
+            });
+          imageUrl = artists[0]?.images?.[0]?.url ?? null;
+        }
+
+        // 3. Deezer artist image (exact match)
+        if (!imageUrl) {
+          try {
+            const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=5`);
+            for (const a of data?.data ?? []) {
+              if (exactMatch(a.name ?? "", artistName) && (a.picture_xl || a.picture_big)) {
+                imageUrl = a.picture_xl || a.picture_big;
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        // 4. iTunes artist image (exact match)
+        if (!imageUrl) {
+          try {
+            const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=5`);
+            for (const r of data?.results ?? []) {
+              if (r.artistViewUrl && r.artworkUrl100 && exactMatch(r.artistName ?? "", artistName)) {
+                imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        // 5. Last.fm artist image (exact match)
+        if (!imageUrl) {
+          try {
+            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
+            if (data?.artist?.name && exactMatch(data.artist.name, artistName)) {
+              const images = data.artist.image ?? [];
+              for (const img of [...images].reverse()) {
+                if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                  imageUrl = img["#text"];
+                  break;
+                }
+              }
+            }
+          } catch {}
+        }
+
+        // 6. Wikidata artist image (structured, precise)
+        if (!imageUrl) {
+          try {
+            const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(artistName)}&language=en&limit=5&format=json`;
+            const searchData = await fetchJson(searchUrl);
+            for (const item of searchData?.search ?? []) {
+              if (!exactMatch(item.label ?? "", artistName)) continue;
+              const entityUrl = `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${item.id}&property=P18&format=json`;
+              const entityData = await fetchJson(entityUrl);
+              const claim = entityData?.claims?.P18?.[0];
+              const fileName = claim?.mainsnak?.datavalue?.value;
+              if (fileName) {
+                const encoded = encodeURIComponent(fileName.replace(/ /g, "_"));
+                imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encoded}?width=600`;
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        // 7. Last.fm broader (relaxed match — last music resort)
         if (!imageUrl) {
           try {
             const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
@@ -456,41 +551,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           } catch {}
         }
 
-        // 3. iTunes artist image (no auth needed)
-        if (!imageUrl) {
-          try {
-            const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=5`);
-            for (const r of data?.results ?? []) {
-              if (r.artistViewUrl && r.artworkUrl100) {
-                imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
-                break;
-              }
-            }
-          } catch {}
-        }
-
-        // 4. Deezer artist image (no auth needed)
-        if (!imageUrl) {
-          try {
-            const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=5`);
-            for (const a of data?.data ?? []) {
-              if (exactMatch(a.name ?? "", artistName) && (a.picture_xl || a.picture_big)) {
-                imageUrl = a.picture_xl || a.picture_big;
-                break;
-              }
-            }
-          } catch {}
-        }
-
-        // 5. Wikipedia artist image (no auth needed)
-        if (!imageUrl) {
-          try {
-            const data = await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(artistName)}`);
-            if (data?.thumbnail?.source) imageUrl = data.thumbnail.source;
-          } catch {}
-        }
-
-        // 6. Spotify via track → artist
+        // 8. Spotify via track → artist
         if (!imageUrl && title && token) {
           const tracks = (await spotifySearch(token, `track:"${title}" artist:"${artistName}"`, "track"))?.tracks?.items ?? [];
           const track = tracks.find((item: any) => item.artists?.some((artist: any) => exactMatch(artist.name ?? "", artistName)));
@@ -501,27 +562,14 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 7. Spotify artist search (exact)
-        if (!imageUrl && token) {
-          const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
-          const artists = (result?.artists?.items ?? [])
-            .filter((artist: any) => artist.images?.[0]?.url)
-            .sort((a: any, b: any) => {
-              const nameMatch = Number(exactMatch(b.name ?? "", artistName)) - Number(exactMatch(a.name ?? "", artistName));
-              if (nameMatch !== 0) return nameMatch;
-              return (b.popularity ?? 0) - (a.popularity ?? 0);
-            });
-          imageUrl = artists[0]?.images?.[0]?.url ?? null;
-        }
-
-        // 8. Spotify broader fallback
+        // 9. Spotify broader fallback
         if (!imageUrl && token) {
           const rb = await spotifySearch(token, artistName, "artist");
           const fallback = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url);
           imageUrl = fallback?.images?.[0]?.url ?? null;
         }
 
-        // 8. Absolute fallback — generic music note
+        // 10. Absolute fallback — generic music note
         if (!imageUrl) {
           imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
         }
@@ -719,8 +767,10 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
     // 5. Spotify (needs token)
     if (token) {
       try {
-        const artist = comparable(data.artistName) === "jao"
-          ? await fetch("https://api.spotify.com/v1/artists/59FrDXDVJz0EKqYg39dnT2", { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
+        const normalized = comparable(data.artistName).replace(/\s+/g, "_");
+        const knownId = KNOWN_ARTIST_IDS[normalized];
+        const artist = knownId
+          ? await fetch(`https://api.spotify.com/v1/artists/${knownId}`, { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
           : (await spotifySearch(token, `artist:"${data.artistName}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(exactMatch(b.name ?? "", data.artistName)) - Number(exactMatch(a.name ?? "", data.artistName)))[0];
         if (artist) {
           if (!imageUrl && artist.images?.[0]?.url) imageUrl = artist.images[0].url;

@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { getWeeklyChart, getAllArtistStats, type ChartEntry, type WeeklyChartData } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
-import { chartsConfig, weeklyChartIds, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
+import { chartsConfig, weeklyChartIds, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { getLatestBeatArticles, type GeneratedBeatArticle } from "@/lib/chart-beat-generator";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/")({
@@ -51,6 +51,45 @@ export const Route = createFileRoute("/")({
       if (firstTimers.length >= 4) break;
     }
 
+    // On This Week — #1s from all available years
+    const mainCharts = [
+      { id: "songs", kind: "song" as const, cfg: chartsConfig.songs },
+      { id: "albums", kind: "album" as const, cfg: chartsConfig.albums },
+      { id: "artists", kind: "artist" as const, cfg: chartsConfig.artists },
+    ];
+    const latestDate = songsData.dates[songsData.dates.length - 1];
+    const currentYear = new Date(latestDate + "T00:00:00").getFullYear();
+    // Find the oldest year available across all main charts
+    let oldestYear = currentYear;
+    for (const chart of mainCharts) {
+      const chartData = knownData[chart.id];
+      if (chartData?.dates?.length > 0) {
+        const oldestDate = chartData.dates[0];
+        const y = new Date(oldestDate + "T00:00:00").getFullYear();
+        if (y < oldestYear) oldestYear = y;
+      }
+    }
+    const onThisWeekYears: number[] = [];
+    for (let y = currentYear; y >= oldestYear; y--) onThisWeekYears.push(y);
+    const onThisWeekData: Record<number, Array<{ chartId: string; chartTitle: string; kind: string; entry: any; date: string }>> = {};
+    for (const year of onThisWeekYears) {
+      onThisWeekData[year] = [];
+      for (const chart of mainCharts) {
+        const chartData = knownData[chart.id];
+        const targetDate = new Date(latestDate + "T00:00:00");
+        targetDate.setFullYear(year);
+        let bestDate: string | null = null;
+        let bestDiff = Infinity;
+        for (const d of chartData.dates) {
+          const diff = Math.abs(new Date(d + "T00:00:00").getTime() - targetDate.getTime());
+          if (diff < bestDiff) { bestDiff = diff; bestDate = d; }
+        }
+        const entries = bestDate ? (chartData.entriesByDate[bestDate] || []) : [];
+        const no1 = entries[0] ?? null;
+        onThisWeekData[year].push({ chartId: chart.id, chartTitle: chart.cfg.title, kind: chart.kind, entry: no1, date: bestDate || "" });
+      }
+    }
+
     return {
       charts: {
         songs: { data: songsData, latestDate: songsData.dates[songsData.dates.length - 1] },
@@ -61,6 +100,9 @@ export const Route = createFileRoute("/")({
       numberOnes,
       firstTimers,
       artistList,
+      onThisWeekData,
+      onThisWeekYears,
+      onThisWeekLatestDate: latestDate,
     };
   },
   head: () => ({
@@ -80,25 +122,56 @@ function SpotifyImg({ query, type, rounded }: { query: string; type: "artist" | 
     getSpotifyImage({ data: { query, type } }).then((u) => { if (active && u) setUrl(u); });
     return () => { active = false; };
   }, [query, type]);
-  if (!url) return <div className={`w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center text-muted-foreground ${rounded ? 'rounded-full' : 'rounded-lg'}`}><i className="fas fa-music text-lg" /></div>;
-  return <img src={url} alt={query} className={`w-full h-full object-cover ${rounded ? 'rounded-full' : 'rounded-lg'}`} />;
+  if (!url) return <div className={`w-full h-full bg-gradient-to-br from-[var(--muted)] to-[var(--border)] flex items-center justify-center text-muted-foreground animate-pulse ${rounded ? 'rounded-full' : 'rounded-lg'}`}><i className="fas fa-music text-lg opacity-30" /></div>;
+  return <img src={url} alt={query} className={`w-full h-full object-cover animate-fade-in ${rounded ? 'rounded-full' : 'rounded-lg'}`} />;
 }
 
 /* ────── TOP CHARTS Section ────── */
 function TopChartsSection({ charts }: { charts: any }) {
-  const [active, setActive] = useState<"songs" | "albums" | "artists">("songs");
+  const tabs: Array<"songs" | "albums" | "artists"> = ["songs", "albums", "artists"];
   const labels: { key: "songs" | "albums" | "artists"; label: string }[] = [
     { key: "songs", label: "HOT 100" },
     { key: "albums", label: "TOP 100 ALBUMS" },
     { key: "artists", label: "TOP 50 ARTISTS" },
   ];
 
+  const [active, setActive] = useState<"songs" | "albums" | "artists">("songs");
+  const [paused, setPaused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Auto-rotate every 4 seconds, paused on hover/manual click
+  useEffect(() => {
+    if (paused) return;
+    const timer = setInterval(() => {
+      setActive((prev) => {
+        const idx = tabs.indexOf(prev);
+        return tabs[(idx + 1) % tabs.length];
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [paused]);
+
+  const handleManualClick = (key: "songs" | "albums" | "artists") => {
+    setActive(key);
+    setPaused(true);
+    // Resume auto-rotation after 10s of inactivity
+    setTimeout(() => setPaused(false), 10000);
+  };
+
   const { data, latestDate } = charts[active];
-  const entries = data.entriesByDate[latestDate]?.slice(0, 5) ?? [];
+  const maxEntries = isMobile ? 4 : 5;
+  const entries = data.entriesByDate[latestDate]?.slice(0, maxEntries) ?? [];
   const cfg = chartsConfig[active];
 
   return (
-    <section className="mb-14">
+    <section className="mb-14" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="section-banner">
         <span>Top Charts</span>
         <Link to="/chart/$chartId/$date" params={{ chartId: active, date: latestDate }} className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
@@ -109,14 +182,20 @@ function TopChartsSection({ charts }: { charts: any }) {
         {labels.map(l => (
           <button
             key={l.key}
-            onClick={() => setActive(l.key)}
+            onClick={() => handleManualClick(l.key)}
             className={`tab-pill ${active === l.key ? "active" : ""}`}
           >{l.label}</button>
         ))}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      <motion.div
+        key={active}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
+      >
         {entries.map((e: ChartEntry, i: number) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06 }} key={`${active}-${e.position}`} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] hover:shadow-lg hover:shadow-[var(--accent)]/10 hover:-translate-y-1 transition-all duration-300 group shadow-sm">
             <div className="aspect-square relative">
               <SpotifyImg
                 query={cfg.kind === "album" ? `album:"${e.name}" artist:"${e.artist}"` : cfg.kind === "artist" ? `artist:"${e.name}"` : `artist:"${e.artist}" track:"${e.name}"`}
@@ -136,23 +215,21 @@ function TopChartsSection({ charts }: { charts: any }) {
                     {stripFeatFromTitle(e.name)}
                   </Link>
                 ) : (
-                  <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
+                  <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:underline">
                     {stripFeatFromTitle(e.name)}
                   </Link>
                 )}
               </div>
               {cfg.kind !== "artist" && (
                 <div className="text-xs text-muted-foreground whitespace-normal break-words">
-                  <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">
-                    {e.artist}
-                  </Link>
+                  {e.artist}
                   <TrackArtists song={e.name} artist={e.artist} className="text-xs text-muted-foreground" />
                 </div>
               )}
             </div>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -171,7 +248,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
         {numberOnes.map((n, i) => {
           if (!n.entry) return null;
           return (
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex flex-col h-full shadow-sm">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={n.chartId} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] hover:shadow-lg hover:shadow-[var(--accent)]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full shadow-sm">
               <div className="flex items-center gap-3 p-4 flex-grow">
                 <div className="w-16 h-16 shrink-0">
                   <SpotifyImg
@@ -189,7 +266,7 @@ function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
                       {stripAlbumEdition(stripFeatFromTitle(n.entry.name))}
                     </Link>
                   ) : (
-                    <Link to="/song/$slug" params={{ slug: slugifyArtist(n.entry.name) }} className="hover:underline">
+                    <Link to="/song/$slug" params={{ slug: songSlug(n.entry.name, n.entry.artist) }} className="hover:underline">
                       {stripFeatFromTitle(n.entry.name)}
                     </Link>
                   )}</div>
@@ -227,7 +304,7 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {firstTimers.map((ft, i) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all group shadow-sm flex flex-col h-full">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] hover:shadow-lg hover:shadow-[var(--accent)]/10 hover:-translate-y-1 transition-all duration-300 group shadow-sm flex flex-col h-full">
             <div className="text-center py-2 border-b border-[var(--border)]">
               <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">{ft.chartTitle}</span>
             </div>
@@ -255,7 +332,7 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
                     {stripFeatFromTitle(ft.name)}
                   </Link>
                 ) : (
-                  <Link to="/song/$slug" params={{ slug: slugifyArtist(ft.name) }} className="hover:underline">
+                  <Link to="/song/$slug" params={{ slug: songSlug(ft.name, ft.artist) }} className="hover:underline">
                     {stripFeatFromTitle(ft.name)}
                   </Link>
                 )}
@@ -277,6 +354,120 @@ function FirstTimersSection({ firstTimers }: { firstTimers: any[] }) {
         ))}
       </div>
     </section>
+  );
+}
+
+/* ────── ON THIS WEEK Widget ────── */
+function OnThisWeekWidget({ years, data, latestDate }: { years: number[]; data: Record<number, Array<{ chartId: string; chartTitle: string; kind: string; entry: any; date: string }>>; latestDate: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const dayOfWeek = new Date().getDay();
+    const currentYear = new Date(latestDate + "T00:00:00").getFullYear();
+    const idx = Math.min(dayOfWeek, years.length - 1);
+    return years[idx] ?? currentYear;
+  });
+
+  const entries = data[selectedYear] || [];
+  const hasAny = entries.some((e) => e.entry);
+  // Find the first chart's date for the "view chart" link
+  const chartDate = entries[0]?.date || latestDate;
+
+  if (!hasAny) return null;
+
+  return (
+    <div className="sidebar-section mt-4">
+      <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">On This Week</div>
+      {/* Year selector — horizontal scroll */}
+      <div className="relative mb-3">
+        <div
+          ref={scrollRef}
+          className="flex gap-1.5 overflow-x-auto scroll-thin pb-1"
+        >
+          {years.map((y) => (
+            <button
+              key={y}
+              onClick={() => setSelectedYear(y)}
+              className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all shrink-0 ${
+                selectedYear === y
+                  ? "bg-[var(--accent)] text-black shadow-[0_0_10px_rgba(255,109,0,0.3)]"
+                  : "bg-[var(--muted)] text-muted-foreground hover:text-[var(--foreground)] hover:bg-[var(--border)]"
+              }`}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {entries.map((item) => {
+          if (!item.entry) return null;
+          const kindIcon = item.kind === "artist" ? "fa-user" : item.kind === "album" ? "fa-compact-disc" : "fa-music";
+          return (
+            <OnThisWeekItem key={`${selectedYear}-${item.chartId}`} item={item} kindIcon={kindIcon} />
+          );
+        })}
+      </div>
+      <Link
+        to="/chart/$chartId/$date"
+        params={{ chartId: "songs", date: chartDate }}
+        className="mt-3 block text-center text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] hover:opacity-80 transition-opacity"
+      >
+        View Full Chart <i className="fas fa-arrow-right ml-1" />
+      </Link>
+    </div>
+  );
+}
+
+function OnThisWeekItem({ item, kindIcon }: { item: { chartId: string; chartTitle: string; kind: string; entry: any }; kindIcon: string }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const entry = item.entry;
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    let query = "";
+    if (item.kind === "artist") query = `artist:"${entry.name}"`;
+    else if (item.kind === "album") query = `album:"${entry.name}" artist:"${entry.artist}"`;
+    else query = `track:"${entry.name}" artist:"${entry.artist}"`;
+    getSpotifyImage({ data: { query, type: item.kind as any } }).then((url) => {
+      if (active) {
+        setImageUrl(url ?? null);
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, [entry.name, entry.artist, item.kind]);
+
+  return (
+    <div className="flex items-center gap-2.5 group">
+      <div className="w-10 h-10 rounded-lg overflow-hidden bg-[var(--muted)] shrink-0 flex items-center justify-center">
+        {loading ? (
+          <div className="w-full h-full bg-gradient-to-br from-[var(--muted)] to-[var(--border)] animate-pulse" />
+        ) : imageUrl ? (
+          <img src={imageUrl} alt={entry.name} className="w-full h-full object-cover animate-fade-in" loading="lazy" />
+        ) : (
+          <i className={`fas ${kindIcon} text-muted-foreground text-xs`} />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{item.chartTitle}</div>
+        <div className="font-bold text-xs truncate group-hover:text-[var(--accent)] transition-colors">
+          {item.kind === "artist" ? (
+            <Link to="/artist/$slug" params={{ slug: slugifyArtist(entry.name) }} className="hover:underline">{entry.name}</Link>
+          ) : item.kind === "album" ? (
+            <Link to="/album/$slug" params={{ slug: slugifyArtist(entry.name) }} className="hover:underline">{stripFeatFromTitle(entry.name)}</Link>
+          ) : (
+            <Link to="/song/$slug" params={{ slug: songSlug(entry.name, entry.artist) }} className="hover:underline">{stripFeatFromTitle(entry.name)}</Link>
+          )}
+        </div>
+        {item.kind !== "artist" && (
+          <div className="text-[10px] text-muted-foreground truncate">
+            <Link to="/artist/$slug" params={{ slug: slugifyArtist(entry.artist) }} className="hover:text-[var(--accent)]">{entry.artist}</Link>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -417,7 +608,7 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
 
 /* ────── LANDING PAGE ────── */
 function LandingPage() {
-  const { charts, latestArticles, numberOnes, firstTimers, artistList } = Route.useLoaderData();
+  const { charts, latestArticles, numberOnes, firstTimers, artistList, onThisWeekData, onThisWeekYears, onThisWeekLatestDate } = Route.useLoaderData();
 
   return (
     <>
@@ -425,7 +616,7 @@ function LandingPage() {
       {/* Hero Title */}
       <div className="text-center py-10 md:py-16 relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[8rem] md:text-[14rem] font-black font-sans text-[rgba(255,255,255,0.08)] uppercase tracking-tighter leading-none">Charts</span>
+          <span className="text-[8rem] md:text-[14rem] font-black font-sans text-[var(--foreground)] opacity-[0.06] uppercase tracking-tighter leading-none">Charts</span>
         </div>
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-[var(--foreground)] tracking-tight relative z-10">daegon charts</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & greatest of all time lists</p>
@@ -436,6 +627,7 @@ function LandingPage() {
         {/* Sidebar - Left Side */}
         <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-8 lg:h-fit">
           <Sidebar artistList={artistList} />
+          <OnThisWeekWidget years={onThisWeekYears} data={onThisWeekData} latestDate={onThisWeekLatestDate} />
         </div>
         {/* Content */}
         <div className="flex-1 min-w-0">

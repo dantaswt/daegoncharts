@@ -12,10 +12,10 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
             key={id}
             to={date ? "/chart/$chartId/$date" : "/chart/$chartId"}
             params={date ? { chartId: id, date } : { chartId: id }}
-            className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
+            className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
               activeId === id
                 ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                : "bg-[var(--muted)] text-white hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+                : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
             }`}
           >
             {cfg.title}
@@ -80,7 +80,7 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="bg-[var(--muted)] text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
+            className="bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
           >
             {formatDate(currentDate)}
             <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
@@ -97,10 +97,10 @@ export function WeekNavigator({ chartId, dates, currentDate }: WeekNavProps) {
                       navigate({ to: "/chart/$chartId/$date", params: { chartId, date: d } });
                     }
                   }}
-                  className={`w-full text-center text-sm font-bold px-4 py-2 border-b border-white/20 cursor-pointer transition-colors ${
+                   className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border-b border-[var(--border)] cursor-pointer transition-colors flex items-center justify-center ${
                     d === currentDate
                       ? "bg-[var(--accent)] text-black"
-                      : "text-white hover:bg-white/10"
+                      : "text-[var(--foreground)] hover:bg-[var(--muted)]"
                   }`}
                 >
                   {formatDate(d)}

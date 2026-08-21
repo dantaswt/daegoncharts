@@ -37,18 +37,18 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
     <div className="relative w-full text-left">
       <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{label}</label>
       {value ? (
-        <div className="flex items-center justify-between bg-[var(--muted)] text-white border border-[var(--border)] p-3 rounded-lg">
+        <div className="flex items-center justify-between bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] p-3 rounded-lg">
           <span className="font-bold truncate">{value}</span>
-          <button onClick={() => onChange(null)} className="text-gray-400 hover:text-white shrink-0 ml-2"><i className="fas fa-times" /></button>
+          <button onClick={() => onChange(null)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] shrink-0 ml-2"><i className="fas fa-times" /></button>
         </div>
       ) : (
         <div>
           <div className="relative">
-            <i className="fas fa-search absolute left-3 top-3.5 text-gray-500" />
+            <i className="fas fa-search absolute left-3 top-3.5 text-[var(--muted-foreground)]" />
             <input
               type="text"
               placeholder="Search artist..."
-              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-lg py-3 pl-9 pr-3 text-white focus:outline-none focus:border-[var(--accent)]"
+              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-lg py-3 pl-9 pr-3 text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setOpen(true)}
@@ -56,11 +56,11 @@ function ArtistSelect({ label, value, onChange, options }: { label: string, valu
             />
           </div>
           {open && (
-            <div className="absolute z-10 w-full mt-1 bg-[var(--card)] text-white border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-1 bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto">
               {filtered.map(opt => (
                 <div
                   key={opt}
-                  className="px-4 py-2 hover:bg-[var(--muted)] hover:text-white cursor-pointer text-sm"
+                  className="px-4 py-2 hover:bg-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer text-sm"
                   onMouseDown={() => {
                     onChange(opt);
                     setSearch("");
@@ -93,8 +93,8 @@ function ArtistAvatar({ name }: { name: string }) {
     return () => { active = false; };
   }, [name]);
 
-  if (url) return <img src={url} alt={name} className="w-full h-full object-cover" />;
-  return <div className="w-full h-full flex items-center justify-center bg-[var(--muted)]"><i className="fas fa-user text-4xl text-gray-500" /></div>;
+  if (url) return <img src={url} alt={name} className="w-full h-full object-cover animate-fade-in" />;
+  return <div className="w-full h-full flex items-center justify-center bg-[var(--muted)]"><i className="fas fa-user text-4xl text-[var(--muted-foreground)] animate-pulse" /></div>;
 }
 
 function ChartBattlePage() {
@@ -164,7 +164,7 @@ function ChartBattlePage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">BATTLE</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[var(--foreground)] opacity-[0.06] font-sans uppercase tracking-tighter leading-none">BATTLE</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase"><i className="fas fa-bolt mr-3"></i>Chart Battle</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Select two artists and a chart to see who dominates</p>
@@ -183,7 +183,7 @@ function ChartBattlePage() {
             <select 
               value={selectedChart} 
               onChange={e => setSelectedChart(e.target.value)}
-              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-lg p-3 text-white focus:outline-none focus:border-[var(--accent)] text-center cursor-pointer"
+              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-lg p-3 text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] text-center cursor-pointer"
             >
               {allAvailableCharts.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -196,7 +196,7 @@ function ChartBattlePage() {
               className={`px-12 py-4 rounded-full text-xl font-black tracking-widest uppercase transition-all shadow-xl ${
                 artist1 && artist2 
                   ? "bg-[var(--accent)] text-black hover:scale-105 hover:shadow-[0_0_20px_var(--accent)]" 
-                  : "bg-[var(--muted)] text-gray-500 cursor-not-allowed"
+                  : "bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed"
               }`}
             >
               Fight!
@@ -207,7 +207,7 @@ function ChartBattlePage() {
         <AnimatePresence>
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center">
             
-            <button onClick={handleReset} className="mb-6 text-sm text-muted-foreground hover:text-white flex items-center gap-2 bg-[var(--muted)] px-4 py-2 rounded-full border border-[var(--border)]">
+            <button onClick={handleReset} className="mb-6 text-sm text-muted-foreground hover:text-[var(--foreground)] flex items-center gap-2 bg-[var(--muted)] px-4 py-2 rounded-full border border-[var(--border)]">
               <i className="fas fa-redo"></i> New Battle
             </button>
 
@@ -218,7 +218,7 @@ function ChartBattlePage() {
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-[var(--border)] shadow-xl mb-4">
                   <ArtistAvatar name={artist1!} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-white">{artist1}</h2>
+                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-[var(--foreground)]">{artist1}</h2>
                 <div className="text-6xl font-black gold my-4">{p1}</div>
               </div>
 
@@ -233,13 +233,14 @@ function ChartBattlePage() {
                   { label: "Weeks", v1: s1!.totalWeeks, v2: s2!.totalWeeks },
                   { label: "Entries", v1: s1!.totalEntries, v2: s2!.totalEntries },
                   { label: "Units", v1: s1!.totalUnits.toLocaleString(), v2: s2!.totalUnits.toLocaleString(), num1: s1!.totalUnits, num2: s2!.totalUnits },
+                  { label: "Avg. Position", v1: s1!.totalEntries > 0 ? (s1!.totalWeeks / s1!.totalEntries).toFixed(1) : "—", v2: s2!.totalEntries > 0 ? (s2!.totalWeeks / s2!.totalEntries).toFixed(1) : "—", num1: s1!.totalEntries > 0 ? s1!.totalWeeks / s1!.totalEntries : 999, num2: s2!.totalEntries > 0 ? s2!.totalWeeks / s2!.totalEntries : 999, lower: true },
                 ].map(stat => (
-                  <div key={stat.label} className="mb-6 last:mb-0">
+                  <div key={stat.label} className="mb-5 last:mb-0">
                     <div className="text-[10px] text-center uppercase tracking-widest text-muted-foreground font-bold mb-1">{stat.label}</div>
                     <div className="flex items-center justify-between px-4">
-                      <div className={`font-black text-lg ${(stat.num1 ?? stat.v1) > (stat.num2 ?? stat.v2) ? 'text-green-400' : 'text-white'}`}>{stat.v1}</div>
+                      <div className={`font-black text-lg ${(stat.lower ? (stat.num1 ?? 999) < (stat.num2 ?? 999) : (stat.num1 ?? stat.v1) > (stat.num2 ?? stat.v2)) ? 'text-green-400' : 'text-[var(--foreground)]'}`}>{stat.v1}</div>
                       <div className="text-muted-foreground mx-2"><i className="fas fa-arrows-alt-h text-[10px]"></i></div>
-                      <div className={`font-black text-lg ${(stat.num2 ?? stat.v2) > (stat.num1 ?? stat.v1) ? 'text-green-400' : 'text-white'}`}>{stat.v2}</div>
+                      <div className={`font-black text-lg ${(stat.lower ? (stat.num2 ?? 999) < (stat.num1 ?? 999) : (stat.num2 ?? stat.v2) > (stat.num1 ?? stat.v1)) ? 'text-green-400' : 'text-[var(--foreground)]'}`}>{stat.v2}</div>
                     </div>
                   </div>
                 ))}
@@ -250,7 +251,7 @@ function ChartBattlePage() {
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-[var(--border)] shadow-xl mb-4">
                   <ArtistAvatar name={artist2!} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-white">{artist2}</h2>
+                <h2 className="text-2xl md:text-3xl font-black mb-2 text-center text-[var(--foreground)]">{artist2}</h2>
                 <div className="text-6xl font-black gold my-4">{p2}</div>
               </div>
             </div>
@@ -262,7 +263,7 @@ function ChartBattlePage() {
               className="mt-8 flex flex-col items-center bg-gradient-to-r from-yellow-500/20 via-yellow-400/30 to-yellow-500/20 border border-yellow-500/50 rounded-2xl px-12 py-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] text-center"
             >
               <i className="fas fa-trophy text-6xl text-yellow-400 mb-4 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]"></i>
-              <div className="text-3xl md:text-5xl font-black uppercase text-white tracking-tighter">
+              <div className="text-3xl md:text-5xl font-black uppercase text-[var(--foreground)] tracking-tighter">
                 {p1 > p2 ? `${artist1} WINS!` : p2 > p1 ? `${artist2} WINS!` : "IT's A TIE!"}
               </div>
             </motion.div>

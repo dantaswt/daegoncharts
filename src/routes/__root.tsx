@@ -13,6 +13,11 @@ import { useEffect, type ReactNode, useState, useRef, useCallback } from "react"
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BackToTop } from "@/components/chart-nav";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CommandSearch } from "@/components/command-search";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { trackPageView } from "@/lib/analytics";
 
 function NotFoundComponent() {
   return (
@@ -21,8 +26,8 @@ function NotFoundComponent() {
         <div className="w-20 h-20 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mx-auto mb-6">
           <i className="fas fa-question text-3xl text-[var(--accent)]" />
         </div>
-        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Page not found</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">This chart week or page doesn't exist.</p>
+        <h1 className="text-2xl font-extrabold text-[var(--foreground)] mb-2">Page not found</h1>
+        <p className="text-sm text-[var(--muted-foreground)] mb-8">This chart week or page doesn't exist.</p>
         <Link to="/" className="px-6 py-2.5 rounded-full bg-[var(--accent)] text-white font-semibold hover:opacity-90 transition-opacity inline-block">
           Go home
         </Link>
@@ -43,8 +48,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
           <i className="fas fa-exclamation-triangle text-3xl text-red-500" />
         </div>
-        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">This page didn't load</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Try again in a moment.</p>
+        <h1 className="text-2xl font-extrabold text-[var(--foreground)] mb-2">This page didn't load</h1>
+        <p className="text-sm text-[var(--muted-foreground)] mb-8">Try again in a moment.</p>
         <div className="flex flex-wrap justify-center gap-3">
           <button
             onClick={() => { router.invalidate(); reset(); }}
@@ -52,7 +57,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             <i className="fas fa-redo mr-2" />Try again
           </button>
-          <a href="/" className="px-6 py-2.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+          <a href="/" className="px-6 py-2.5 rounded-full border border-[var(--border)] text-[var(--foreground)] font-semibold hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
             Go home
           </a>
         </div>
@@ -62,7 +67,46 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 function PendingComponent() {
-  return null;
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-64 bg-[var(--muted)]" />
+        <Skeleton className="h-8 w-48 bg-[var(--muted)]" />
+      </div>
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="chart-card w-full">
+            <div className="hidden md:grid gap-3 items-center" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
+              <Skeleton className="w-16 h-12 bg-[var(--muted)]" />
+              <Skeleton className="w-24 h-24 bg-[var(--muted)]" />
+              <Skeleton className="w-8 h-8 bg-[var(--muted)]" />
+              <div className="flex flex-col gap-2 flex-1">
+                <Skeleton className="h-5 w-3/4 bg-[var(--muted)]" />
+                <Skeleton className="h-4 w-1/2 bg-[var(--muted)]" />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-col items-end gap-1">
+                  <Skeleton className="h-3 w-16 bg-[var(--muted)]" />
+                  <Skeleton className="h-3 w-16 bg-[var(--muted)]" />
+                  <Skeleton className="h-3 w-16 bg-[var(--muted)]" />
+                </div>
+              </div>
+            </div>
+            <div className="md:hidden flex flex-col gap-2">
+              <div className="flex items-start gap-2">
+                <Skeleton className="w-10 h-10 bg-[var(--muted)]" />
+                <Skeleton className="w-14 h-14 bg-[var(--muted)]" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4 bg-[var(--muted)]" />
+                  <Skeleton className="h-3 w-1/2 bg-[var(--muted)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function LoadingBar() {
@@ -126,8 +170,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <head><HeadContent /></head>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t!=='light')document.documentElement.classList.add('dark')}catch(e){}})()`,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,
+          }}
+        />
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
@@ -138,7 +194,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -152,28 +207,22 @@ function SiteHeader() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const handleSearch = useCallback(() => {
-    if (searchQuery.trim()) {
-      navigate({ to: "/artists", search: { q: searchQuery.trim() } });
-      setSearchQuery("");
-      setMenuOpen(false);
-    }
-  }, [searchQuery, navigate]);
-
   const navItems = [
     { label: "HOT 100", to: "/chart/$chartId" as const, params: { chartId: "songs" } },
     { label: "CHART BEAT", to: "/chart-beat-2/$chartId/$date" as const, params: { chartId: "songs", date: "2026-07-06" } },
-    { label: "YEAR-END CHARTS", to: "/year-end/$chartId" as const, params: { chartId: "yearEndSongs" } },
-    { label: "GREATEST OF ALL TIME", to: "/goat/$chartId" as const, params: { chartId: "goatSongs" } },
+    { label: "YEAR-END CHARTS", to: "/year-end" as const },
+    { label: "GREATEST OF ALL TIME", to: "/goat" as const },
     { label: "STATS", to: "/stats" as const, params: {} },
+    { label: "AWARDS", to: "/awards" as const, params: {} },
     { label: "#1'S", to: "/number-ones" as const, params: {} },
+    { label: "ABOUT", to: "/about" as const, params: {} },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--muted)] border-b border-[var(--border)]">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
       <div className="max-w-7xl mx-auto px-4 py-3 grid grid-cols-[auto_1fr_auto] items-center gap-4">
         {/* Logo */}
-        <Link to="/" className="text-lg md:text-xl font-extrabold text-white lowercase tracking-wide shrink-0">
+        <Link to="/" className="text-lg md:text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0">
           daegon charts
         </Link>
 
@@ -184,38 +233,35 @@ function SiteHeader() {
               key={item.label}
               to={item.to}
               params={item.params}
-              className="text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+              className="text-[11px] font-bold uppercase tracking-widest text-[#9CA3AF] hover:text-[#f5f5f5] transition-colors whitespace-nowrap"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        {/* Search */}
-        <div className="hidden lg:flex items-center shrink-0">
-          <input
-            type="text"
-            placeholder="SEARCH ARTIST"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="bg-transparent border border-gray-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 w-56 placeholder-gray-500 focus:border-[var(--accent)] focus:outline-none transition-colors"
-          />
+        {/* Search + Theme */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
+          <CommandSearch />
+          <ThemeToggle />
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="lg:hidden text-white text-2xl p-1 cursor-pointer"
-          aria-label="Menu"
-        >
-          <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
-        </button>
+        {/* Mobile hamburger + theme */}
+        <div className="lg:hidden flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-[#f5f5f5] text-2xl p-1 cursor-pointer"
+            aria-label="Menu"
+          >
+            <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div ref={menuRef} className="lg:hidden bg-[var(--muted)] border-t border-[var(--border)]">
+        <div ref={menuRef} className="lg:hidden bg-[#0f0f0f] border-t border-[#2a2a2a]">
           <div className="px-4 py-4 space-y-3">
             {navItems.map((item) => (
               <Link
@@ -223,21 +269,14 @@ function SiteHeader() {
                 to={item.to}
                 params={item.params}
                 onClick={() => setMenuOpen(false)}
-                className="block text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-[var(--accent)] transition-colors py-2 border-b border-[var(--border)]"
+                className="block text-sm font-bold uppercase tracking-widest text-[#9CA3AF] hover:text-[var(--accent)] transition-colors py-2 border-b border-[#2a2a2a]"
               >
                 {item.label}
               </Link>
             ))}
-            {/* Mobile search */}
+            {/* Mobile search trigger */}
             <div className="pt-2">
-              <input
-                type="text"
-                placeholder="SEARCH ARTIST"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full bg-transparent border border-gray-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 placeholder-gray-500 focus:border-[var(--accent)] focus:outline-none transition-colors"
-              />
+              <CommandSearch />
             </div>
           </div>
         </div>
@@ -248,10 +287,17 @@ function SiteHeader() {
 
 function SiteFooter() {
   return (
-    <footer className="bg-[var(--muted)] mt-10 py-8 border-t border-[var(--border)]">
+    <footer className="bg-[#0f0f0f] mt-10 py-8 border-t border-[#2a2a2a]">
       <div className="container mx-auto px-4">
+        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground mb-6">
+          <Link to="/artists" className="hover:text-[var(--accent)] transition-colors font-semibold">Artists</Link>
+          <span className="text-[#9CA3AF]">|</span>
+          <Link to="/albums" className="hover:text-[var(--accent)] transition-colors font-semibold">Albums</Link>
+          <span className="text-[#9CA3AF]">|</span>
+          <Link to="/songs" className="hover:text-[var(--accent)] transition-colors font-semibold">Songs</Link>
+        </div>
         <div className="text-center text-muted-foreground text-xs">
-          <p>Chart generated based on dantaswt's Last.fm data.</p>
+          <p>Chart generated based on daegon charts archive.</p>
           <p className="mt-1">Powered by TanStack Start.</p>
         </div>
       </div>
@@ -261,13 +307,21 @@ function SiteFooter() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    trackPageView(window.location.pathname);
+  }, [router.state.location]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <LoadingBar />
       <div className="flex flex-col min-h-screen">
         <SiteHeader />
         <main className="flex-grow container mx-auto p-3 md:p-6 pt-20 md:pt-24">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
         <SiteFooter />
         <BackToTop />

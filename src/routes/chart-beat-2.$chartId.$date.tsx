@@ -23,11 +23,11 @@ export const Route = createFileRoute("/chart-beat-2/$chartId/$date")({
     return { chartId, date: params.date, dates: data.dates };
   },
   head: ({ loaderData }) => {
-    if (!loaderData) return { meta: [{ title: "Chart Beat 2.0 | daegon charts" }] };
+    if (!loaderData) return { meta: [{ title: "Chart Beat | daegon charts" }] };
     const cfg = chartsConfig[loaderData.chartId];
     return {
       meta: [
-        { title: `Chart Beat 2.0 — ${cfg.title} | daegon charts` },
+        { title: `Chart Beat — ${cfg.title} | daegon charts` },
         { name: "description", content: `Auto-generated chart analysis for ${cfg.title}.` },
       ],
     };

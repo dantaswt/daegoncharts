@@ -28,8 +28,8 @@ function ItemImage({ name, artist, kind }: { name: string; artist: string; kind:
     return () => { active = false; };
   }, [query, type]);
   return (
-    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center shrink-0">
-      {url ? <img src={url} alt={name} className="w-full h-full object-cover" /> : <i className="fas fa-music text-muted-foreground" />}
+    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-gradient-to-br from-[var(--muted)] to-[var(--border)] flex items-center justify-center shrink-0">
+      {url ? <img src={url} alt={name} className="w-full h-full object-cover animate-fade-in" /> : <i className="fas fa-music text-muted-foreground animate-pulse" />}
     </div>
   );
 }
@@ -45,7 +45,7 @@ function RecordRow({ record, rank, kind, chartId }: { record: Stats2Record; rank
       transition={{ duration: 0.2, delay: Math.min(rank * 0.02, 0.4) }}
       className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group"
     >
-      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${rank <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
+      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${rank <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-[var(--foreground)]"}`}>
         {rank}
       </div>
       <ItemImage name={record.name} artist={record.artist} kind={actualKind} />
@@ -61,6 +61,116 @@ function RecordRow({ record, rank, kind, chartId }: { record: Stats2Record; rank
         )}
       </div>
     </motion.div>
+  );
+}
+
+/* ── All-Kill Section ── */
+function AllKillSection({ allKills }: { allKills: { top: { name: string; artist: string; date: string; count: number; charts: string[]; entries: string[] }[]; full: { name: string; artist: string; date: string; count: number; charts: string[]; entries: string[] }[]; songs: { name: string; artist: string; date: string; count: number; charts: string[] }[]; albums: { name: string; artist: string; date: string; count: number; charts: string[] }[] } }) {
+  const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<"full" | "top" | "songs" | "albums">("full");
+
+  const tabs = [
+    { id: "full" as const, label: "Full All-Kill", icon: "fa-trophy", items: allKills.full },
+    { id: "top" as const, label: "Top All-Kill", icon: "fa-crown", items: allKills.top },
+    { id: "songs" as const, label: "Song All-Kill", icon: "fa-music", items: allKills.songs },
+    { id: "albums" as const, label: "Album All-Kill", icon: "fa-compact-disc", items: allKills.albums },
+  ];
+
+  const activeItems = tabs.find((t) => t.id === activeTab)?.items ?? [];
+  const displayItems = expanded ? activeItems : activeItems.slice(0, 5);
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-lg">
+          <i className="fas fa-trophy text-white text-lg" />
+        </div>
+        <div>
+          <h2 className="text-lg font-black gold uppercase tracking-wide">All-Kill</h2>
+          <p className="text-xs text-muted-foreground">Entries that dominated #1 across every chart simultaneously</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setExpanded(false); }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeTab === tab.id
+                ? "bg-[var(--accent)] text-black"
+                : "bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]"
+            }`}
+          >
+            <i className={`fas ${tab.icon}`} />
+            {tab.label}
+            <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] ${
+              activeTab === tab.id ? "bg-black/20" : "bg-[var(--muted)]"
+            }`}>
+              {tab.items.length}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Items */}
+      {activeItems.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground bg-[var(--card)] rounded-xl border border-[var(--border)]">
+          <i className="fas fa-trophy text-3xl mb-3 block opacity-30" />
+          <p className="text-sm font-semibold">No All-Kills found</p>
+          <p className="text-xs mt-1">No entry has topped all charts in this category yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {displayItems.map((item, i) => {
+            const itemKind = activeTab === "songs" ? "song" : activeTab === "albums" ? "album" : "artist";
+            return (
+            <motion.div
+              key={`${item.name}||${item.artist}||${item.date}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.3) }}
+              className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group"
+            >
+              <ItemImage name={item.name} artist={item.artist} kind={itemKind} />
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-sm group-hover:text-[var(--accent)] transition-colors">{item.artist}</div>
+                <div className="text-xs text-muted-foreground">
+                  {"entries" in item && Array.isArray(item.entries)
+                    ? [...new Set(item.entries)].join(", ")
+                    : item.name}
+                </div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {item.charts.map((c) => (
+                    <span key={c} className="px-1.5 py-0.5 bg-[var(--muted)] rounded text-[10px] text-muted-foreground">{c}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-black text-base sm:text-lg gold">{item.count} Charts</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {new Date(item.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </div>
+              </div>
+            </motion.div>
+            );
+          })}
+          {activeItems.length > 5 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="w-full py-2 text-xs text-muted-foreground hover:text-[var(--accent)] transition-colors"
+            >
+              {expanded ? (
+                <><i className="fas fa-chevron-up mr-1" /> Show less</>
+              ) : (
+                <><i className="fas fa-chevron-down mr-1" /> Show all {activeItems.length} All-Kills</>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -241,7 +351,7 @@ function MultiArtistFilter({ artists, selected, onChange }: { artists: string[];
               placeholder="Search artists..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded px-2 py-1.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
+              className="w-full bg-[var(--muted)] border border-[var(--border)] rounded px-2 py-1.5 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
               autoFocus
             />
           </div>
@@ -290,7 +400,7 @@ function SortSelector({ value, onChange, isLowerBetter }: { value: string; onCha
 /* ── Main Stats Page ── */
 function Stats2Page() {
   const data = Route.useLoaderData();
-  const { chartStats, availableYears, chartIds } = data;
+  const { chartStats, availableYears, chartIds, allKills } = data;
 
   const [selectedChart, setSelectedChart] = useState(chartIds[0]);
   const [selectedStat, setSelectedStat] = useState("debuts");
@@ -379,11 +489,16 @@ function Stats2Page() {
       {/* Hero Header */}
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">STATS</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[var(--foreground)] opacity-[0.06] font-sans uppercase tracking-tighter leading-none">STATS</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Stats</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Records, milestones & chart history across every chart</p>
       </div>
+
+      {/* All-Kill Section */}
+      {allKills && (
+        <AllKillSection allKills={allKills} />
+      )}
 
       {/* Filters */}
       <section className="mb-6 space-y-3 sticky top-0 z-40 bg-[var(--background)] py-3 -mx-4 sm:-mx-6 px-4 sm:px-6 border-b border-[var(--border)]">

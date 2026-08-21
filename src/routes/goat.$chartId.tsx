@@ -1,9 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getGoatGenerated, type GOATEntry } from "@/lib/charts.functions";
-import { chartsConfig, goatChartIds, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
+import { chartsConfig, goatChartIds, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 
@@ -42,9 +42,13 @@ function GoatPage() {
   const cfg = chartsConfig[chartId];
   const isAlbum = data.kind === "album";
   const isRadio = chartId === "goatRadio";
-  const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales" | "audience" | "points">("weeks");
+  const defaultSort = chartId === "goatSongs" ? "points" : isRadio ? "audience" : "units";
+  const [sortBy, setSortBy] = useState<"weeks" | "units" | "streams" | "sales" | "audience" | "points">(defaultSort);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
+  const sortRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 50;
 
   const sorted = useMemo(() => {
@@ -71,16 +75,28 @@ function GoatPage() {
   const imageSize = isAlbum ? 56 : 40;
 
   const sortOptions = [
-    { key: "weeks" as const, label: "Weeks on Chart", icon: "fa-calendar-week" },
-    { key: "units" as const, label: "Total Units", icon: "fa-chart-bar" },
-    { key: "points" as const, label: "Total Points", icon: "fa-star" },
-    { key: "streams" as const, label: "Total Streams", icon: "fa-headphones" },
-    { key: "sales" as const, label: "Total Sales", icon: "fa-shopping-cart" },
+    ...(chartId === "goatSongs" ? [{ key: "points" as const, label: "Total Points", icon: "fa-star" }] : []),
     ...(isRadio ? [{ key: "audience" as const, label: "Total Audience", icon: "fa-broadcast-tower" }] : []),
+    { key: "units" as const, label: "Total Units", icon: "fa-chart-bar" },
+    ...(chartId === "goatSongs" || chartId === "goatAlbums" ? [{ key: "sales" as const, label: "Total Sales", icon: "fa-shopping-cart" }] : []),
+    ...(chartId === "goatSongs" || chartId === "goatAlbums" ? [{ key: "streams" as const, label: "Total Streams", icon: "fa-headphones" }] : []),
+    { key: "weeks" as const, label: "Weeks on Chart", icon: "fa-calendar-week" },
   ];
 
   const metricLabel = sortBy === "units" ? "Units" : sortBy === "streams" ? "Streams" : sortBy === "sales" ? "Sales" : sortBy === "audience" ? "Audience" : sortBy === "points" ? "Points" : "Weeks";
   const metricIcon = sortBy === "units" ? "fa-chart-bar" : sortBy === "streams" ? "fa-headphones" : sortBy === "sales" ? "fa-shopping-cart" : sortBy === "audience" ? "fa-broadcast-tower" : sortBy === "points" ? "fa-star" : "fa-calendar-week";
+
+  const toggleDetails = (key: string) => {
+    setDetailsOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
@@ -90,16 +106,35 @@ function GoatPage() {
           <aside className="space-y-4">
             <div className="sidebar-section">
               <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Sort By</div>
-              <div className="space-y-1">
-                {sortOptions.map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => { setSortBy(opt.key); setCurrentPage(1); }}
-                    className={`sidebar-link w-full text-left ${sortBy === opt.key ? "active" : ""}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <div ref={sortRef} className="relative">
+                <button
+                  onClick={() => setSortOpen(!sortOpen)}
+                  className="w-full bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] text-sm font-bold px-3 py-2 text-left focus:outline-none cursor-pointer flex items-center justify-between gap-2"
+                >
+                  <span>{sortOptions.find((o) => o.key === sortBy)?.label}</span>
+                  <i className={`fas fa-chevron-down text-xs transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+                </button>
+                {sortOpen && (
+                  <div className="absolute top-full left-0 right-0 z-50 bg-[var(--card)] border border-[var(--border)] max-h-[300px] overflow-y-auto">
+                    {sortOptions.map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => {
+                          setSortBy(opt.key);
+                          setSortOpen(false);
+                          setCurrentPage(1);
+                        }}
+                        className={`w-full text-left text-sm font-bold px-3 py-2 border-b border-white/20 cursor-pointer transition-colors ${
+                          sortBy === opt.key
+                            ? "bg-[var(--accent)] text-black"
+                            : "text-[var(--foreground)] hover:bg-[var(--muted)]"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -134,7 +169,7 @@ function GoatPage() {
           {/* Header */}
           <div className="relative text-center py-8 md:py-10 mb-6 overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-              <span className="text-[4rem] md:text-[6rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">Greatest of All Time</span>
+              <span className="text-[4rem] md:text-[6rem] font-black text-[var(--foreground)] opacity-[0.06] font-sans uppercase tracking-tighter leading-none">Greatest of All Time</span>
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black gold tracking-tight relative z-10 uppercase">
               {cfg?.title ?? "Greatest of All Time"}
@@ -171,13 +206,15 @@ function GoatPage() {
                     className={`relative text-center p-4 sm:p-6 rounded-2xl border overflow-hidden ${isFirst ? "border-[var(--accent)] bg-[rgba(255,109,0,0.05)]" : "border-[var(--border)] bg-[var(--card)]"}`}
                   >
                     {isFirst && <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--accent)]" />}
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${isFirst ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${isFirst ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-[var(--foreground)]"}`}>
                       {idx + 1}
                     </div>
-                    <div className="font-bold text-sm sm:text-base break-words">{data.kind === "artist" ? stripFeatFromTitle(item.name) : data.kind === "album" ? (
-                      <Link to="/album/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripAlbumEdition(stripFeatFromTitle(item.name))}</Link>
+                    <div className="font-bold text-sm sm:text-base break-words">{data.kind === "artist" ? (
+                      <Link to="/artist/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
+                    ) : data.kind === "album" ? (
+                      <Link to="/album/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripAlbumEdition(item.name)}</Link>
                     ) : (
-                      <Link to="/song/$slug" params={{ slug: slugifyArtist(item.name) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
+                      <Link to="/song/$slug" params={{ slug: songSlug(item.name, item.artist) }} className="hover:underline">{stripFeatFromTitle(item.name)}</Link>
                     )}</div>
                     {data.kind !== "artist" && (
                       <div className="text-xs text-muted-foreground break-words">
@@ -218,62 +255,107 @@ function GoatPage() {
           </div>
 
           {/* List */}
-          <section className="space-y-2">
+          <section className="space-y-3">
             {displayed.length > 0 ? (
-              displayed.map((e, i) => (
-                <motion.div
-                  key={`${e.name}-${e.artist}`}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: Math.min(i * 0.01, 0.3) }}
-                  className={`flex items-center gap-3 sm:gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group ${isAlbum ? "p-3 sm:p-4" : "p-3 sm:p-4"}`}
-                >
-                  <div className={`flex items-center justify-center font-black text-sm shrink-0 ${isAlbum ? "w-10 h-10 sm:w-12 sm:h-12 rounded-xl text-base" : "w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm"} ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
-                    {e.position}
-                  </div>
-                  <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={imageSize} />
-                  <div className="min-w-0 flex-1">
-                    <div className={`font-bold group-hover:text-[var(--accent)] transition-colors break-words ${isAlbum ? "text-base" : "text-sm"}`}>
-                      {data.kind === "artist" ? (
-                        <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
-                      ) : data.kind === "album" ? (
-                        <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripAlbumEdition(stripFeatFromTitle(e.name))}</Link>
-                      ) : (
-                        <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
-                      )}
-                    </div>
-                    {data.kind !== "artist" && (
-                      <div className="text-xs text-muted-foreground break-words">
-                        <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
-                        <TrackArtists song={e.name} artist={e.artist} className="text-muted-foreground" />
+              displayed.map((e, i) => {
+                const entryKey = `${e.name}-${e.artist}`;
+                const isOpen = detailsOpen[entryKey] ?? false;
+                return (
+                  <motion.div
+                    key={entryKey}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all overflow-hidden"
+                  >
+                    {/* Desktop layout */}
+                    <div className="hidden md:grid gap-3 items-center p-4" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
+                      <div className="flex flex-col items-center justify-center w-16">
+                        <div className={`rank-num font-black ${e.position === 1 ? "text-4xl bg-[var(--accent)] text-black w-16 h-16 flex items-center justify-center" : "text-3xl"}`}>{e.position}</div>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 sm:gap-4 text-xs text-muted-foreground shrink-0">
-                    <div className="text-center">
-                      <div className="text-[9px] uppercase font-bold tracking-wider">Peak</div>
-                      <div className="font-black gold text-sm">#{e.peak}</div>
-                    </div>
-                    {showWeeksCol && (
-                      <div className="text-center">
-                        <div className="text-[9px] uppercase font-bold tracking-wider">Weeks</div>
-                        <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
+                      <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${e.position === 1 ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)]" : "w-24 h-24"}`}>
+                        <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={e.position === 1 ? 180 : 96} />
                       </div>
-                    )}
-                    {sortBy !== "weeks" && (
-                      <div className="text-center">
-                        <div className="flex items-center gap-1 text-[var(--accent)]">
-                          <i className={`fas ${metricIcon} text-[9px]`} />
-                          <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
+                      <div className="min-w-0 flex flex-col flex-1 pl-3">
+                        <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${e.position === 1 ? "text-xl" : "text-base"}`}>
+                          {data.kind === "artist" ? (
+                            <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
+                          ) : data.kind === "album" ? (
+                            <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(e.name)}</Link>
+                          ) : (
+                            <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.name)}</Link>
+                          )}
                         </div>
-                        <div className="font-black text-[var(--foreground)] text-sm">
-                          {sortBy === "units" ? formatMetric(e.totalUnits, false) : sortBy === "streams" ? formatMetric(e.totalStreams, true) : sortBy === "sales" ? formatMetric(e.totalSales, false) : sortBy === "audience" ? formatMetric(e.totalAudience, false) : sortBy === "points" ? formatMetric(e.totalPoints, false) : e.weeks}
+                        {data.kind !== "artist" && (
+                          <div className={`break-words line-clamp-2 ${e.position === 1 ? "text-base text-[var(--muted-foreground)]" : "text-sm text-[var(--muted-foreground)]"}`}>
+                            <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
+                            {data.kind === "song" && <TrackArtists song={e.name} artist={e.artist} className="text-sm text-[var(--muted-foreground)]" />}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+                          {isOpen ? "−" : "+"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Mobile layout */}
+                    <div className="md:hidden flex flex-col p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
+                          <div className="rank-num text-lg font-black">{e.position}</div>
+                        </div>
+                        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none w-14 h-14 flex-shrink-0">
+                          <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={56} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+                            {data.kind === "artist" ? (
+                              <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
+                            ) : data.kind === "album" ? (
+                              <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(e.name)}</Link>
+                            ) : (
+                              <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.name)}</Link>
+                            )}
+                          </div>
+                          {data.kind !== "artist" && (
+                            <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
+                              <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
+                            </div>
+                          )}
+                        </div>
+                        <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
+                          {isOpen ? "−" : "+"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Details panel */}
+                    {isOpen && (
+                      <div className="details-panel mx-4 mb-4 mt-2 rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">Peak</div>
+                            <div className="font-black text-[var(--foreground)] text-sm mt-1">#{e.peak}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">Weeks</div>
+                            <div className="font-black text-[var(--foreground)] text-sm mt-1">{e.weeks}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">{metricLabel}</div>
+                            <div className="font-black text-[var(--foreground)] text-sm mt-1">
+                              {sortBy === "units" ? formatMetric(e.totalUnits, false) : sortBy === "streams" ? formatMetric(e.totalStreams, true) : sortBy === "sales" ? formatMetric(e.totalSales, false) : sortBy === "audience" ? formatMetric(e.totalAudience, false) : sortBy === "points" ? formatMetric(e.totalPoints, false) : e.weeks}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                );
+              })
             ) : (
               <div className="text-center py-16 text-muted-foreground text-sm">No results found.</div>
             )}

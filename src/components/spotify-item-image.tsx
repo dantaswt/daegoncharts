@@ -7,10 +7,13 @@ interface SpotifyItemImageProps {
   kind: "song" | "album" | "artist";
   size?: number;
   className?: string;
+  rounded?: "lg" | "full";
 }
 
-export function SpotifyItemImage({ name, artist, kind, size = 40, className = "" }: SpotifyItemImageProps) {
+export function SpotifyItemImage({ name, artist, kind, size = 40, className = "", rounded = "lg" }: SpotifyItemImageProps) {
   const [url, setUrl] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const isFull = rounded === "full";
 
   useEffect(() => {
     let active = true;
@@ -32,26 +35,28 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
     return () => { active = false; };
   }, [name, artist, kind]);
 
+  const imgStyle: React.CSSProperties = isFull ? { borderRadius: "50%", width: size, height: size } : { width: size, height: size };
+
   if (url) {
     return (
       <img
         src={url}
         alt={name}
-        width={size}
-        height={size}
         loading="lazy"
         decoding="async"
-        className={`object-cover rounded-lg shrink-0 ${className}`}
+        onLoad={() => setLoaded(true)}
+        style={imgStyle}
+        className={`object-cover shrink-0 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
       />
     );
   }
 
   return (
     <div
-      style={{ width: size, height: size }}
-      className={`rounded-lg shrink-0 bg-[var(--muted)] flex items-center justify-center ${className}`}
+      style={{ width: size, height: size, borderRadius: isFull ? "50%" : undefined }}
+      className={`shrink-0 bg-[var(--muted)] flex items-center justify-center animate-pulse ${className}`}
     >
-      <i className={`fas ${kind === "artist" ? "fa-user" : kind === "album" ? "fa-compact-disc" : "fa-music"} text-xs opacity-50`} />
+      <i className={`fas ${kind === "artist" ? "fa-user" : kind === "album" ? "fa-compact-disc" : "fa-music"} text-xs opacity-30`} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import Papa from "papaparse";
-import { chartsConfig, chartBeatConfig, slugify, weeklyChartIds } from "./charts-config";
+import { chartsConfig, chartBeatConfig, slugify, songSlug, parseSongSlug, weeklyChartIds } from "./charts-config";
 
 export interface ChartEntry {
   position: number;
@@ -238,6 +238,7 @@ function formatTotalUnits(v: string | undefined): string | undefined {
 
 export function getCertificationLevel(units: number, type: "song" | "album"): string | undefined {
   if (type === "song") {
+    if (units >= 12_000_000) return "2x Diamond";
     if (units >= 6_000_000) return "Diamond";
     if (units >= 600_000) {
       const x = Math.floor(units / 600_000);
@@ -246,6 +247,7 @@ export function getCertificationLevel(units: number, type: "song" | "album"): st
     if (units >= 400_000) return "Gold";
     if (units >= 200_000) return "Silver";
   } else {
+    if (units >= 20_000_000) return "2x Diamond";
     if (units >= 10_000_000) return "Diamond";
     if (units >= 1_000_000) {
       const x = Math.floor(units / 1_000_000);
@@ -258,7 +260,7 @@ export function getCertificationLevel(units: number, type: "song" | "album"): st
 
 export function getCertificationMeta(level: string | undefined): { color: string; bg: string; border: string } | undefined {
   if (!level) return undefined;
-  if (level === "Diamond") return { color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-900/20", border: "border-cyan-200 dark:border-cyan-800" };
+  if (level.includes("Diamond")) return { color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-900/20", border: "border-cyan-200 dark:border-cyan-800" };
   if (level === "Platinum") return { color: "text-gray-600 dark:text-gray-300", bg: "bg-gray-100 dark:bg-gray-800", border: "border-gray-300 dark:border-gray-700" };
   if (level === "Gold") return { color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-yellow-900/20", border: "border-yellow-200 dark:border-yellow-800" };
   if (level === "Silver") return { color: "text-gray-500 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-900", border: "border-gray-200 dark:border-gray-700" };
@@ -640,8 +642,26 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
 
   const chartStatsAcc: Record<string, { weeksAt1: number; top5: number; top10: number; totalEntries: number; totalPoints: number; totalSales: number; totalStreams: number; totalAudience: number }> = {};
 
-  for (const chartId of songChartIds) {
-    const chartData = await loadWeekly(chartId);
+  const parsed = parseSongSlug(slug);
+  const matchName = parsed ? parsed.nameSlug : slug;
+  const matchArtist = parsed ? parsed.artistSlug : null;
+
+  const yecChartIds = ["yearEndSongs", "yearEndRadio", "yearEndStreamingSongs", "yearEndDigitalSongsSales"];
+
+  const [allCharts, allYecData, allGoatData, statsRows] = await Promise.all([
+    Promise.all(songChartIds.map((id) => loadWeekly(id))),
+    Promise.all(yecChartIds.map((id) => {
+      const cfg = chartsConfig[id];
+      if (!cfg || cfg.url.endsWith("&gid=0")) return Promise.resolve(null);
+      return loadYearEnd(id).catch(() => null);
+    })),
+    Promise.all(["goatSongs", "goatRadio"].map((id) => loadGoat(id).catch(() => null))),
+    fetchCsv(chartsConfig.statsData.url).catch(() => null),
+  ]);
+
+  for (let ci = 0; ci < songChartIds.length; ci++) {
+    const chartId = songChartIds[ci];
+    const chartData = allCharts[ci];
     let chartPoints = 0;
     let chartSales = 0;
     let chartStreams = 0;
@@ -652,7 +672,9 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
     let totalEntries = 0;
     for (const date of chartData.dates) {
       for (const entry of chartData.entriesByDate[date]) {
-        if (slugify(entry.name) !== slug) continue;
+        const nameMatch = slugify(entry.name) === matchName;
+        const artistMatch = matchArtist ? slugify(entry.artist) === matchArtist : true;
+        if (!nameMatch || !artistMatch) continue;
         songName ||= entry.name;
         songArtist ||= entry.artist;
         if (chartId === "songs") {
@@ -704,67 +726,65 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
   totalAudience.formatted = totalAudience.raw > 0 ? formatMetric(totalAudience.raw, "radioSongs") : "";
 
   const yecEntries: SongDetails["yecEntries"] = [];
-  const yecChartIds = ["yearEndSongs", "yearEndRadio", "yearEndStreamingSongs", "yearEndDigitalSongsSales"];
-  for (const yecId of yecChartIds) {
+  for (let yi = 0; yi < yecChartIds.length; yi++) {
+    const yecId = yecChartIds[yi];
+    const yearEndData = allYecData[yi];
+    if (!yearEndData) continue;
     const cfg = chartsConfig[yecId];
-    if (!cfg || cfg.url.endsWith("&gid=0")) continue;
-    try {
-      const yearEndData = await loadYearEnd(yecId);
-      for (const year of yearEndData.years) {
-        for (const entry of yearEndData.entriesByYear[year]) {
-          if (slugify(entry.name) === slug) {
-            yecEntries.push({
-              year,
-              chartId: yecId,
-              chartTitle: cfg.title,
-              position: entry.position,
-              peak: entry.peak,
-              weeks: entry.weeks,
-              totalUnits: entry.totalUnits,
-            });
-            if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
-            bestWeeks = Math.max(bestWeeks, entry.weeks);
-          }
+    for (const year of yearEndData.years) {
+      for (const entry of yearEndData.entriesByYear[year]) {
+        const nameMatch = slugify(entry.name) === matchName;
+        const artistMatch = matchArtist ? slugify(entry.artist) === matchArtist : true;
+        if (nameMatch && artistMatch) {
+          yecEntries.push({
+            year,
+            chartId: yecId,
+            chartTitle: cfg.title,
+            position: entry.position,
+            peak: entry.peak,
+            weeks: entry.weeks,
+            totalUnits: entry.totalUnits,
+          });
+          if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+          bestWeeks = Math.max(bestWeeks, entry.weeks);
         }
       }
-    } catch {}
+    }
   }
   yecEntries.sort((a, b) => Number(b.year) - Number(a.year) || a.position - b.position);
 
   let goatPosition: number | undefined;
   let goatWeeks: number | undefined;
-  for (const goatId of ["goatSongs", "goatRadio"]) {
-    try {
-      const goatData = await loadGoat(goatId);
-      for (const entry of goatData.entries) {
-        if (slugify(entry.name) === slug) {
-          goatPosition = entry.position;
-          goatWeeks = entry.weeks;
-          break;
-        }
+  for (const goatData of allGoatData) {
+    if (!goatData) continue;
+    for (const entry of goatData.entries) {
+      const nameMatch = slugify(entry.name) === matchName;
+      const artistMatch = matchArtist ? slugify(entry.artist) === matchArtist : true;
+      if (nameMatch && artistMatch) {
+        goatPosition = entry.position;
+        goatWeeks = entry.weeks;
+        break;
       }
-      if (goatPosition) break;
-    } catch {}
+    }
+    if (goatPosition) break;
   }
 
   const statsRecords: SongDetails["statsRecords"] = [];
-  try {
-    const statsCfg = chartsConfig.statsData;
-    const rows = await fetchCsv(statsCfg.url);
-    const header = rows[0].map((h) => h.toLowerCase().trim());
+  if (statsRows) {
+    const header = statsRows[0].map((h: string) => h.toLowerCase().trim());
     const catIdx = findIdx(header, ["stats", "category"]);
     const itemIdx = findIdx(header, ["artist/song", "item", "title", "name"]);
     const numIdx = findIdx(header, ["number", "value", "total", "count"]);
-    for (const r of rows.slice(1)) {
+    for (const r of statsRows.slice(1)) {
       const item = (r[itemIdx] ?? "").trim();
-      if (slugify(item) === slug) {
+      if (slugify(item) === matchName) {
         statsRecords.push({
           category: (r[catIdx] ?? "").trim(),
           value: (r[numIdx] ?? "").trim(),
         });
       }
     }
-  } catch {}
+  }
 
   return {
     name: songName,
@@ -921,7 +941,7 @@ export const getAllSongList = createServerFn({ method: "GET" }).handler(async ()
       for (const date of chart.dates) {
         for (const e of chart.entriesByDate[date]) {
           if (!e.name) continue;
-          const slug = slugify(e.name);
+          const slug = songSlug(e.name, e.artist);
           if (!map[slug]) map[slug] = { name: e.name, artist: e.artist, slug, entries: 0 };
           map[slug].entries++;
         }
@@ -950,6 +970,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       peakDate: findIdx(header, ["peak date"]),
     };
     const map: Record<string, ArtistDetails> = {};
+    const slugVariants = new Map<string, Set<string>>(); // slug → all name variants seen
 
     const allRows: { artist: string; chart: string; entry: any }[] = [];
     for (const r of rows.slice(1)) {
@@ -966,9 +987,34 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       firstEntry: idx.firstEntry >= 0 ? normalizeDate(r[idx.firstEntry] || "") || null : null,
       peakDate: idx.peakDate >= 0 ? normalizeDate(r[idx.peakDate] || "") || null : null,
     };
+    const slug = slugify(artist);
+    if (!slugVariants.has(slug)) slugVariants.set(slug, new Set());
+    slugVariants.get(slug)!.add(artist);
     (map[artist] ||= { name: artist, chartsByKind: {} });
     (map[artist].chartsByKind[chart] ||= []).push(entry);
     allRows.push({ artist, chart, entry });
+    }
+
+    for (const [slug, variants] of slugVariants) {
+      if (variants.size <= 1) continue;
+      const sorted = [...variants].sort((a, b) => {
+        const aAllUpper = a === a.toUpperCase() && a.length > 2;
+        const bAllUpper = b === b.toUpperCase() && b.length > 2;
+        if (aAllUpper !== bAllUpper) return aAllUpper ? -1 : 1;
+        return b.length - a.length;
+      });
+      const best = sorted[0];
+      for (const alt of sorted.slice(1)) {
+        if (alt === best) continue;
+        for (const chart of Object.keys(map[alt].chartsByKind)) {
+          (map[best].chartsByKind[chart] ||= []).push(...map[alt].chartsByKind[chart]);
+        }
+        delete map[alt];
+      }
+      for (const row of allRows) {
+        if (sorted.slice(1).includes(row.artist)) row.artist = best;
+      }
+      slugVariants.set(slug, new Set([best]));
     }
 
     const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -1197,6 +1243,7 @@ export interface YECEntry {
   weeksAt1: number;
   totalUnits: number;
   kind: "song" | "album" | "artist";
+  entries?: number;
 }
 
 export const getYearEndGenerated = createServerFn({ method: "GET" })
@@ -1256,35 +1303,115 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
     });
   });
 
+/* ────── Artist Year-End Positions ────── */
+export interface ArtistYECPosition {
+  chartTitle: string;
+  year: string;
+  itemName: string;
+  position: number;
+  peak: number;
+  weeks: number;
+}
+
+export const getArtistYearEndPositions = createServerFn({ method: "GET" })
+  .validator((d: { artistName: string }) => d)
+  .handler(async ({ data }) => {
+    return cached(`artist_yec_${data.artistName}`, async () => {
+      const chartIds = [
+        { id: "artists", title: "Year-End Artists" },
+        { id: "albums", title: "Year-End Albums" },
+        { id: "songs", title: "Year-End Songs" },
+      ];
+      const results: ArtistYECPosition[] = [];
+      for (const { id, title } of chartIds) {
+        const yec = await getYearEndGenerated({ data: { chartId: id } }).catch(() => null);
+        if (!yec) continue;
+        for (const [year, entries] of Object.entries(yec.entriesByYear)) {
+          for (const entry of entries) {
+            const nameMatch = entry.name.toLowerCase() === data.artistName.toLowerCase();
+            const artistMatch = entry.artist?.toLowerCase() === data.artistName.toLowerCase();
+            if (nameMatch || artistMatch) {
+              results.push({ chartTitle: title, year, itemName: entry.name, position: entry.position, peak: entry.peak, weeks: entry.weeks });
+            }
+          }
+        }
+      }
+      return results.sort((a, b) => b.year.localeCompare(a.year) || a.position - b.position);
+    });
+  });
+
 /* ────── Year-End New Artists (generated from artist chart data) ────── */
+const CURATED_NEW_ARTISTS: Record<string, string[]> = {
+  "2017": [
+    "camila cabello", "dua lipa", "julia michaels", "prettymuch", "mgk",
+    "niall horan", "pabllo vittar", "marian hill", "zara larsson", "harry styles",
+    "neiked", "louis tomlinson", "blackpink", "poppy", "iza", "zayn",
+  ],
+  "2018": [
+    "jão", "declan mckenna", "duda beat", "post malone", "cardi b",
+    "lil peep", "ava max", "(g)i-dle", "iza", "bebe rexha",
+    "hayley kiyoko", "the aces", "gustavo mioto", "bazzi", "louisa johnson",
+    "luísa sonza", "khalid", "greeicy", "lauv",
+  ],
+  "2019": [
+    "billie eilish", "lizzo", "lil nas x", "mc tha", "rosalía",
+    "kim petras", "bad bunny", "normani", "dinah jane", "luísa sonza",
+    "blaya", "mahmundi", "paloma mami", "lewis capaldi", "davi sabbag",
+  ],
+  "2020": [
+    "doja cat", "chloe x halle", "conan gray", "megan thee stallion",
+    "rina sawayama", "aminé", "summer walker", "alma", "karol g",
+    "dadá boladão", "alina baraz", "yung beef",
+  ],
+  "2021": [
+    "olivia rodrigo", "marina sena", "potyguara bardo", "phoebe bridgers",
+    "don l", "clarissa", "juliette", "nathy peluso", "chlöe", "lisa",
+    "giveon", "c. tangana", "faye webster", "slayyyter", "måneskin",
+    "day", "paloma mami", "annikko", "chameleo",
+  ],
+  "2022": [
+    "jovem dionisio", "tate mcrae", "steve lacy", "dove cameron",
+    "omar apollo", "lele pons", "elley duhé", "gayle", "urias",
+    "sabrina carpenter", "veridiana benassi", "latto", "newjeans",
+    "maria becerra", "måneskin", "orville peck", "flo", "liniker",
+    "rebelde la serie", "pedro sampaio",
+  ],
+  "2023": [
+    "newjeans", "bizarrap", "gracie abrams", "raye", "melanie fiona",
+    "maria becerra", "eslabon armando", "la cruz", "käärijä", "doechii",
+    "emilia", "clarissa", "coi leray", "coco jones",
+    "jung kook", "ice spice",
+  ],
+  "2024": [
+    "chappell roan", "beabadoobee", "sevdaliza", "tyla", "addison rae",
+    "dasha", "benson boone", "rosé", "caroline polachek",
+    "wicked movie cast", "flo", "magdalena bay", "ayra starr", "ice spice",
+  ],
+  "2025": [
+    "lola young", "pinkpantheress", "guitarricadelafuente", "katseye",
+    "jade", "reneé rapp", "lucas pretti", "sombr", "ravyn lenae",
+    "cynthia erivo", "huntr/x", "mariah the scientist", "olivia dean",
+    "amaarae", "laufey", "os garotin", "rose gray", "destin conrad",
+  ],
+};
+
 export const getYearEndNewArtists = createServerFn({ method: "GET" })
   .handler(async () => {
     return cached("yec_new_artists", async () => {
       const chartData = await getWeeklyChart({ data: { chartId: "artists" } });
 
-      // Step 1: find each artist's first-ever appearance date
-      const firstSeen: Record<string, string> = {};
-      for (const date of chartData.dates) {
-        const entries = chartData.entriesByDate[date] || [];
-        for (const e of entries) {
-          const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
-          if (e.diff === "NEW" && !firstSeen[key]) {
-            firstSeen[key] = date;
-          }
-        }
-      }
-
-      // Step 2: for each year, accumulate ALL units for artists whose first appearance is in that year
+      // Step 1: for each year, accumulate units for curated artists
       const years: Record<string, Record<string, YECEntry>> = {};
       for (const date of chartData.dates) {
         const year = date.slice(0, 4);
         const entries = chartData.entriesByDate[date] || [];
         if (!years[year]) years[year] = {};
+        const curated = CURATED_NEW_ARTISTS[year];
+        if (!curated) continue;
 
         for (const e of entries) {
           const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
-          // Only include artists whose first appearance is in this year
-          if (!firstSeen[key] || firstSeen[key].slice(0, 4) !== year) continue;
+          if (!curated.some((c) => c.toLowerCase() === e.name.toLowerCase())) continue;
 
           if (!years[year][key]) {
             years[year][key] = {
@@ -1310,7 +1437,7 @@ export const getYearEndNewArtists = createServerFn({ method: "GET" })
       for (const [year, items] of Object.entries(years)) {
         result[year] = Object.values(items)
           .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
-          .slice(0, 100)
+          .slice(0, 10)
           .map((e, i) => ({ ...e, position: i + 1 }));
       }
 
@@ -2064,7 +2191,123 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
       chartStats[chart.id] = categories;
     }
 
-    return { chartStats, availableYears, chartIds };
+    // ── All-Kill ── entries that are #1 across multiple charts on the same date
+    const songChartIds = ["songs", "streamingSongs", "radioSongs", "digitalSongsSales"];
+    const albumChartIds = ["albums", "topStreamingAlbums", "topAlbumSales"];
+    const allChartIds = [...songChartIds, ...albumChartIds, "artists"];
+
+    const allChartData: Record<string, { entriesByDate: Record<string, { name: string; artist: string; position: number }[]>; dates: string[] }> = {};
+    for (const chart of allData) {
+      allChartData[chart.id] = chart;
+    }
+
+    function getAllCommonDates(chartIds: string[]): string[] {
+      const dateSets = chartIds.map((id) => new Set(allChartData[id]?.dates ?? []));
+      if (dateSets.length === 0) return [];
+      return [...dateSets[0]].filter((d) => dateSets.every((s) => s.has(d))).sort();
+    }
+
+    function getNumberOne(date: string, chartId: string): { name: string; artist: string } | null {
+      const entries = allChartData[chartId]?.entriesByDate[date];
+      if (!entries) return null;
+      const top = entries.find((e) => e.position === 1);
+      return top ? { name: top.name, artist: top.artist } : null;
+    }
+
+    // Top All-Kill: #1 on Hot 100 + Top 100 Albums + Artist 50 by the same artist
+    const topCharts = ["songs", "albums", "artists"];
+    const topAllKillDates = getAllCommonDates(topCharts);
+    const topAllKills: { name: string; artist: string; date: string; count: number; charts: string[]; entries: string[] }[] = [];
+    for (const date of topAllKillDates) {
+      const n1 = getNumberOne(date, topCharts[0]);
+      if (!n1) continue;
+      const chartsHit: string[] = [];
+      const entriesHit: string[] = [];
+      let allMatch = true;
+      for (const cid of topCharts) {
+        const n = getNumberOne(date, cid);
+        if (n && n.artist === n1.artist) {
+          chartsHit.push(chartsConfig[cid].title);
+          entriesHit.push(n.name);
+        } else {
+          allMatch = false;
+          break;
+        }
+      }
+      if (allMatch && chartsHit.length === topCharts.length) {
+        topAllKills.push({ name: n1.name, artist: n1.artist, date, count: chartsHit.length, charts: chartsHit, entries: entriesHit });
+      }
+    }
+
+    // Full All-Kill: #1 on ALL charts by the same artist (different entries allowed)
+    const fullAllKillDates = getAllCommonDates(allChartIds);
+    const fullAllKills: { name: string; artist: string; date: string; count: number; charts: string[]; entries: string[] }[] = [];
+    for (const date of fullAllKillDates) {
+      const n1 = getNumberOne(date, allChartIds[0]);
+      if (!n1) continue;
+      const chartsHit: string[] = [];
+      const entriesHit: string[] = [];
+      let allMatch = true;
+      for (const cid of allChartIds) {
+        const n = getNumberOne(date, cid);
+        if (n && n.artist === n1.artist) {
+          chartsHit.push(chartsConfig[cid].title);
+          entriesHit.push(n.name);
+        } else {
+          allMatch = false;
+          break;
+        }
+      }
+      if (allMatch && chartsHit.length === allChartIds.length) {
+        fullAllKills.push({ name: n1.name, artist: n1.artist, date, count: chartsHit.length, charts: chartsHit, entries: entriesHit });
+      }
+    }
+
+    // Song All-Kill: #1 on all song charts
+    const songAllKillDates = getAllCommonDates(songChartIds);
+    const songAllKills: { name: string; artist: string; date: string; count: number; charts: string[] }[] = [];
+    for (const date of songAllKillDates) {
+      const n1 = getNumberOne(date, songChartIds[0]);
+      if (!n1) continue;
+      const chartsHit: string[] = [];
+      let allMatch = true;
+      for (const cid of songChartIds) {
+        const n = getNumberOne(date, cid);
+        if (n && n.name === n1.name && n.artist === n1.artist) {
+          chartsHit.push(chartsConfig[cid].title);
+        } else {
+          allMatch = false;
+          break;
+        }
+      }
+      if (allMatch && chartsHit.length === songChartIds.length) {
+        songAllKills.push({ name: n1.name, artist: n1.artist, date, count: chartsHit.length, charts: chartsHit });
+      }
+    }
+
+    // Album All-Kill: #1 on all album charts
+    const albumAllKillDates = getAllCommonDates(albumChartIds);
+    const albumAllKills: { name: string; artist: string; date: string; count: number; charts: string[] }[] = [];
+    for (const date of albumAllKillDates) {
+      const n1 = getNumberOne(date, albumChartIds[0]);
+      if (!n1) continue;
+      const chartsHit: string[] = [];
+      let allMatch = true;
+      for (const cid of albumChartIds) {
+        const n = getNumberOne(date, cid);
+        if (n && n.name === n1.name && n.artist === n1.artist) {
+          chartsHit.push(chartsConfig[cid].title);
+        } else {
+          allMatch = false;
+          break;
+        }
+      }
+      if (allMatch && chartsHit.length === albumChartIds.length) {
+        albumAllKills.push({ name: n1.name, artist: n1.artist, date, count: chartsHit.length, charts: chartsHit });
+      }
+    }
+
+    return { chartStats, availableYears, chartIds, allKills: { top: topAllKills, full: fullAllKills, songs: songAllKills, albums: albumAllKills } };
   });
 });
 

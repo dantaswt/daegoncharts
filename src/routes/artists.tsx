@@ -1,14 +1,11 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { getAllArtistList } from "@/lib/charts.functions";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import React, { useMemo, useState } from "react";
-import { z } from "zod";
-
-const artistsSearchSchema = z.object({ q: z.string().optional() });
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/artists")({
-  validateSearch: (search: Record<string, unknown>) => artistsSearchSchema.parse(search),
   loader: async () => {
     const list = await getAllArtistList();
     return { list };
@@ -36,9 +33,9 @@ function ArtistThumbnail({ name }: { name: string }) {
   return (
     <div className="w-14 h-14 rounded-full overflow-hidden bg-[var(--card)] flex items-center justify-center text-sm font-semibold text-[var(--foreground)] uppercase border border-[var(--border)]">
       {imageUrl ? (
-        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover animate-fade-in" />
       ) : (
-        <span>{name.charAt(0)}</span>
+        <span className="animate-pulse">{name.charAt(0)}</span>
       )}
     </div>
   );
@@ -46,9 +43,10 @@ function ArtistThumbnail({ name }: { name: string }) {
 
 function AllArtistsPage() {
   const { list } = Route.useLoaderData();
-  const { q } = useSearch();
   const navigate = useNavigate();
-  const [search, setSearch] = useState(q ?? "");
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQ = urlParams.get("q") ?? "";
+  const [search, setSearch] = useState(initialQ);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout>>();
   const letters = useMemo(() => {
     return Array.from(new Set(list.map((a) => a.name[0].toUpperCase()))).sort();
@@ -63,7 +61,13 @@ function AllArtistsPage() {
     setSearch(value);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      navigate({ search: { q: value || undefined }, replace: true });
+      const params = new URLSearchParams(window.location.search);
+      if (value) {
+        params.set("q", value);
+      } else {
+        params.delete("q");
+      }
+      navigate({ search: Object.fromEntries(params), replace: true });
     }, 400);
   };
 
@@ -88,7 +92,7 @@ function AllArtistsPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">ARTISTS</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[var(--foreground)] opacity-[0.06] font-sans uppercase tracking-tighter leading-none">ARTISTS</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Artists</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{list.length} artists tracked across all charts</p>
@@ -113,7 +117,7 @@ function AllArtistsPage() {
             placeholder="Search artists"
             value={search}
             onChange={(event) => handleSearchChange(event.target.value)}
-            className="w-full sm:w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)]"
+            className="w-full sm:w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
           />
         </div>
       </div>
@@ -125,9 +129,14 @@ function AllArtistsPage() {
           <section key={letter} className="mb-8">
             <h2 className="text-xl font-bold mb-3">{letter}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {grouped[letter].map((artist) => (
-                <Link
+              {grouped[letter].map((artist, i) => (
+                <motion.div
                   key={artist.slug}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.4) }}
+                >
+                <Link
                   to="/artist/$slug"
                   params={{ slug: artist.slug }}
                   className="group bg-[var(--card)] border border-[var(--border)] rounded-3xl p-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors shadow-sm"
@@ -138,6 +147,7 @@ function AllArtistsPage() {
                     <div className="text-xs text-muted-foreground mt-1">{artist.entries} entries</div>
                   </div>
                 </Link>
+                </motion.div>
               ))}
             </div>
           </section>

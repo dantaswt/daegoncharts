@@ -63,7 +63,7 @@ function ArticleImage({ post }: { post: ArticlePost }) {
     getSpotifyImage({ data: { query: `artist:"${post.artist}"`, type: "artist" } }).then((url) => { if (active) setImageUrl(url ?? null); });
     return () => { active = false; };
   }, [post.artist, post.image]);
-  return imageUrl ? <img src={imageUrl} alt="" className="w-full h-52 md:h-72 object-cover rounded-xl border border-[var(--border)] mb-5" /> : null;
+  return imageUrl ? <img src={imageUrl} alt="" className="w-full h-52 md:h-72 object-cover rounded-xl border border-[var(--border)] mb-5 animate-fade-in" /> : null;
 }
 
 function ChartBeatPage() {
@@ -106,7 +106,7 @@ function ChartBeatPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
       <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-[6rem] md:text-[10rem] font-black text-[rgba(255,255,255,0.08)] font-sans uppercase tracking-tighter leading-none">BEAT</span>
+          <span className="text-[6rem] md:text-[10rem] font-black text-[var(--foreground)] opacity-[0.06] font-sans uppercase tracking-tighter leading-none">BEAT</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Chart Beat</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Stories, analysis and insights from the charts</p>
@@ -120,7 +120,7 @@ function ChartBeatPage() {
             <div key={year}>
               <button onClick={() => toggleYear(year)} className="flex items-center justify-between w-full text-left px-2 py-1.5 rounded text-sm hover:text-[var(--accent)]">
                 <span className="font-semibold">{year}</span>
-                <i className={`fas fa-chevron-${expandedYears.has(year) ? "up" : "down"} text-[10px] text-gray-500`} />
+                <i className={`fas fa-chevron-${expandedYears.has(year) ? "up" : "down"} text-[10px] text-[var(--muted-foreground)]`} />
               </button>
               {expandedYears.has(year) && (
                 <div className="ml-2">

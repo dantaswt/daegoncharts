@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ChartEntry } from "@/lib/charts.functions";
-import { getCertificationLevel } from "@/lib/charts.functions";
-import { slugifyArtist, slugify as slugifyAlbum, stripAlbumEdition, chartsConfig } from "@/lib/charts-config";
+import { getCertificationLevel, getCertificationMeta } from "@/lib/charts.functions";
+import { slugifyArtist, slugify as slugifyAlbum, songSlug, stripAlbumEdition, chartsConfig } from "@/lib/charts-config";
 import { useEffect, useMemo, useState } from "react";
 import { getSpotifyImage } from "@/lib/spotify.functions";
 import { motion } from "framer-motion";
@@ -60,13 +60,13 @@ function formatValue(v: string | undefined, chartId?: string, isStream?: boolean
 function AwardIcon({ type }: { type: "gainer" | "performance" }) {
   if (type === "gainer") {
     return (
-      <span className="award-icon inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-white" title="Greatest Gainer of the Week">
-        <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+      <span className="award-icon inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-black" title="Greatest Gainer of the Week">
+        <svg viewBox="0 0 24 24" fill="black" className="w-3.5 h-3.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
       </span>
     );
   }
   return (
-    <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5" title="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+    <svg viewBox="0 0 24 24" fill="black" className="award-icon w-5 h-5" title="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
   );
 }
 
@@ -92,9 +92,10 @@ interface Props {
   chartDates?: string[];
   chartEntriesByDate?: Record<string, ChartEntry[]>;
   showDiff?: boolean;
+  diffColors?: boolean;
 }
 
-function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "album" | "artist" }) {
+function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "song" | "album" | "artist"; delay?: number }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const query = useMemo(() => {
     if (kind === "album") {
@@ -115,11 +116,13 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
 
   useEffect(() => {
     let active = true;
-    getSpotifyImage({ data: { query, type } }).then((url) => {
-      if (active && url) setImageUrl(url);
-    });
-    return () => { active = false; };
-  }, [query, type]);
+    const timer = setTimeout(() => {
+      getSpotifyImage({ data: { query, type } }).then((url) => {
+        if (active && url) setImageUrl(url);
+      });
+    }, delay);
+    return () => { active = false; clearTimeout(timer); };
+  }, [query, type, delay]);
 
   if (imageUrl) {
     return (
@@ -128,12 +131,12 @@ function SpotifyImage({ entry, kind }: { entry: ChartEntry; kind: "song" | "albu
         alt={entry.name}
         loading="lazy"
         decoding="async"
-        className="w-full h-full object-cover shadow-sm rounded-none"
+        className="w-full h-full object-cover shadow-sm rounded-none animate-fade-in"
       />
     );
   }
 
-  return <i className={`fas ${kind === "artist" ? "fa-user" : kind === "album" ? "fa-compact-disc" : "fa-music"} text-2xl opacity-50`} />;
+  return <i className={`fas ${kind === "artist" ? "fa-user" : kind === "album" ? "fa-compact-disc" : "fa-music"} text-2xl opacity-30 animate-pulse`} />;
 }
 
 function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boolean }) {
@@ -145,26 +148,34 @@ function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boole
     <div className="flex flex-col items-end gap-0.5 text-[11px] leading-tight">
       {showDiff && (
         <div className="flex items-center gap-2">
-          <span className="text-gray-400 uppercase tracking-wide">LW</span>
-          <span className="font-bold text-white w-6 text-right">{lastWeek}</span>
+          <span className="text-[var(--muted-foreground)] uppercase tracking-wide">LW</span>
+          <span className="font-bold text-[var(--foreground)] w-6 text-right">{lastWeek}</span>
         </div>
       )}
       <div className="flex items-center gap-2">
-        <span className="text-gray-400 uppercase tracking-wide">Peak</span>
-        <span className="font-bold text-white w-6 text-right">{peak.replace("#", "")}</span>
+        <span className="text-[var(--muted-foreground)] uppercase tracking-wide">Peak</span>
+        <span className="font-bold text-[var(--foreground)] w-6 text-right">{peak.replace("#", "")}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-gray-400 uppercase tracking-wide">Weeks</span>
-        <span className="font-bold text-white w-6 text-right">{weeks}</span>
+        <span className="text-[var(--muted-foreground)] uppercase tracking-wide">Weeks</span>
+        <span className="font-bold text-[var(--foreground)] w-6 text-right">{weeks}</span>
       </div>
     </div>
   );
 }
 
-export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesByDate, showDiff = true }: Props) {
+export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesByDate, showDiff = true, diffColors = false }: Props) {
   const [showDetails, setShowDetails] = useState(false);
   const slug = slugifyArtist(entry.artist);
   const isGoat = chartId?.startsWith("goat");
+
+  const certLevel = useMemo(() => {
+    if (chartId !== "songs" && chartId !== "albums") return undefined;
+    const totalUnits = entry.totalUnits ? parseFloat(entry.totalUnits.replace(/[.,]/g, "")) : 0;
+    if (!totalUnits) return undefined;
+    return getCertificationLevel(totalUnits, chartId === "songs" ? "song" : "album");
+  }, [entry.totalUnits, chartId]);
+  const certMeta = getCertificationMeta(certLevel);
 
   const awards = useMemo(() => {
     if (!date || !chartEntriesByDate || isGoat) return { gainerStreams: false, gainerSales: false, performance: false, hasStar: false };
@@ -229,7 +240,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
         items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
       }
-      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      if (certLevel) items.push({ label: "Certification", value: certLevel });
       return items;
     }
 
@@ -244,7 +255,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       items.push({ label: "Pure Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
       const streamsVal = parseEuropeanNumber(entry.streams);
       items.push({ label: "SEA", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      if (certLevel) items.push({ label: "Certification", value: certLevel });
       return items;
     }
 
@@ -260,7 +271,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
         items.push({ label: "Total Streams", value: totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-" });
       }
-      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      if (certLevel) items.push({ label: "Certification", value: certLevel });
       return items;
     }
 
@@ -271,7 +282,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
         const totalSalesVal = parseEuropeanNumber(entry.totalSales);
         items.push({ label: "Total Sales", value: totalSalesVal > 0 ? formatValue(entry.totalSales, chartId) : "-" });
       }
-      if (entry.certification) items.push({ label: "Certification", value: entry.certification });
+      if (certLevel) items.push({ label: "Certification", value: certLevel });
       return items;
     }
 
@@ -453,6 +464,21 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       );
   }, [chartDates, chartEntriesByDate, chartId, entry.artist, entry.name, isGoat, date]);
 
+  const diffBg = useMemo(() => {
+    const d = entry.diff;
+    if (d === "NEW") return "bg-sky-200";
+    if (d === "RE") return "bg-blue-200";
+    if (d.startsWith("▲")) {
+      const spots = parseInt(d.slice(1)) || 0;
+      return spots >= 10 ? "bg-emerald-300" : "bg-emerald-100";
+    }
+    if (d.startsWith("▼")) {
+      const spots = parseInt(d.slice(1)) || 0;
+      return spots >= 10 ? "bg-red-300" : "bg-red-100";
+    }
+    return "";
+  }, [entry.diff]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -460,7 +486,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       viewport={{ once: true }}
       transition={{ duration: 0.3 }}
       id={`entry-${entry.position}`}
-      className="chart-card w-full"
+      className={`chart-card w-full ${diffColors && diffBg ? diffBg : ""} ${diffColors && diffBg ? "diff-colors-active" : ""}`}
     >
       {/* Desktop layout */}
       <div className="hidden md:grid gap-3 items-center" style={{ gridTemplateColumns: "auto auto auto minmax(0,1fr) auto" }}>
@@ -473,7 +499,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
         </div>
         <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${entry.position === 1 ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)] -ml-3" : "w-24 h-24"}`}>
-          <SpotifyImage entry={entry} kind={kind} />
+          <SpotifyImage entry={entry} kind={kind} delay={entry.position * 150} />
         </div>
         <div className="flex items-center justify-center w-8 flex-shrink-0">
           {showDiff && <DiffIndicator diff={entry.diff} />}
@@ -485,7 +511,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                 {stripAlbumEdition(stripFeatFromTitle(entry.name))}
               </Link>
             ) : kind === "song" ? (
-              <Link to="/song/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
+              <Link to="/song/$slug" params={{ slug: songSlug(entry.name, entry.artist) }} className="hover:text-[var(--accent)] hover:underline">
                 {stripFeatFromTitle(entry.name)}
               </Link>
             ) : (
@@ -498,13 +524,13 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             )}
           </div>
           {kind !== "artist" && (
-            <div className={`break-words line-clamp-2 ${entry.position === 1 ? "text-base text-gray-400" : "text-sm text-gray-500"}`}>
+            <div className={`break-words line-clamp-2 ${entry.position === 1 ? "text-base text-[var(--muted-foreground)]" : "text-sm text-[var(--muted-foreground)]"}`}>
               <Link to="/artist/$slug" params={{ slug }} className="hover:text-[var(--accent)] hover:underline">{entry.artist}</Link>
-              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-gray-500" />}
+              {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-sm text-[var(--muted-foreground)]" />}
             </div>
           )}
           {kind === "song" && chartId !== "songs" && chartId !== "streamingSongs" && entry.album && (
-            <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-gray-500 break-words hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(entry.album)}</Link>
+            <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.album) }} className="text-[11px] text-[var(--muted-foreground)] break-words hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(entry.album)}</Link>
           )}
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
@@ -515,10 +541,10 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
           <ChartMetrics entry={entry} showDiff={showDiff} />
           <div className="flex flex-col gap-2">
-            <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+            <button type="button" onClick={handleCopy} className="copy-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
               <i className="fas fa-copy" />
             </button>
-            <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+            <button type="button" onClick={() => setShowDetails((v) => !v)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
               {showDetails ? "−" : "+"}
             </button>
           </div>
@@ -541,16 +567,16 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             )}
           </div>
           <div className="placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none w-14 h-14 flex-shrink-0">
-            <SpotifyImage entry={entry} kind={kind} />
+            <SpotifyImage entry={entry} kind={kind} delay={entry.position * 150} />
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+          <div className={`min-w-0 flex-1 ${kind === "artist" ? "flex items-center" : ""}`}>
+            <div className={`font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${kind === "artist" ? "text-center justify-center" : ""}`}>
               {kind === "album" ? (
                 <Link to="/album/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
                   {stripAlbumEdition(stripFeatFromTitle(entry.name))}
                 </Link>
               ) : kind === "song" ? (
-                <Link to="/song/$slug" params={{ slug: slugifyAlbum(entry.name) }} className="hover:text-[var(--accent)] hover:underline">
+                <Link to="/song/$slug" params={{ slug: songSlug(entry.name, entry.artist) }} className="hover:text-[var(--accent)] hover:underline">
                   {stripFeatFromTitle(entry.name)}
                 </Link>
               ) : (
@@ -565,7 +591,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               )}
             </div>
             {kind !== "artist" && (
-              <div className="text-[10px] text-gray-500 break-words line-clamp-2">
+              <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
                 <Link
                   to="/artist/$slug"
                   params={{ slug }}
@@ -573,22 +599,22 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                 >
                 {entry.artist}
                 </Link>
-                {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[10px] text-gray-500" />}
+                {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[10px] text-[var(--muted-foreground)]" />}
               </div>
             )}
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {metric && (
-              <div className="text-right text-sm font-bold text-white tracking-tight">{formatValue(metric, chartId)}</div>
+              <div className="text-right text-sm font-bold text-[var(--foreground)] tracking-tight">{formatValue(metric, chartId)}</div>
             )}
             <div className="flex flex-row items-center gap-1.5">
               {awards.hasStar && (
                 <AwardIcon type={(awards.gainerStreams || awards.gainerSales) ? "gainer" : "performance"} />
               )}
-              <button type="button" onClick={handleCopy} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
+              <button type="button" onClick={handleCopy} className="copy-btn w-11 h-11 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
                 <i className="fas fa-copy" />
               </button>
-              <button type="button" onClick={() => setShowDetails((v) => !v)} className="w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+              <button type="button" onClick={() => setShowDetails((v) => !v)} className="details-btn w-11 h-11 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                 {showDetails ? "−" : "+"}
               </button>
             </div>
@@ -604,15 +630,15 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
       {/* Details panel (shared) */}
       {showDetails && (
-        <div className="mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
+        <div className="details-panel mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
           {detailFields.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               {detailFields.map((item) => {
                 const isTotal = item.label.toLowerCase().startsWith("total");
                 return (
-                  <div key={item.label} className={`rounded-3xl border p-4 ${isTotal ? "bg-[rgba(255,215,0,0.06)] border-[rgba(255,215,0,0.15)]" : "bg-[var(--card)] border-[var(--border)]"}`}>
-                    <div className={`text-[10px] uppercase tracking-[0.2em] ${isTotal ? "text-[#FFD600]" : "text-[var(--accent)]"}`}>{item.label}</div>
-                    <div className="mt-2 text-sm font-semibold text-white">{item.value}</div>
+                  <div key={item.label} className={`rounded-3xl border p-4 ${isTotal ? "bg-[rgba(255,215,0,0.06)] border-[rgba(255,215,0,0.15)]" : item.label === "Certification" ? `${certMeta?.bg ?? ""} ${certMeta?.border ?? ""}` : "bg-[var(--card)] border-[var(--border)]"}`}>
+                    <div className={`text-[10px] uppercase tracking-[0.2em] ${isTotal ? "text-[#FFD600]" : item.label === "Certification" ? "text-[var(--muted-foreground)]" : "text-[var(--accent)]"}`}>{item.label}</div>
+                    <div className={`mt-2 text-sm font-semibold ${item.label === "Certification" ? `uppercase ${certMeta?.color ?? "text-[var(--foreground)]"}` : "text-[var(--foreground)]"}`}>{item.value}</div>
                   </div>
                 );
               })}
@@ -620,19 +646,19 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
           {runEntries.length > 0 ? (
             <div>
-              <div className="font-semibold mb-2 text-white">Chart run</div>
+              <div className="font-semibold mb-2 text-[var(--foreground)]">Chart run</div>
               <div className="space-y-2">
                 {runEntries.map((run) => (
                   <a
                     key={`${run.date}-${run.position}`}
                     href={`/chart/${chartId}/${run.date}`}
-                    className="block rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 transition hover:border-[var(--accent)] hover:bg-gray-900"
+                    className="block rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 transition hover:border-[var(--accent)] hover:bg-[var(--muted)]"
                   >
-                    <div className="flex items-center justify-between gap-3 text-sm text-white">
+                    <div className="flex items-center justify-between gap-3 text-sm text-[var(--foreground)]">
                       <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       <span className="font-semibold text-[var(--accent)]">{run.position}</span>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-400">
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
                       <span>Peak: {run.peak}</span>
                       <span>Weeks: {run.weeks}</span>
                       {run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
@@ -643,7 +669,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               </div>
             </div>
           ) : (
-            <div className="text-sm text-gray-500">Details shown. Press + again to close.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">Details shown. Press + again to close.</div>
           )}
         </div>
       )}

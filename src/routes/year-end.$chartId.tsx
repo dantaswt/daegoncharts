@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getYearEndGenerated, getYearEndNewArtists, type YECEntry } from "@/lib/charts.functions";
-import { chartsConfig, yearEndChartIds, slugifyArtist, stripAlbumEdition } from "@/lib/charts-config";
+import { getYearEndHot100Artists, getYearEndTop100AlbumsArtists, getYearEndArtist50Male, getYearEndArtist50Female, getYearEndArtist50DuoGroup, getYearEndRadioSongsArtists } from "@/lib/yec-computed";
+import { chartsConfig, yearEndChartIds, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
-import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
+import { TrackArtists, stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-artists";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 
@@ -11,6 +12,36 @@ export const Route = createFileRoute("/year-end/$chartId")({
   loader: async ({ params }) => {
     const cfg = chartsConfig[params.chartId];
     if (!cfg || cfg.group !== "yearEnd") throw notFound();
+
+    if (params.chartId === "yearEndNewArtists") {
+      const data = await getYearEndNewArtists();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecHot100Artists") {
+      const data = await getYearEndHot100Artists();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecTop100AlbumsArtists") {
+      const data = await getYearEndTop100AlbumsArtists();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecArtist50Male") {
+      const data = await getYearEndArtist50Male();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecArtist50Female") {
+      const data = await getYearEndArtist50Female();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecArtist50DuoGroup") {
+      const data = await getYearEndArtist50DuoGroup();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecRadioSongsArtists") {
+      const data = await getYearEndRadioSongsArtists();
+      return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+
     const weeklyId = params.chartId.replace("yearEnd", "").replace(/^./, (c) => c.toLowerCase());
     const weeklyMap: Record<string, string> = {
       songs: "songs", artists: "artists", albums: "albums", radio: "radioSongs",
@@ -18,16 +49,12 @@ export const Route = createFileRoute("/year-end/$chartId")({
       topAlbumSales: "topAlbumSales", digitalSongsSales: "digitalSongsSales",
     };
     const mappedId = weeklyMap[weeklyId] ?? weeklyId;
-    if (params.chartId === "yearEndNewArtists") {
-      const data = await getYearEndNewArtists();
-      return { data, chartId: params.chartId, mappedId: "artists" };
-    }
     const data = await getYearEndGenerated({ data: { chartId: mappedId } });
     return { data, chartId: params.chartId, mappedId };
   },
   head: ({ loaderData }) => {
     const t = loaderData ? chartsConfig[loaderData.chartId]?.title : "Year-End";
-    return { meta: [{ title: `${t} | daegon charts` }] };
+    return { meta: [{ title: `Year-End Charts - ${t} | daegon charts` }] };
   },
   notFoundComponent: () => <div className="text-center py-16 gold font-bold">Not found</div>,
   component: YearEndChartPage,
@@ -86,7 +113,7 @@ function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; sele
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="bg-[var(--muted)] text-white border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
+            className="bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
           >
             {selectedYear}
             <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
@@ -103,8 +130,8 @@ function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; sele
                   }}
                   className={`w-full text-center text-sm font-bold px-4 py-2 border-b border-white/20 cursor-pointer transition-colors ${
                     y === selectedYear
-                      ? "bg-[var(--accent)] text-black"
-                      : "text-white hover:bg-white/10"
+                    ? "bg-[var(--accent)] text-black"
+                    : "text-[var(--foreground)] hover:bg-[var(--muted)]"
                   }`}
                 >
                   {y}
@@ -128,16 +155,26 @@ function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; sele
 function YearEndChartPage() {
   const { data, chartId, mappedId } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
-  const [selectedYear, setSelectedYear] = useState<string>(data.years[0] || "");
+  const lockedUntil = new Date("2026-12-31T23:59:59");
+  const years = data.years.filter((y) => y !== "2026" || new Date() >= lockedUntil);
+  const [selectedYear, setSelectedYear] = useState<string>(years[0] || "");
+  const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
   const entries = selectedYear ? data.entriesByYear[selectedYear] ?? [] : [];
   const isAlbum = data.kind === "album";
-  const imageSize = isAlbum ? 56 : 40;
+  const isArtist = data.kind === "artist";
 
-  const metricKey = chartId === "yearEndTopStreamingAlbums" ? "total" : mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units";
+  const isArtistChart = chartId === "yecHot100Artists" || chartId === "yecTop100AlbumsArtists" || chartId === "yecRadioSongsArtists";
+
+  useEffect(() => {
+    document.title = `Year-End Charts — ${cfg?.title ?? "Year-End"} | daegon charts`;
+  }, [cfg]);
+
+  const metricKey = chartId === "yecHot100Artists" ? "points" : chartId === "yecTop100AlbumsArtists" || chartId === "yecArtist50Male" || chartId === "yecArtist50Female" ? "units" : chartId === "yearEndTopStreamingAlbums" ? "total" : chartId === "yecRadioSongsArtists" ? "audience" : mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units";
   const metricLabel = metricKey === "total" ? "Total Streams" : metricKey === "points" ? "Points" : metricKey === "streams" ? "Streams" : metricKey === "audience" ? "Audience" : metricKey === "sales" ? "Sales" : "Units";
-  const metricIcon = metricKey === "total" ? "fa-headphones" : metricKey === "points" ? "fa-star" : metricKey === "streams" ? "fa-headphones" : metricKey === "audience" ? "fa-broadcast-tower" : metricKey === "sales" ? "fa-shopping-cart" : "fa-chart-bar";
 
-  const years = data.years;
+  const toggleDetails = (key: string) => {
+    setDetailsOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -154,7 +191,7 @@ function YearEndChartPage() {
                 className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
                   id === chartId
                     ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                    : "bg-[var(--muted)] text-white hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+                    : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
                 }`}
               >
                 {c.title}
@@ -174,7 +211,7 @@ function YearEndChartPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
-                {cfg?.title ?? "Year-End"} {selectedYear}
+                {cfg?.title ?? "Year-End"}
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 {entries.length} items ranked by {metricLabel.toLowerCase()}
@@ -199,55 +236,105 @@ function YearEndChartPage() {
 
         {/* Entries */}
         {entries.length > 0 ? (
-          <div className="space-y-2 max-w-4xl mx-auto">
-            {entries.map((e: YECEntry) => (
-              <motion.div
-                key={`${e.position}-${e.name}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: Math.min(e.position * 0.01, 0.3) }}
-                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all group"
-              >
-                <div className={`flex items-center justify-center font-black shrink-0 ${isAlbum ? "w-10 h-10 sm:w-12 sm:h-12 rounded-xl text-base" : "w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm"} ${e.position <= 3 ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-white"}`}>
-                  {e.position}
-                </div>
-                <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={imageSize} />
-                <div className="min-w-0 flex-1">
-                  <div className={`font-bold group-hover:text-[var(--accent)] transition-colors break-words ${isAlbum ? "text-base" : "text-sm"}`}>
-                    {e.kind === "artist" ? (
-                      <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{e.name}</Link>
-                    ) : e.kind === "album" ? (
-                      <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripAlbumEdition(stripFeatFromTitle(e.name))}</Link>
-                    ) : (
-                      <Link to="/song/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">{stripFeatFromTitle(e.name)}</Link>
-                    )}
+          <div className="space-y-3 max-w-4xl mx-auto">
+            {entries.map((e: YECEntry) => {
+              const isFirst = e.position === 1;
+              const entryKey = `${selectedYear}-${e.position}-${e.name}`;
+              const isOpen = detailsOpen[entryKey] ?? false;
+              return (
+                <motion.div
+                  key={entryKey}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all overflow-hidden"
+                >
+                  {/* Desktop layout */}
+                  <div className="hidden md:grid gap-3 items-center p-4" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
+                    <div className="flex flex-col items-center justify-center w-16">
+                      <div className={`rank-num font-black ${isFirst ? "text-4xl bg-[var(--accent)] text-black w-16 h-16 flex items-center justify-center" : "text-3xl"}`}>{e.position}</div>
+                    </div>
+                    <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${isFirst ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)]" : "w-24 h-24"}`}>
+                      <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={isFirst ? 180 : 96} />
+                    </div>
+                    <div className="min-w-0 flex flex-col flex-1 pl-3">
+                      <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isFirst ? "text-xl" : "text-base"}`}>
+                        {e.kind === "artist" ? (
+                          <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
+                        ) : e.kind === "album" ? (
+                          <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(e.name)}</Link>
+                        ) : (
+                          <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.name)}</Link>
+                        )}
+                      </div>
+                      {e.kind !== "artist" && (
+                        <div className={`break-words line-clamp-2 ${isFirst ? "text-base text-[var(--muted-foreground)]" : "text-sm text-[var(--muted-foreground)]"}`}>
+                          <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist}</Link>
+                          {e.kind === "song" && <TrackArtists song={e.name} artist={e.artist} className="text-sm text-[var(--muted-foreground)]" />}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+                        {isOpen ? "−" : "+"}
+                      </button>
+                    </div>
                   </div>
-                  {e.kind !== "artist" && (
-                    <div className="text-xs text-muted-foreground break-words">
-                      <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
-                      <TrackArtists song={e.name} artist={e.artist} className="text-xs text-muted-foreground" />
+
+                  {/* Mobile layout */}
+                  <div className="md:hidden flex flex-col p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
+                        <div className="rank-num text-lg font-black">{e.position}</div>
+                      </div>
+                      <div className="placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none w-14 h-14 flex-shrink-0">
+                        <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={56} />
+                      </div>
+                      <div className={`min-w-0 flex-1 ${isArtist ? "flex items-center" : ""}`}>
+                        <div className={`font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isArtist ? "text-center justify-center" : ""}`}>
+                          {e.kind === "artist" ? (
+                            <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
+                          ) : e.kind === "album" ? (
+                            <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{stripAlbumEdition(e.name)}</Link>
+                          ) : (
+                            <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:text-[var(--accent)] hover:underline">{stripFeatFromTitle(e.name)}</Link>
+                          )}
+                        </div>
+                        {e.kind !== "artist" && (
+                          <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
+                            <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist}</Link>
+                          </div>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
+                        {isOpen ? "−" : "+"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Details panel */}
+                  {isOpen && (
+                    <div className="details-panel mx-4 mb-4 mt-2 rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center">
+                          <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">{isArtistChart ? "Entries" : "Peak"}</div>
+                          <div className="font-black text-[var(--foreground)] text-sm mt-1">{isArtistChart ? (e.entries ?? 1) : `#${e.peak}`}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">Weeks</div>
+                          <div className="font-black text-[var(--foreground)] text-sm mt-1">{e.weeks}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">{metricLabel}</div>
+                          <div className="font-black text-[var(--foreground)] text-sm mt-1">{formatMetric(e.totalUnits, metricKey)}</div>
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-                <div className="flex items-center gap-3 sm:gap-4 text-xs text-muted-foreground shrink-0">
-                  <div className="text-center">
-                    <div className="text-[9px] uppercase font-bold tracking-wider">Peak</div>
-                    <div className="font-black gold text-sm">#{e.peak}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[9px] uppercase font-bold tracking-wider">Weeks</div>
-                    <div className="font-black text-[var(--foreground)] text-sm">{e.weeks}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center gap-1 text-[var(--accent)]">
-                      <i className={`fas ${metricIcon} text-[9px]`} />
-                      <span className="text-[9px] uppercase font-bold tracking-wider">{metricLabel}</span>
-                    </div>
-                    <div className="font-black text-[var(--foreground)] text-sm">{formatMetric(e.totalUnits, metricKey)}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground text-sm">
@@ -255,10 +342,6 @@ function YearEndChartPage() {
           </div>
         )}
 
-        {/* Year navigator bottom */}
-        <div className="mt-8">
-          <YearDropdown years={years} selectedYear={selectedYear} onSelect={setSelectedYear} />
-        </div>
       </main>
     </div>
   );
