@@ -16,7 +16,7 @@ export const MALE_ARTISTS = new Set([
   "niall horan", "grandson", "raul seixas", "lauv", "zedd", "dennis",
   "john mayer", "yung beef", "la cruz", "george michael", "mac miller",
   "victor kley", "ney matogrosso", "erasmo carlos", "dj snake", "mgk",
-  "black alien", "cashmere cat", "eslabon armando", "enrique iglesias",
+  "black alien", "cashmere cat", "eslabon armado", "enrique iglesias",
   "seu jorge", "tyler, the creator", "pharrell williams", "käärijä",
   "lucas pretti", "c. tangana", "padre fábio de melo", "roddy rich",
   "sombr", "eminem", "frejat", "lulu santos", "seungri",
@@ -56,4 +56,8 @@ export const MALE_ARTISTS = new Set([
   "childish gambino", "safety trance", "tiësto", "timbaland",
   "vetromn", "di ferrero", "pk", "stephen sanchez", "aretuza lovi",
   "declan mckenna",
+  "gloria groove",
+  "sam smith", "james arthur", "steve aoki", "louis tomlinson",
+  "brandon arreaga", "ty dolla $ign",
+  "davi sabbag",
 ]);

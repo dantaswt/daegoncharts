@@ -3,25 +3,89 @@ import React from "react";
 import { chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 
 export function ChartTypeNav({ activeId, date }: { activeId: string; date?: string }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const activeCfg = chartsConfig[activeId];
+
   return (
     <div className="flex flex-col gap-2 justify-center md:justify-start mb-6">
-      {weeklyChartIds.map((id) => {
-        const cfg = chartsConfig[id];
-        return (
-          <Link
-            key={id}
-            to={date ? "/chart/$chartId/$date" : "/chart/$chartId"}
-            params={date ? { chartId: id, date } : { chartId: id }}
-            className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
-              activeId === id
-                ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
-            }`}
-          >
-            {cfg.title}
-          </Link>
-        );
-      })}
+      {/* Mobile: show only selected + expand button */}
+      <div className="md:hidden">
+        <Link
+          to={date ? "/chart/$chartId/$date" : "/chart/$chartId"}
+          params={date ? { chartId: activeId, date } : { chartId: activeId }}
+          className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center bg-[var(--accent)] text-black border-[var(--accent)]"
+        >
+          {activeCfg?.title ?? activeId}
+        </Link>
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center gap-2 bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+        >
+          {expanded ? "− Less" : "+ More Charts"}
+        </button>
+        {expanded && (
+          <>
+            {weeklyChartIds.filter((id) => id !== activeId).map((id) => {
+              const cfg = chartsConfig[id];
+              return (
+                <Link
+                  key={id}
+                  to={date ? "/chart/$chartId/$date" : "/chart/$chartId"}
+                  params={date ? { chartId: id, date } : { chartId: id }}
+                  className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+                >
+                  {cfg.title}
+                </Link>
+              );
+            })}
+            <div className="border-t border-[var(--border)] my-1" />
+            <Link
+              to="/latin-albums/$date"
+              params={date ? { date } : { date: "" }}
+              className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
+                activeId === "topLatinAlbums"
+                  ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+                  : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+              }`}
+            >
+              Top Latin Albums
+            </Link>
+          </>
+        )}
+      </div>
+
+      {/* Desktop: show all */}
+      <div className="hidden md:flex flex-col gap-2">
+        {weeklyChartIds.map((id) => {
+          const cfg = chartsConfig[id];
+          return (
+            <Link
+              key={id}
+              to={date ? "/chart/$chartId/$date" : "/chart/$chartId"}
+              params={date ? { chartId: id, date } : { chartId: id }}
+              className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
+                activeId === id
+                  ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+                  : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+              }`}
+            >
+              {cfg.title}
+            </Link>
+          );
+        })}
+        <div className="border-t border-[var(--border)] my-1" />
+        <Link
+          to="/latin-albums/$date"
+          params={date ? { date } : { date: "" }}
+          className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
+            activeId === "topLatinAlbums"
+              ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+              : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+          }`}
+        >
+          Top Latin Albums
+        </Link>
+      </div>
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { Route as AwardsIndexRouteImport } from './routes/awards.index'
 import { Route as YearEndChartIdRouteImport } from './routes/year-end.$chartId'
 import { Route as StatsCategoryRouteImport } from './routes/stats.$category'
 import { Route as SongSlugRouteImport } from './routes/song.$slug'
+import { Route as LatinAlbumsDateRouteImport } from './routes/latin-albums.$date'
 import { Route as GoatChartIdRouteImport } from './routes/goat.$chartId'
 import { Route as ChartChartIdRouteImport } from './routes/chart.$chartId'
 import { Route as ChartBeatBlogRouteImport } from './routes/chart-beat.$blog'
@@ -120,6 +121,11 @@ const SongSlugRoute = SongSlugRouteImport.update({
   path: '/song/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LatinAlbumsDateRoute = LatinAlbumsDateRouteImport.update({
+  id: '/latin-albums/$date',
+  path: '/latin-albums/$date',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoatChartIdRoute = GoatChartIdRouteImport.update({
   id: '/goat/$chartId',
   path: '/goat/$chartId',
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
+  '/latin-albums/$date': typeof LatinAlbumsDateRoute
   '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/awards/stats': typeof AwardsStatsRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
+  '/latin-albums/$date': typeof LatinAlbumsDateRoute
   '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
   '/goat/$chartId': typeof GoatChartIdRoute
+  '/latin-albums/$date': typeof LatinAlbumsDateRoute
   '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/chart-beat/$blog'
     | '/chart/$chartId'
     | '/goat/$chartId'
+    | '/latin-albums/$date'
     | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/awards/stats'
     | '/chart-beat/$blog'
     | '/goat/$chartId'
+    | '/latin-albums/$date'
     | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/chart-beat/$blog'
     | '/chart/$chartId'
     | '/goat/$chartId'
+    | '/latin-albums/$date'
     | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
@@ -398,6 +410,7 @@ export interface RootRouteChildren {
   ChartBeatBlogRoute: typeof ChartBeatBlogRouteWithChildren
   ChartChartIdRoute: typeof ChartChartIdRouteWithChildren
   GoatChartIdRoute: typeof GoatChartIdRoute
+  LatinAlbumsDateRoute: typeof LatinAlbumsDateRoute
   SongSlugRoute: typeof SongSlugRoute
   StatsCategoryRoute: typeof StatsCategoryRoute
   YearEndChartIdRoute: typeof YearEndChartIdRoute
@@ -519,6 +532,13 @@ declare module '@tanstack/react-router' {
       path: '/song/$slug'
       fullPath: '/song/$slug'
       preLoaderRoute: typeof SongSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/latin-albums/$date': {
+      id: '/latin-albums/$date'
+      path: '/latin-albums/$date'
+      fullPath: '/latin-albums/$date'
+      preLoaderRoute: typeof LatinAlbumsDateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/goat/$chartId': {
@@ -684,6 +704,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChartBeatBlogRoute: ChartBeatBlogRouteWithChildren,
   ChartChartIdRoute: ChartChartIdRouteWithChildren,
   GoatChartIdRoute: GoatChartIdRoute,
+  LatinAlbumsDateRoute: LatinAlbumsDateRoute,
   SongSlugRoute: SongSlugRoute,
   StatsCategoryRoute: StatsCategoryRoute,
   YearEndChartIdRoute: YearEndChartIdRoute,

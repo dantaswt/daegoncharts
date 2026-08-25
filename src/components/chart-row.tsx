@@ -93,6 +93,7 @@ interface Props {
   chartEntriesByDate?: Record<string, ChartEntry[]>;
   showDiff?: boolean;
   diffColors?: boolean;
+  hideDetailFields?: boolean;
 }
 
 function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "song" | "album" | "artist"; delay?: number }) {
@@ -164,8 +165,9 @@ function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boole
   );
 }
 
-export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesByDate, showDiff = true, diffColors = false }: Props) {
+export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesByDate, showDiff = true, diffColors = false, hideDetailFields = false }: Props) {
   const [showDetails, setShowDetails] = useState(false);
+  const [copied, setCopied] = useState(false);
   const slug = slugifyArtist(entry.artist);
   const isGoat = chartId?.startsWith("goat");
 
@@ -451,6 +453,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       document.execCommand("copy");
       document.body.removeChild(ta);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const runEntries = useMemo(() => {
@@ -541,9 +545,16 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
           )}
           <ChartMetrics entry={entry} showDiff={showDiff} />
           <div className="flex flex-col gap-2">
-            <button type="button" onClick={handleCopy} className="copy-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
-              <i className="fas fa-copy" />
-            </button>
+            <div className="relative">
+              <button type="button" onClick={handleCopy} className={`copy-btn w-8 h-8 rounded-full text-sm transition-all duration-200 flex items-center justify-center ${copied ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95"}`} aria-label="Copy info">
+                <i className={`fas ${copied ? "fa-check" : "fa-copy"}`} />
+              </button>
+              {copied && (
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[var(--foreground)] text-[var(--background)] text-[10px] font-bold px-2 py-1 rounded pointer-events-none animate-fade-in">
+                  Copied!
+                </div>
+              )}
+            </div>
             <button type="button" onClick={() => setShowDetails((v) => !v)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
               {showDetails ? "−" : "+"}
             </button>
@@ -584,7 +595,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                   {entry.name}
                 </Link>
               )}
-            {entry.position !== 1 && (entry.weeksAt1 ?? 0) >= 2 && (
+              {entry.position !== 1 && (entry.weeksAt1 ?? 0) >= 2 && (
                 <span className="inline-flex items-center px-1.5 py-0.5 bg-[#FFD600] text-black text-[8px] font-bold rounded whitespace-nowrap uppercase">
                   {entry.weeksAt1} {entry.weeksAt1 === 1 ? "WEEK" : "WEEKS"} AT #1
                 </span>
@@ -592,12 +603,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             </div>
             {kind !== "artist" && (
               <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
-                <Link
-                  to="/artist/$slug"
-                  params={{ slug }}
-                  className="hover:text-[var(--accent)] hover:underline"
-                >
-                {entry.artist}
+                <Link to="/artist/$slug" params={{ slug }} className="hover:text-[var(--accent)] hover:underline">
+                  {entry.artist}
                 </Link>
                 {kind === "song" && <TrackArtists song={entry.name} artist={entry.artist} className="text-[10px] text-[var(--muted-foreground)]" />}
               </div>
@@ -611,16 +618,23 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               {awards.hasStar && (
                 <AwardIcon type={(awards.gainerStreams || awards.gainerSales) ? "gainer" : "performance"} />
               )}
-              <button type="button" onClick={handleCopy} className="copy-btn w-11 h-11 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Copy info">
-                <i className="fas fa-copy" />
-              </button>
+              <div className="relative">
+                <button type="button" onClick={handleCopy} className={`copy-btn w-11 h-11 rounded-full text-sm transition-all duration-200 flex items-center justify-center ${copied ? "bg-[var(--accent)] text-black" : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95"}`} aria-label="Copy info">
+                  <i className={`fas ${copied ? "fa-check" : "fa-copy"}`} />
+                </button>
+                {copied && (
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[var(--foreground)] text-[var(--background)] text-[10px] font-bold px-2 py-1 rounded pointer-events-none animate-fade-in">
+                    Copied!
+                  </div>
+                )}
+              </div>
               <button type="button" onClick={() => setShowDetails((v) => !v)} className="details-btn w-11 h-11 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                 {showDetails ? "−" : "+"}
               </button>
             </div>
           </div>
         </div>
-        {/* Bottom row: LW / Peak / Weeks — always visible, fixed at bottom */}
+        {/* Bottom row: LW / Peak / Weeks */}
         <div className="mt-2 pt-2 border-t border-[var(--border)] flex items-center gap-3 text-[11px] text-muted-foreground">
           {showDiff && <span>LW: <span className="font-semibold text-[var(--foreground)]">{entry.lastWeek !== undefined && entry.lastWeek.trim() !== "" ? (entry.lastWeek === "0" ? "-" : entry.lastWeek) : "-"}</span></span>}
           <span>Peak: <span className="font-semibold text-[var(--foreground)]">{entry.peak > 0 ? `#${entry.peak}` : "-"}</span></span>
@@ -631,7 +645,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       {/* Details panel (shared) */}
       {showDetails && (
         <div className="details-panel mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
-          {detailFields.length > 0 && (
+          {!hideDetailFields && detailFields.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               {detailFields.map((item) => {
                 const isTotal = item.label.toLowerCase().startsWith("total");
@@ -648,24 +662,29 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             <div>
               <div className="font-semibold mb-2 text-[var(--foreground)]">Chart run</div>
               <div className="space-y-2">
-                {runEntries.map((run) => (
-                  <a
-                    key={`${run.date}-${run.position}`}
-                    href={`/chart/${chartId}/${run.date}`}
-                    className="block rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 transition hover:border-[var(--accent)] hover:bg-[var(--muted)]"
-                  >
-                    <div className="flex items-center justify-between gap-3 text-sm text-[var(--foreground)]">
-                      <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                      <span className="font-semibold text-[var(--accent)]">{run.position}</span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
-                      <span>Peak: {run.peak}</span>
-                      <span>Weeks: {run.weeks}</span>
-                      {run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
-                      {run.totalUnits && <span>Total Units: {formatValue(run.totalUnits, chartId)}</span>}
-                    </div>
-                  </a>
-                ))}
+                {runEntries.map((run) => {
+                  const runHref = chartId === "topLatinAlbums"
+                    ? `/latin-albums/${run.date}`
+                    : `/chart/${chartId}/${run.date}`;
+                  return (
+                    <a
+                      key={`${run.date}-${run.position}`}
+                      href={runHref}
+                      className="block rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 transition hover:border-[var(--accent)] hover:bg-[var(--muted)]"
+                    >
+                      <div className="flex items-center justify-between gap-3 text-sm text-[var(--foreground)]">
+                        <span>{new Date(run.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span className="font-semibold text-[var(--accent)]">{run.position}</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
+                        <span>Peak: {run.peak}</span>
+                        <span>Weeks: {run.weeks}</span>
+                        {chartId !== "topLatinAlbums" && run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
+                        {chartId !== "topLatinAlbums" && run.totalUnits && <span>Total Units: {formatValue(run.totalUnits, chartId)}</span>}
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           ) : (

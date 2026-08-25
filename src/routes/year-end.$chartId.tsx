@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getYearEndGenerated, getYearEndNewArtists, type YECEntry } from "@/lib/charts.functions";
-import { getYearEndHot100Artists, getYearEndTop100AlbumsArtists, getYearEndArtist50Male, getYearEndArtist50Female, getYearEndArtist50DuoGroup, getYearEndRadioSongsArtists } from "@/lib/yec-computed";
+import { getYearEndHot100Artists, getYearEndTop100AlbumsArtists, getYearEndArtist50Male, getYearEndArtist50Female, getYearEndArtist50DuoGroup, getYearEndRadioSongsArtists, getYearEndTopLatinAlbums } from "@/lib/yec-computed";
 import { chartsConfig, yearEndChartIds, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
@@ -40,6 +40,10 @@ export const Route = createFileRoute("/year-end/$chartId")({
     if (params.chartId === "yecRadioSongsArtists") {
       const data = await getYearEndRadioSongsArtists();
       return { data, chartId: params.chartId, mappedId: "artists" };
+    }
+    if (params.chartId === "yecTopLatinAlbums") {
+      const data = await getYearEndTopLatinAlbums();
+      return { data, chartId: params.chartId, mappedId: "albums" };
     }
 
     const weeklyId = params.chartId.replace("yearEnd", "").replace(/^./, (c) => c.toLowerCase());
@@ -169,7 +173,7 @@ function YearEndChartPage() {
     document.title = `Year-End Charts — ${cfg?.title ?? "Year-End"} | daegon charts`;
   }, [cfg]);
 
-  const metricKey = chartId === "yecHot100Artists" ? "points" : chartId === "yecTop100AlbumsArtists" || chartId === "yecArtist50Male" || chartId === "yecArtist50Female" ? "units" : chartId === "yearEndTopStreamingAlbums" ? "total" : chartId === "yecRadioSongsArtists" ? "audience" : mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units";
+  const metricKey = chartId === "yecHot100Artists" || chartId === "yecTopLatinAlbums" ? "points" : chartId === "yecTop100AlbumsArtists" || chartId === "yecArtist50Male" || chartId === "yecArtist50Female" ? "units" : chartId === "yearEndTopStreamingAlbums" ? "total" : chartId === "yecRadioSongsArtists" ? "audience" : mappedId === "songs" ? "points" : mappedId === "streamingSongs" || mappedId === "topStreamingAlbums" ? "streams" : mappedId === "radioSongs" ? "audience" : mappedId === "topAlbumSales" || mappedId === "digitalSongsSales" ? "sales" : "units";
   const metricLabel = metricKey === "total" ? "Total Streams" : metricKey === "points" ? "Points" : metricKey === "streams" ? "Streams" : metricKey === "audience" ? "Audience" : metricKey === "sales" ? "Sales" : "Units";
 
   const toggleDetails = (key: string) => {
@@ -181,23 +185,37 @@ function YearEndChartPage() {
       {/* Fixed chart type nav sidebar */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <div className="flex flex-col gap-2 justify-center md:justify-start mb-6">
-          {yearEndChartIds.map((id) => {
-            const c = chartsConfig[id];
-            return (
-              <Link
-                key={id}
-                to="/year-end/$chartId"
-                params={{ chartId: id }}
-                className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
-                  id === chartId
-                    ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                    : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
-                }`}
-              >
-                {c.title}
-              </Link>
-            );
-          })}
+          {/* Mobile: collapse */}
+          <div className="md:hidden">
+            <Link
+              to="/year-end/$chartId"
+              params={{ chartId }}
+              className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center bg-[var(--accent)] text-black border-[var(--accent)]"
+            >
+              {chartsConfig[chartId]?.title ?? chartId}
+            </Link>
+            <YECMobExpand activeId={chartId} />
+          </div>
+          {/* Desktop: show all */}
+          <div className="hidden md:flex flex-col gap-2">
+            {yearEndChartIds.map((id) => {
+              const c = chartsConfig[id];
+              return (
+                <Link
+                  key={id}
+                  to="/year-end/$chartId"
+                  params={{ chartId: id }}
+                  className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
+                    id === chartId
+                      ? "bg-[var(--accent)] text-black border-[var(--accent)]"
+                      : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+                  }`}
+                >
+                  {c.title}
+                </Link>
+              );
+            })}
+          </div>
         </div>
         <Link to="/year-end" className="sidebar-section block hover:border-[var(--accent)] transition-all">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest"><i className="fas fa-arrow-left mr-2" />All Year-End</div>
@@ -344,5 +362,32 @@ function YearEndChartPage() {
 
       </main>
     </div>
+  );
+}
+
+function YECMobExpand({ activeId }: { activeId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center gap-2 bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+      >
+        {expanded ? "− Less" : "+ More Charts"}
+      </button>
+      {expanded && yearEndChartIds.filter((id) => id !== activeId).map((id) => {
+        const c = chartsConfig[id];
+        return (
+          <Link
+            key={id}
+            to="/year-end/$chartId"
+            params={{ chartId: id }}
+            className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+          >
+            {c.title}
+          </Link>
+        );
+      })}
+    </>
   );
 }

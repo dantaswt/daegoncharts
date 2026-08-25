@@ -18,6 +18,15 @@ const KNOWN_ARTIST_IDS: Record<string, string> = {
   "coldplay": "4gzpq5DPGxSnKw4USahUn0",
   "bts": "3Nrfpe0tUJi4K4DXYWgMUX",
   "sza": "7tYKF4w9nC0nq9CsPZTHyP",
+  "rbd": "7cjh6y0V9SsyCrWSXTzwOs",
+  "rouge": "7oCPozHYsiILeiQlma8EEj",
+  "iza": "3zgnrYIltMkgeejmvMCnes",
+  "fun.": "5nCi3BB41mBaMH9gfr6Su0",
+  "f(x)": "3wRA5UYoo08BBKJnzyKkpF",
+  "i.o.i": "6RKnXXyprPjhBdCvL802Ku",
+  "ravena": "5jnvLdIq82U5JWfYRZKLYg",
+  "cast_of_rent": "0ZAibQ1lZh5UbUaQybsn62",
+  "teen_angels": "5bRULziD2hCP3acYRcfK3E",
 };
 
 async function getAccessToken() {
@@ -125,6 +134,38 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
     const cacheKey = `${data.type}:${data.query.trim()}`;
     if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
     const token = await getAccessToken();
+
+    // Hardcoded overrides for albums where Spotify search fails
+    const HARDCODED_ALBUM_IMAGES: Record<string, string> = {
+      "checkmate": "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da841ebe14cc216c7be9269638d7",
+      "solo": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02c0f23c0d2af5ec63daef87f0",
+      "ritalee1979": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02471646faaecf4b53e95b5c1c",
+      "rebeldes": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e025637ea9091a58684212c8fea",
+      "equals": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02dc806722f6802a8ea9953c89",
+      "brasileirinha": "https://static.wikia.nocookie.net/anitta/images/0/0c/BRASILEIRINHA.png/revision/latest?cb=20210622000705&path-prefix=pt-br",
+      "girlfromrio": "https://i.pinimg.com/736x/9d/1a/66/9d1a663dae6e7251e69c75e8605b9ce9.jpg",
+      "acontece": "https://i.pinimg.com/736x/72/c5/fd/72c5fdbdcb418854b7aee2c12720007b.jpg",
+      "wanessacamargo": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02b3053279804f33dd993d032c",
+      "wanessacamargo2002": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02a492ad852a3ff45542494af6",
+      "w": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e022cd46c56308c5aba148c03dc",
+      "deadline": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e028db56c674b13b3a4c6a4dbb8",
+    };
+
+    // Hardcoded overrides for tracks
+    const HARDCODED_TRACK_IMAGES: Record<string, string> = {
+      "saveyourtearsremix": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02c6af5ffa661a365b77df6ef6",
+    };
+
+    if (data.type === "album") {
+      const albumName = (fieldValue(data.query, "album") || data.query).trim().toLowerCase();
+      const artistName = fieldValue(data.query, "artist");
+      const hardcodedKey = comparable(albumName).replace(/[^a-z0-9]/g, "");
+      if (HARDCODED_ALBUM_IMAGES[hardcodedKey]) {
+        const img = HARDCODED_ALBUM_IMAGES[hardcodedKey];
+        imageCache.set(cacheKey, img);
+        return img;
+      }
+    }
 
     try {
       let imageUrl: string | null = null;
@@ -330,6 +371,14 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
       } else if (data.type === "track") {
         const trackName = fieldValue(data.query, "track") || data.query;
         const artistName = fieldValue(data.query, "artist");
+
+        // Hardcoded track overrides
+        const trackKey = comparable(trackName).replace(/[^a-z0-9]/g, "");
+        if (HARDCODED_TRACK_IMAGES[trackKey]) {
+          const img = HARDCODED_TRACK_IMAGES[trackKey];
+          imageCache.set(cacheKey, img);
+          return img;
+        }
 
         // 1. Wikipedia single
         if (!imageUrl && artistName) {

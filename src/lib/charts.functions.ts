@@ -332,15 +332,23 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     if (a !== -1) idx.units = a;
   }
   const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
+  const ALBUM_NAME_OVERRIDES: Record<string, Record<string, string>> = {
+    "anitta": { "versions of me": "Girl from Rio" },
+    "waneesa": { "w (2005)": "W", "w": "W" },
+  };
   const entriesByDate: Record<string, ChartEntry[]> = {};
   for (const r of rows.slice(1)) {
     const date = normalizeDate(r[idx.date]);
     if (!date) continue;
+    const rawName = (r[nameIdx] ?? "").trim();
+    const rawArtist = (r[idx.artist] ?? "").trim();
+    const finalName = ALBUM_NAME_OVERRIDES[rawArtist.toLowerCase()]?.[rawName.toLowerCase()] || rawName;
+
     const entry: ChartEntry = {
       position: toInt(r[idx.position]),
       diff: idx.diff >= 0 ? (r[idx.diff] ?? "") : "",
-      name: (r[nameIdx] ?? "").trim(),
-      artist: (r[idx.artist] ?? "").trim(),
+      name: finalName,
+      artist: rawArtist,
       album: idx.album >= 0 ? (r[idx.album] ?? "").trim() : undefined,
       peak: toInt(r[idx.peak]),
       weeks: toInt(r[idx.weeks]),

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getYearEndGenerated } from "@/lib/charts.functions";
+import { getYearEndTopLatinAlbums } from "@/lib/yec-computed";
 import { chartsConfig, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { stripFeatFromTitle } from "@/components/track-artists";
@@ -23,6 +24,7 @@ const ALBUM_CHARTS = [
   { id: "yearEndAlbums", title: "Top 100 Albums" },
   { id: "yearEndTopAlbumSales", title: "Top Album Sales" },
   { id: "yearEndTopStreamingAlbums", title: "Top Streaming Albums" },
+  { id: "yecTopLatinAlbums", title: "Top Latin Albums" },
 ];
 
 const ARTIST_CHARTS = [
@@ -31,7 +33,7 @@ const ARTIST_CHARTS = [
   { id: "yecArtist50Male", title: "Artist 50 — Male" },
   { id: "yecArtist50DuoGroup", title: "Artist 50 — Duo/Group" },
   { id: "yearEndNewArtists", title: "Top New Artists" },
-  { id: "yecTop100AlbumsArtists", title: "Top 100 Albums — Artists" },
+  { id: "yecTop100AlbumsArtists", title: "Top 200 Albums — Artists" },
   { id: "yecRadioSongsArtists", title: "Radio Songs — Artists" },
 ];
 
@@ -214,6 +216,11 @@ function YearEndIndex() {
     queryFn: () => getYearEndGenerated({ data: { chartId: "artists" } }),
   });
 
+  const latinAlbumsQuery = useQuery({
+    queryKey: ["yec-latin-albums"],
+    queryFn: () => getYearEndTopLatinAlbums(),
+  });
+
   const allYears = songsQuery.data?.years ?? [];
   const lockedUntil = new Date("2026-12-31T23:59:59");
   const years = allYears.filter((y) => y !== "2026" || new Date() >= lockedUntil);
@@ -221,10 +228,12 @@ function YearEndIndex() {
   const songEntries = songsQuery.data?.entriesByYear[selectedYear] ?? [];
   const albumEntries = albumsQuery.data?.entriesByYear[selectedYear] ?? [];
   const artistEntries = artistsQuery.data?.entriesByYear[selectedYear] ?? [];
+  const latinAlbumEntries = latinAlbumsQuery.data?.entriesByYear[selectedYear] ?? [];
 
   const topSongs = songEntries.slice(0, 5);
   const topAlbums = albumEntries.slice(0, 5);
   const topArtists = artistEntries.slice(0, 5);
+  const topLatinAlbums = latinAlbumEntries.slice(0, 5);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
@@ -252,6 +261,7 @@ function YearEndIndex() {
           <Top5Preview title="Hot 100" chartId="yearEndSongs" entries={topSongs} kind="song" />
           <Top5Preview title="Top 100 Albums" chartId="yearEndAlbums" entries={topAlbums} kind="album" />
           <Top5Preview title="Artist 50" chartId="yearEndArtists" entries={topArtists} kind="artist" />
+          <Top5Preview title="Top Latin Albums" chartId="yecTopLatinAlbums" entries={topLatinAlbums} kind="album" />
 
           {/* Chart grids */}
           <ChartGrid title="Songs" charts={SONG_CHARTS} />

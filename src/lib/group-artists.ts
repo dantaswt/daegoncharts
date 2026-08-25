@@ -5,7 +5,7 @@ export const GROUP_ARTISTS = new Set([
   "erreway", "rouge", "one direction", "novos baianos", "newjeans",
   "i-dle", "fresno", "*nsync", "nsync", "calcinha preta",
   "companhia do calypso", "5 seconds of summer", "tribalistas",
-  "soundtrack", "destiny's child", "rebeldes", "the beatles", "coldplay",
+  "cast of rent", "destiny's child", "rebeldes", "the beatles", "coldplay",
   "selena gomez & the scene", "girls generation", "snsd", "소녀시대",
   "spice girls", "the aces", "secos & molhados", "flo", "seafret",
   "dnce", "the pussycat dolls", "katseye", "tlc",
@@ -58,4 +58,5 @@ export const GROUP_ARTISTS = new Set([
   "wicked movie cast", "cage the elephant", "g.r.l.", "rpm",
   "silk city", "zé neto & cristiano", "lady antebellum",
   "girls' generation", "gfriend", "marian hill",
+  "neiked", "gugudan", "terror jr", "seventeen", "i.o.i", "ravena", "turma do carrossel",
 ]);

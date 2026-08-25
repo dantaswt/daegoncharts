@@ -140,7 +140,20 @@ function GoatPage() {
 
             <div className="sidebar-section">
               <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Charts</div>
-              <div className="space-y-1">
+              {/* Mobile: collapse */}
+              <div className="md:hidden space-y-1">
+                <Link
+                  to="/goat/$chartId"
+                  params={{ chartId }}
+                  className="sidebar-link active"
+                >
+                  <i className={`fas ${chartsConfig[chartId]?.icon} text-xs text-muted-foreground w-4`} />
+                  {chartsConfig[chartId]?.title ?? chartId}
+                </Link>
+                <GOATMobExpand activeId={chartId} />
+              </div>
+              {/* Desktop: show all */}
+              <div className="hidden md:block space-y-1">
                 {goatChartIds.map((id) => {
                   const c = chartsConfig[id];
                   return (
@@ -386,5 +399,33 @@ function GoatPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function GOATMobExpand({ activeId }: { activeId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center gap-2 bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
+      >
+        {expanded ? "− Less" : "+ More Charts"}
+      </button>
+      {expanded && goatChartIds.filter((id) => id !== activeId).map((id) => {
+        const c = chartsConfig[id];
+        return (
+          <Link
+            key={id}
+            to="/goat/$chartId"
+            params={{ chartId: id }}
+            className="sidebar-link"
+          >
+            <i className={`fas ${c.icon} text-xs text-muted-foreground w-4`} />
+            {c.title}
+          </Link>
+        );
+      })}
+    </>
   );
 }

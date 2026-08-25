@@ -57,7 +57,7 @@ for (const id of weeklyChartIds) {
 }
 chartNameToRoute["Hot 100 Songs"] = { chartId: "songs" };
 chartNameToRoute["Top 50 Artists"] = { chartId: "artists" };
-chartNameToRoute["Top 100 Albums"] = { chartId: "albums" };
+  chartNameToRoute["Top 100 Albums"] = { chartId: "albums" };
 chartNameToRoute["Radio Songs"] = { chartId: "radioSongs" };
 chartNameToRoute["Top 40 Radio"] = { chartId: "radioSongs" };
 chartNameToRoute["Top Streaming Albums"] = { chartId: "topStreamingAlbums" };
