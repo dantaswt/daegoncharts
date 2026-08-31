@@ -182,6 +182,11 @@ function RootShell({ children }: { children: ReactNode }) {
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,
           }}
         />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5838624736955714"
+          crossOrigin="anonymous"
+        />
         <HeadContent />
       </head>
       <body>
