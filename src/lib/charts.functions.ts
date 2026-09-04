@@ -303,70 +303,80 @@ function computeDiffs(dates: string[], entriesByDate: Record<string, ChartEntry[
 
 async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
   const cfg = chartsConfig[chartId];
-  const rows = await fetchCsv(cfg.url);
-  const header = rows[0].map((h) => h.toLowerCase().trim());
-  const idx = {
-    date: findIdx(header, ["date", "chart date"]),
-    position: findIdx(header, ["position", "rank", "pos"]),
-    diff: findIdx(header, ["dif", "diff", "▲▼"]),
-    song: findIdx(header, ["song", "title", "track"]),
-    album: findIdx(header, ["album"]),
-    artist: findIdx(header, ["artist", "artists"]),
-    lastWeek: findIdx(header, ["last week", "lw", "last wk", "prev week", "previous week"]),
-    peak: findIdx(header, ["peak"]),
-    weeks: findIdx(header, ["weeks", "wks"]),
-    weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "week at 1", "weeks at #1"]),
-    points: findIdx(header, ["points"]),
-    sales: findIdx(header, ["sales", "sales/streams", "sales/streaming", "pure sales"]),
-    streams: findIdx(header, ["streams", "sea", "streaming"]),
-    airplay: findIdx(header, ["airplay"]),
-    audience: findIdx(header, ["audience"]),
-    certification: findIdx(header, ["certification"]),
-    units: findIdx(header, ["units", "spins", "sales", "streams", "audience"]),
-    totalUnits: findIdx(header, ["total units", "total"]),
-    totalStreams: findIdx(header, ["total streams", "total streaming"]),
-    totalSales: findIdx(header, ["total sales"]),
-  };
-  if (cfg.id === "radioSongs") {
-    const a = header.indexOf("audience");
-    if (a !== -1) idx.units = a;
-  }
-  const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
   const ALBUM_NAME_OVERRIDES: Record<string, Record<string, string>> = {
     "anitta": { "versions of me": "Girl from Rio" },
     "waneesa": { "w (2005)": "W", "w": "W" },
   };
-  const entriesByDate: Record<string, ChartEntry[]> = {};
-  for (const r of rows.slice(1)) {
-    const date = normalizeDate(r[idx.date]);
-    if (!date) continue;
-    const rawName = (r[nameIdx] ?? "").trim();
-    const rawArtist = (r[idx.artist] ?? "").trim();
-    const finalName = ALBUM_NAME_OVERRIDES[rawArtist.toLowerCase()]?.[rawName.toLowerCase()] || rawName;
 
-    const entry: ChartEntry = {
-      position: toInt(r[idx.position]),
-      diff: idx.diff >= 0 ? (r[idx.diff] ?? "") : "",
-      name: finalName,
-      artist: rawArtist,
-      album: idx.album >= 0 ? (r[idx.album] ?? "").trim() : undefined,
-      peak: toInt(r[idx.peak]),
-      weeks: toInt(r[idx.weeks]),
-      weeksAt1: idx.weeksAt1 >= 0 ? toInt(r[idx.weeksAt1]) : undefined,
-      lastWeek: idx.lastWeek >= 0 ? r[idx.lastWeek] : undefined,
-      points: idx.points >= 0 ? r[idx.points] : undefined,
-      sales: idx.sales >= 0 ? r[idx.sales] : undefined,
-      streams: idx.streams >= 0 ? r[idx.streams] : undefined,
-      airplay: idx.airplay >= 0 ? r[idx.airplay] : undefined,
-      audience: idx.audience >= 0 ? r[idx.audience] : undefined,
-      certification: idx.certification >= 0 ? r[idx.certification] : undefined,
-      units: idx.units >= 0 ? r[idx.units] : undefined,
-      totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] : undefined,
-      totalStreams: idx.totalStreams >= 0 ? r[idx.totalStreams] : undefined,
-      totalSales: idx.totalSales >= 0 ? r[idx.totalSales] : undefined,
+  function parseSheet(rows: string[][]): Record<string, ChartEntry[]> {
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const idx = {
+      date: findIdx(header, ["date", "chart date"]),
+      position: findIdx(header, ["position", "rank", "pos"]),
+      diff: findIdx(header, ["dif", "diff", "▲▼"]),
+      song: findIdx(header, ["song", "title", "track"]),
+      album: findIdx(header, ["album"]),
+      artist: findIdx(header, ["artist", "artists"]),
+      lastWeek: findIdx(header, ["last week", "lw", "last wk", "prev week", "previous week"]),
+      peak: findIdx(header, ["peak"]),
+      weeks: findIdx(header, ["weeks", "wks"]),
+      weeksAt1: findIdx(header, ["weeks at 1", "wks at 1", "week at #1", "week at 1", "weeks at #1"]),
+      points: findIdx(header, ["points"]),
+      sales: findIdx(header, ["sales", "sales/streams", "sales/streaming", "pure sales"]),
+      streams: findIdx(header, ["streams", "sea", "streaming"]),
+      airplay: findIdx(header, ["airplay"]),
+      audience: findIdx(header, ["audience"]),
+      certification: findIdx(header, ["certification"]),
+      units: findIdx(header, ["units", "spins", "sales", "streams", "audience"]),
+      totalUnits: findIdx(header, ["total units", "total"]),
+      totalStreams: findIdx(header, ["total streams", "total streaming"]),
+      totalSales: findIdx(header, ["total sales"]),
     };
-    if (!entry.name || !entry.position) continue;
-    (entriesByDate[date] ||= []).push(entry);
+    if (cfg.id === "radioSongs") {
+      const a = header.indexOf("audience");
+      if (a !== -1) idx.units = a;
+    }
+    const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
+    const result: Record<string, ChartEntry[]> = {};
+    for (const r of rows.slice(1)) {
+      const date = normalizeDate(r[idx.date]);
+      if (!date) continue;
+      const rawName = (r[nameIdx] ?? "").trim();
+      const rawArtist = (r[idx.artist] ?? "").trim();
+      const finalName = ALBUM_NAME_OVERRIDES[rawArtist.toLowerCase()]?.[rawName.toLowerCase()] || rawName;
+      const entry: ChartEntry = {
+        position: toInt(r[idx.position]),
+        diff: idx.diff >= 0 ? (r[idx.diff] ?? "") : "",
+        name: finalName,
+        artist: rawArtist,
+        album: idx.album >= 0 ? (r[idx.album] ?? "").trim() : undefined,
+        peak: toInt(r[idx.peak]),
+        weeks: toInt(r[idx.weeks]),
+        weeksAt1: idx.weeksAt1 >= 0 ? toInt(r[idx.weeksAt1]) : undefined,
+        lastWeek: idx.lastWeek >= 0 ? r[idx.lastWeek] : undefined,
+        points: idx.points >= 0 ? r[idx.points] : undefined,
+        sales: idx.sales >= 0 ? r[idx.sales] : undefined,
+        streams: idx.streams >= 0 ? r[idx.streams] : undefined,
+        airplay: idx.airplay >= 0 ? r[idx.airplay] : undefined,
+        audience: idx.audience >= 0 ? r[idx.audience] : undefined,
+        certification: idx.certification >= 0 ? r[idx.certification] : undefined,
+        units: idx.units >= 0 ? r[idx.units] : undefined,
+        totalUnits: idx.totalUnits >= 0 ? r[idx.totalUnits] : undefined,
+        totalStreams: idx.totalStreams >= 0 ? r[idx.totalStreams] : undefined,
+        totalSales: idx.totalSales >= 0 ? r[idx.totalSales] : undefined,
+      };
+      if (!entry.name || !entry.position) continue;
+      (result[date] ||= []).push(entry);
+    }
+    return result;
+  }
+
+  const entriesByDate = parseSheet(await fetchCsv(cfg.url));
+  if (cfg.secondaryUrl) {
+    const entries2 = parseSheet(await fetchCsv(cfg.secondaryUrl));
+    for (const [d, entries] of Object.entries(entries2)) {
+      (entriesByDate[d] ||= []).push(...entries);
+    }
   }
   const dates = Object.keys(entriesByDate).sort();
   for (const d of dates) entriesByDate[d].sort((a, b) => a.position - b.position);
