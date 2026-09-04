@@ -379,7 +379,25 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     }
   }
   const dates = Object.keys(entriesByDate).sort();
-  for (const d of dates) entriesByDate[d].sort((a, b) => a.position - b.position);
+  for (const d of dates) {
+    entriesByDate[d].sort((a, b) => a.position - b.position);
+    const seen = new Map<string, number>();
+    for (let i = entriesByDate[d].length - 1; i >= 0; i--) {
+      const e = entriesByDate[d][i];
+      const key = `${e.name.toLowerCase()}|${e.artist.toLowerCase()}`;
+      const existing = seen.get(key);
+      if (existing !== undefined) {
+        if (e.position < entriesByDate[d][existing].position) {
+          entriesByDate[d].splice(existing, 1);
+          seen.set(key, i);
+        } else {
+          entriesByDate[d].splice(i, 1);
+        }
+      } else {
+        seen.set(key, i);
+      }
+    }
+  }
   computeDiffs(dates, entriesByDate);
   return { chartId, title: cfg.title, kind: cfg.kind, dates, entriesByDate };
 }

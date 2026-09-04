@@ -142,16 +142,7 @@ export const Route = createFileRoute("/artist/$slug")({
       yecPositions = await getArtistYearEndPositions({ data: { artistName: match.name } }).catch(() => []);
 
       if (chartHistory) {
-        for (const [label, entries] of Object.entries(chartHistory)) {
-          const existing = match.chartsByKind[label] || [];
-          const existingKeys = new Set(existing.map((e: any) => e.item.toLowerCase()));
-          for (const entry of entries) {
-            if (!existingKeys.has(entry.item.toLowerCase())) {
-              (match.chartsByKind[label] ||= []).push(entry);
-            }
-          }
-          match.chartsByKind[label]?.sort((a: any, b: any) => a.peak - b.peak || b.weeks - a.weeks);
-        }
+        match.chartsByKind = chartHistory;
       }
     }
 
