@@ -38,6 +38,12 @@ export const chartsConfig: Record<string, ChartConfig> = {
   yecArtist50DuoGroup: { id: "yecArtist50DuoGroup", url: "", title: "Artist 50 — Duo/Group", icon: "fa-users", kind: "artist", group: "yearEnd" },
   yecRadioSongsArtists: { id: "yecRadioSongsArtists", url: "", title: "Radio Songs — Artists", icon: "fa-broadcast-tower", kind: "artist", group: "yearEnd" },
   yecTopLatinAlbums: { id: "yecTopLatinAlbums", url: "", title: "Top Latin Albums", icon: "fa-fire", kind: "album", group: "yearEnd" },
+  decadeEnd2000Songs: { id: "decadeEnd2000Songs", url: "", title: "2000s — Hot 100", icon: "fa-compact-disc", kind: "song", group: "yearEnd" },
+  decadeEnd2000Albums: { id: "decadeEnd2000Albums", url: "", title: "2000s — Top 100 Albums", icon: "fa-compact-disc", kind: "album", group: "yearEnd" },
+  decadeEnd2000Artists: { id: "decadeEnd2000Artists", url: "", title: "2000s — Artist 50", icon: "fa-user", kind: "artist", group: "yearEnd" },
+  decadeEnd2010Songs: { id: "decadeEnd2010Songs", url: "", title: "2010s — Hot 100", icon: "fa-compact-disc", kind: "song", group: "yearEnd" },
+  decadeEnd2010Albums: { id: "decadeEnd2010Albums", url: "", title: "2010s — Top 100 Albums", icon: "fa-compact-disc", kind: "album", group: "yearEnd" },
+  decadeEnd2010Artists: { id: "decadeEnd2010Artists", url: "", title: "2010s — Artist 50", icon: "fa-user", kind: "artist", group: "yearEnd" },
   goatSongs: { id: "goatSongs", url: SHEET + "1157278896", title: "Greatest of All Time Songs", icon: "fa-trophy", kind: "song", group: "goat" },
   goatArtists: { id: "goatArtists", url: SHEET + "222299678", title: "Greatest of All Time Artists", icon: "fa-trophy", kind: "artist", group: "goat" },
   goatAlbums: { id: "goatAlbums", url: SHEET + "1548244755", title: "Greatest of All Time Albums", icon: "fa-trophy", kind: "album", group: "goat" },
@@ -54,7 +60,7 @@ export const chartBeatConfig = {
 } as const;
 
 export const weeklyChartIds = ["songs", "artists", "albums", "radioSongs", "topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"];
-export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yearEndRadio", "yearEndDigitalSongsSales", "yearEndStreamingSongs", "yearEndTopAlbumSales", "yearEndTopStreamingAlbums", "yecHot100Artists", "yecArtist50Female", "yecArtist50Male", "yecArtist50DuoGroup", "yearEndNewArtists", "yecTop100AlbumsArtists", "yecRadioSongsArtists", "yecTopLatinAlbums"];
+export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yearEndRadio", "yearEndDigitalSongsSales", "yearEndStreamingSongs", "yearEndTopAlbumSales", "yearEndTopStreamingAlbums", "yecHot100Artists", "yecArtist50Female", "yecArtist50Male", "yecArtist50DuoGroup", "yearEndNewArtists", "yecTop100AlbumsArtists", "yecRadioSongsArtists", "yecTopLatinAlbums", "decadeEnd2000Songs", "decadeEnd2000Albums", "decadeEnd2000Artists", "decadeEnd2010Songs", "decadeEnd2010Albums", "decadeEnd2010Artists"];
 export const goatChartIds = ["goatSongs", "goatArtists", "goatAlbums", "goatRadio"];
 
 export function slugify(text: string): string {

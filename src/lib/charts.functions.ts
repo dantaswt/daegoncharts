@@ -1339,6 +1339,83 @@ export const getYearEndGenerated = createServerFn({ method: "GET" })
     });
   });
 
+/* ────── Decade-End Charts (generated from weekly data) ────── */
+export interface DecadeEntry {
+  position: number;
+  name: string;
+  artist: string;
+  peak: number;
+  weeks: number;
+  weeksAt1: number;
+  totalUnits: number;
+  kind: "song" | "album" | "artist";
+  entries?: number;
+}
+
+export const getDecadeEndGenerated = createServerFn({ method: "GET" })
+  .validator((d: { chartId: string; decade: string }) => d)
+  .handler(async ({ data }) => {
+    return cached(`decade_end_${data.chartId}_${data.decade}`, async () => {
+      const chartData = await getWeeklyChart({ data: { chartId: data.chartId } });
+      const startYear = parseInt(data.decade);
+      const endYear = startYear + 9;
+      const decades: Record<string, Record<string, DecadeEntry>> = {};
+
+      const metricKey = data.chartId === "songs" ? "points"
+        : data.chartId === "streamingSongs" || data.chartId === "topStreamingAlbums" ? "streams"
+        : data.chartId === "radioSongs" ? "audience"
+        : data.chartId === "topAlbumSales" || data.chartId === "digitalSongsSales" ? "sales"
+        : "units";
+
+      const decadeKey = data.decade;
+      const seenGlobal = new Set<string>();
+      for (const date of chartData.dates) {
+        const year = parseInt(date.slice(0, 4));
+        if (year < startYear || year > endYear) continue;
+        const entries = chartData.entriesByDate[date] || [];
+        if (!decades[decadeKey]) decades[decadeKey] = {};
+
+        for (const e of entries) {
+          const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+          if (!decades[decadeKey][key]) {
+            decades[decadeKey][key] = {
+              position: 0,
+              name: e.name,
+              artist: e.artist,
+              peak: e.peak,
+              weeks: 0,
+              weeksAt1: 0,
+              totalUnits: 0,
+              kind: chartData.kind,
+            };
+          }
+          const entry = decades[decadeKey][key];
+          entry.weeks += 1;
+          if (e.peak < entry.peak) entry.peak = e.peak;
+          entry.weeksAt1 += (e.weeksAt1 ?? 0);
+          const isFirstAppearance = !seenGlobal.has(key);
+          seenGlobal.add(key);
+          if (isFirstAppearance && data.chartId === "topStreamingAlbums" && e.totalStreams) {
+            entry.totalUnits += toInt(e.totalStreams);
+          } else {
+            const unitsRaw = String(e[metricKey as keyof ChartEntry] ?? e.units ?? "0");
+            entry.totalUnits += toInt(unitsRaw);
+          }
+        }
+      }
+
+      const result: Record<string, DecadeEntry[]> = {};
+      for (const [decade, items] of Object.entries(decades)) {
+        result[decade] = Object.values(items)
+          .sort((a, b) => b.totalUnits - a.peak || a.peak - b.peak)
+          .slice(0, 100)
+          .map((e, i) => ({ ...e, position: i + 1 }));
+      }
+
+      return { decades: Object.keys(result).sort().reverse(), entriesByDecade: result, kind: chartData.kind, title: chartsConfig[data.chartId]?.title ?? data.chartId };
+    });
+  });
+
 /* ────── Artist Year-End Positions ────── */
 export interface ArtistYECPosition {
   chartTitle: string;

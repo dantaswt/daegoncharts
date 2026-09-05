@@ -268,6 +268,22 @@ function YearEndIndex() {
           <ChartGrid title="Albums" charts={ALBUM_CHARTS} />
           <ChartGrid title="Artists" charts={ARTIST_CHARTS} />
 
+          {/* Decade-End */}
+          <div className="mt-12 mb-6">
+            <h2 className="text-2xl md:text-3xl font-black gold uppercase text-center mb-2">Decade-End Charts</h2>
+            <p className="text-muted-foreground text-sm text-center mb-8">Top songs, albums and artists across the 2000s and 2010s</p>
+          </div>
+          <ChartGrid title="2000s" charts={[
+            { id: "decadeEnd2000Songs", title: "2000s — Hot 100" },
+            { id: "decadeEnd2000Albums", title: "2000s — Top 100 Albums" },
+            { id: "decadeEnd2000Artists", title: "2000s — Artist 50" },
+          ]} />
+          <ChartGrid title="2010s" charts={[
+            { id: "decadeEnd2010Songs", title: "2010s — Hot 100" },
+            { id: "decadeEnd2010Albums", title: "2010s — Top 100 Albums" },
+            { id: "decadeEnd2010Artists", title: "2010s — Artist 50" },
+          ]} />
+
           {/* Bottom nav */}
           <div className="mt-10">
             <YearDropdown years={years} selectedYear={selectedYear} onSelect={setSelectedYear} />

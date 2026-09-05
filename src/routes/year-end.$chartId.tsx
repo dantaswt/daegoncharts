@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getYearEndGenerated, getYearEndNewArtists, type YECEntry } from "@/lib/charts.functions";
+import { getYearEndGenerated, getYearEndNewArtists, getDecadeEndGenerated, type YECEntry } from "@/lib/charts.functions";
 import { getYearEndHot100Artists, getYearEndTop100AlbumsArtists, getYearEndArtist50Male, getYearEndArtist50Female, getYearEndArtist50DuoGroup, getYearEndRadioSongsArtists, getYearEndTopLatinAlbums } from "@/lib/yec-computed";
 import { chartsConfig, yearEndChartIds, slugifyArtist, songSlug, stripAlbumEdition } from "@/lib/charts-config";
 import { ChartImage } from "@/components/chart-image";
@@ -46,6 +46,17 @@ export const Route = createFileRoute("/year-end/$chartId")({
       return { data, chartId: params.chartId, mappedId: "albums" };
     }
 
+    if (params.chartId.startsWith("decadeEnd")) {
+      const match = params.chartId.match(/decadeEnd(\d{4})(\w+)$/);
+      if (!match) throw notFound();
+      const [, decade, kind] = match;
+      const weeklyMap: Record<string, string> = { Songs: "songs", Albums: "albums", Artists: "artists" };
+      const mappedId = weeklyMap[kind];
+      if (!mappedId) throw notFound();
+      const data = await getDecadeEndGenerated({ data: { chartId: mappedId, decade } });
+      return { data, chartId: params.chartId, mappedId, isDecade: true, decade };
+    }
+
     const weeklyId = params.chartId.replace("yearEnd", "").replace(/^./, (c) => c.toLowerCase());
     const weeklyMap: Record<string, string> = {
       songs: "songs", artists: "artists", albums: "albums", radio: "radioSongs",
@@ -80,7 +91,7 @@ function formatMetric(v: number, metricKey: string): string {
   return v.toLocaleString("en-US");
 }
 
-function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; selectedYear: string; onSelect: (y: string) => void }) {
+function YearDropdown({ years, selectedYear, onSelect, label = "Year" }: { years: string[]; selectedYear: string; onSelect: (y: string) => void; label?: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -105,7 +116,7 @@ function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; sele
 
   return (
     <div className="flex flex-col items-center gap-2 md:gap-3 mb-4">
-      <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Year</div>
+      <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{label}</div>
       <div className="flex flex-wrap items-center gap-2 md:gap-3">
         {prevYear ? (
           <button onClick={() => onSelect(prevYear)} className="btn-gold">
@@ -157,13 +168,15 @@ function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; sele
 }
 
 function YearEndChartPage() {
-  const { data, chartId, mappedId } = Route.useLoaderData();
+  const { data, chartId, mappedId, isDecade, decade } = Route.useLoaderData();
   const cfg = chartsConfig[chartId];
   const lockedUntil = new Date("2026-12-31T23:59:59");
-  const years = data.years.filter((y) => y !== "2026" || new Date() >= lockedUntil);
-  const [selectedYear, setSelectedYear] = useState<string>(years[0] || "");
+  const isDecadeChart = !!isDecade;
+  const items = isDecadeChart ? (data.decades ?? []) : (data.years ?? []).filter((y: string) => y !== "2026" || new Date() >= lockedUntil);
+  const entriesByKey = isDecadeChart ? data.entriesByDecade : data.entriesByYear;
+  const [selectedKey, setSelectedKey] = useState<string>(items[0] || "");
   const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
-  const entries = selectedYear ? data.entriesByYear[selectedYear] ?? [] : [];
+  const entries = selectedKey ? entriesByKey[selectedKey] ?? [] : [];
   const isAlbum = data.kind === "album";
   const isArtist = data.kind === "artist";
 
@@ -240,7 +253,7 @@ function YearEndChartPage() {
                 entries={entries.map((e) => ({ position: e.position, diff: "", name: e.name, artist: e.artist, peak: e.peak, weeks: e.weeks, weeksAt1: e.weeksAt1 }))}
                 chartTitle={cfg?.title ?? "Year-End"}
                 chartId={chartId}
-                date={`${selectedYear}-12-31`}
+                date={`${selectedKey}-12-31`}
                 kind={data.kind}
                 hideWeeksAt1
                 hideLastWeek
@@ -250,14 +263,14 @@ function YearEndChartPage() {
         </div>
 
         {/* Year navigator */}
-        <YearDropdown years={years} selectedYear={selectedYear} onSelect={setSelectedYear} />
+        <YearDropdown years={items} selectedYear={selectedKey} onSelect={setSelectedKey} label={isDecadeChart ? "Decade" : "Year"} />
 
         {/* Entries */}
         {entries.length > 0 ? (
           <div className="space-y-3 max-w-4xl mx-auto">
             {entries.map((e: YECEntry) => {
               const isFirst = e.position === 1;
-              const entryKey = `${selectedYear}-${e.position}-${e.name}`;
+              const entryKey = `${selectedKey}-${e.position}-${e.name}`;
               const isOpen = detailsOpen[entryKey] ?? false;
               return (
                 <motion.div
@@ -356,7 +369,7 @@ function YearEndChartPage() {
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground text-sm">
-            {selectedYear ? "No data for this year." : "Select a year."}
+            {selectedKey ? `No data for this ${isDecadeChart ? "decade" : "year"}.` : `Select a ${isDecadeChart ? "decade" : "year"}.`}
           </div>
         )}
 
