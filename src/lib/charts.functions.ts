@@ -1407,7 +1407,7 @@ export const getDecadeEndGenerated = createServerFn({ method: "GET" })
       const result: Record<string, DecadeEntry[]> = {};
       for (const [decade, items] of Object.entries(decades)) {
         result[decade] = Object.values(items)
-          .sort((a, b) => b.totalUnits - a.peak || a.peak - b.peak)
+          .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
           .slice(0, 100)
           .map((e, i) => ({ ...e, position: i + 1 }));
       }
