@@ -216,6 +216,7 @@ function SiteHeader() {
     { label: "HOT 100", to: "/chart/$chartId" as const, params: { chartId: "songs" } },
     { label: "CHART BEAT", to: "/chart-beat-2/$chartId/$date" as const, params: { chartId: "songs", date: "2026-07-06" } },
     { label: "YEAR-END CHARTS", to: "/year-end" as const },
+
     { label: "GREATEST OF ALL TIME", to: "/goat" as const },
     { label: "STATS", to: "/stats" as const, params: {} },
     { label: "AWARDS", to: "/awards" as const, params: {} },
