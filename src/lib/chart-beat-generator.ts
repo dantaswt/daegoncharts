@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getWeeklyChart, getAllArtistStats, type ChartEntry, type WeeklyChartData } from "./charts.functions";
+import { getWeeklyChart, getAllArtistStats, cached, type ChartEntry, type WeeklyChartData } from "./charts.functions";
 import { chartsConfig } from "./charts-config";
 
 export interface GeneratedBeatArticle {
@@ -516,18 +516,20 @@ export const generateChartBeat2 = createServerFn({ method: "GET" })
 
 export const getLatestBeatArticles = createServerFn({ method: "GET" })
   .handler(async () => {
-    const chartIds = ["songs", "albums", "artists"];
-    const articles: GeneratedBeatArticle[] = [];
-    for (const chartId of chartIds) {
-      try {
-        const chartData = await getWeeklyChart({ data: { chartId } });
-        const latestDate = chartData.dates[chartData.dates.length - 1];
-        if (!latestDate) continue;
-        const article = await generateChartBeat2({ data: { chartId, date: latestDate } });
-        articles.push(article);
-      } catch {
-        // skip failed charts
+    return cached("latestBeatArticles", async () => {
+      const chartIds = ["songs", "albums", "artists"];
+      const articles: GeneratedBeatArticle[] = [];
+      for (const chartId of chartIds) {
+        try {
+          const chartData = await getWeeklyChart({ data: { chartId } });
+          const latestDate = chartData.dates[chartData.dates.length - 1];
+          if (!latestDate) continue;
+          const article = await generateChartBeat2({ data: { chartId, date: latestDate } });
+          articles.push(article);
+        } catch {
+          // skip failed charts
+        }
       }
-    }
-    return articles;
+      return articles;
+    });
   });

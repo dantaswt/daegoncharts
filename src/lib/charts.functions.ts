@@ -161,9 +161,30 @@ export interface ChartBeatPost {
   image?: string | null;
 }
 
-// simple in-memory cache with TTL
+// simple in-memory cache with TTL and size limit
 const cache = new Map<string, { at: number; data: unknown }>();
+const inflight = new Map<string, Promise<unknown>>();
 const TTL = 30 * 60 * 1000;
+const MAX_CACHE = 80;
+
+export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const hit = cache.get(key);
+  if (hit && now - hit.at < TTL) return Promise.resolve(hit.data as T);
+  const inflightHit = inflight.get(key);
+  if (inflightHit) return inflightHit as Promise<T>;
+  const p = fn().then((data) => {
+    cache.set(key, { at: Date.now(), data });
+    inflight.delete(key);
+    if (cache.size > MAX_CACHE) {
+      const oldest = cache.keys().next().value!;
+      cache.delete(oldest);
+    }
+    return data;
+  }).catch((err) => { inflight.delete(key); throw err; });
+  inflight.set(key, p);
+  return p;
+}
 
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -228,6 +249,23 @@ function toInt(v: string | undefined): number {
   s = s.replace(/,/g, "");
   const n = parseInt(s, 10);
   return isNaN(n) ? 0 : n;
+}
+
+function parseEuropeanFloat(v: string | undefined): number {
+  let s = (v ?? "").trim();
+  if (!s || s === "-") return 0;
+  s = s.replace(/[^0-9.,\-]/g, "");
+  if (!s) return 0;
+  if (s.includes(".") && (s.match(/\./g) || []).length > 1) {
+    s = s.replace(/\./g, "");
+  }
+  s = s.replace(/,/g, ".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatNumber(v: number): string {
+  return Math.round(v).toLocaleString("en-US");
 }
 
 function formatTotalUnits(v: string | undefined): string | undefined {
@@ -1625,56 +1663,21 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
     const chartIds = ["songs", "streamingSongs", "radioSongs", "digitalSongsSales", "albums", "topStreamingAlbums", "topAlbumSales", "artists"];
     const allData = await Promise.all(
       chartIds.map(async (id) => {
-        const cfg = chartsConfig[id];
-        const rows = await fetchCsv(cfg.url);
-        const header = rows[0].map((h) => h.toLowerCase().trim());
-        const idx = {
-          date: findIdx(header, ["date", "chart date"]),
-          position: findIdx(header, ["position", "rank", "pos"]),
-          song: findIdx(header, ["song", "title", "track"]),
-          album: findIdx(header, ["album"]),
-          artist: findIdx(header, ["artist", "artists"]),
-          diff: findIdx(header, ["dif", "diff", "▲▼"]),
-          peak: findIdx(header, ["peak"]),
-          weeks: findIdx(header, ["weeks", "wks"]),
-          units: findIdx(header, ["units"]),
-          sales: findIdx(header, ["sales", "pure sales", "sales/streams", "sales/streaming"]),
-          streams: findIdx(header, ["streams", "sea", "streaming"]),
-          audience: findIdx(header, ["audience"]),
-        };
-        if (cfg.id === "radioSongs") {
-          const a = header.indexOf("audience");
-          if (a !== -1) idx.units = a;
-        }
-        const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
+        const weekly = await getWeeklyChart({ data: { chartId: id } });
         const entriesByDate: Record<string, { position: number; name: string; artist: string; diff: string; peak: number; weeks: number; metric: number; metricLabel: string }[]> = {};
-        for (const r of rows.slice(1)) {
-          const date = normalizeDate(r[idx.date]);
-          if (!date) continue;
-          const position = toInt(r[idx.position]);
-          const name = (r[nameIdx] ?? "").trim();
-          const artist = (r[idx.artist] ?? "").trim();
-          if (!name || !position) continue;
-          const metricValue = toInt(r[idx.units]) || toInt(r[idx.sales]) || toInt(r[idx.streams]) || toInt(r[idx.audience]);
-          let metricLabel = "units";
-          if (idx.units >= 0 && r[idx.units]) metricLabel = "units";
-          else if (idx.sales >= 0 && r[idx.sales]) metricLabel = "sales";
-          else if (idx.streams >= 0 && r[idx.streams]) metricLabel = "streams";
-          else if (idx.audience >= 0 && r[idx.audience]) metricLabel = "audience";
-          (entriesByDate[date] ||= []).push({
-            position,
-            name,
-            artist,
-            diff: idx.diff >= 0 ? (r[idx.diff] ?? "") : "",
-            peak: toInt(r[idx.peak]),
-            weeks: toInt(r[idx.weeks]),
-            metric: metricValue,
-            metricLabel,
-          });
+        for (const date of weekly.dates) {
+          entriesByDate[date] = (weekly.entriesByDate[date] ?? []).map((e) => ({
+            position: e.position,
+            name: e.name,
+            artist: e.artist,
+            diff: e.diff,
+            peak: e.peak,
+            weeks: e.weeks,
+            metric: toInt(String(e.points ?? e.units ?? e.streams ?? e.sales ?? e.audience ?? 0)),
+            metricLabel: "points" in e ? "points" : "units" in e ? "units" : "streams" in e ? "streams" : "sales" in e ? "sales" : "audience" in e ? "audience" : "units",
+          }));
         }
-        const dates = Object.keys(entriesByDate).sort();
-        for (const d of dates) entriesByDate[d].sort((a, b) => a.position - b.position);
-        return { id, title: cfg.title, kind: cfg.kind, dates, entriesByDate, metricLabel: entriesByDate[Object.keys(entriesByDate)[0]]?.[0]?.metricLabel ?? "units" };
+        return { id, title: weekly.title, kind: weekly.kind, dates: weekly.dates, entriesByDate, metricLabel: weekly.kind === "song" ? "points" : "units" };
       })
     );
 
