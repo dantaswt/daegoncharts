@@ -663,9 +663,7 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
               <div className="font-semibold mb-2 text-[var(--foreground)]">Chart run</div>
               <div className="space-y-2">
                 {runEntries.map((run) => {
-                  const runHref = chartId === "topLatinAlbums"
-                    ? `/latin-albums/${run.date}`
-                    : `/chart/${chartId}/${run.date}`;
+                  const runHref = `/chart/${chartId}/${run.date}`;
                   return (
                     <a
                       key={`${run.date}-${run.position}`}
@@ -679,8 +677,8 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
                         <span>Peak: {run.peak}</span>
                         <span>Weeks: {run.weeks}</span>
-                        {chartId !== "topLatinAlbums" && run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
-                        {chartId !== "topLatinAlbums" && run.totalUnits && <span>Total Units: {formatValue(run.totalUnits, chartId)}</span>}
+                        {run.points && <span>Points: {formatValue(run.points, chartId)}</span>}
+                        {run.totalUnits && <span>Total Units: {formatValue(run.totalUnits, chartId)}</span>}
                       </div>
                     </a>
                   );

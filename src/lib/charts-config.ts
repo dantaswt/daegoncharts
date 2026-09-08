@@ -10,8 +10,8 @@ export interface ChartConfig {
   secondaryUrl?: string;
 }
 
-const SHEET = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/export?format=csv&gid=";
-const SHEET_HOT100 = "https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/export?format=csv&gid=";
+const SHEET = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tqx=out:csv&gid=";
+const SHEET_HOT100 = "https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tqx=out:csv&gid=";
 
 export const chartsConfig: Record<string, ChartConfig> = {
   songs: { id: "songs", url: SHEET + "904867620", title: "Hot 100", icon: "fa-music", kind: "song", group: "weekly", secondaryUrl: SHEET_HOT100 + "1011796371" },
@@ -45,7 +45,6 @@ export const chartsConfig: Record<string, ChartConfig> = {
   goatRadio: { id: "goatRadio", url: SHEET + "1447340097", title: "Greatest of All Time Radio", icon: "fa-broadcast-tower", kind: "song", group: "goat" },
   artistStats: { id: "artistStats", url: SHEET + "1519606558", title: "Artist Statistics", icon: "fa-chart-bar", kind: "artist", group: "weekly" },
   statsData: { id: "statsData", url: SHEET + "193788146", title: "Stats", icon: "fa-chart-line", kind: "artist", group: "weekly" },
-  topLatinAlbums: { id: "topLatinAlbums", url: "", title: "Top Latin Albums", icon: "fa-fire", kind: "album", group: "weekly" },
 };
 
 export const chartBeatConfig = {
@@ -55,7 +54,7 @@ export const chartBeatConfig = {
 } as const;
 
 export const weeklyChartIds = ["songs", "artists", "albums", "radioSongs", "topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"];
-export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yearEndRadio", "yearEndDigitalSongsSales", "yearEndStreamingSongs", "yearEndTopAlbumSales", "yearEndTopStreamingAlbums", "yecHot100Artists", "yecArtist50Female", "yecArtist50Male", "yecArtist50DuoGroup", "yearEndNewArtists", "yecTop100AlbumsArtists", "yecRadioSongsArtists", "yecTopLatinAlbums"];
+export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yearEndRadio", "yearEndDigitalSongsSales", "yearEndStreamingSongs", "yearEndTopAlbumSales", "yearEndTopStreamingAlbums", "yecHot100Artists", "yecArtist50Female", "yecArtist50Male", "yecArtist50DuoGroup", "yearEndNewArtists", "yecTop100AlbumsArtists", "yecRadioSongsArtists"];
 export const goatChartIds = ["goatSongs", "goatArtists", "goatAlbums", "goatRadio"];
 
 export function slugify(text: string): string {

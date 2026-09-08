@@ -39,17 +39,6 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
               );
             })}
             <div className="border-t border-[var(--border)] my-1" />
-            <Link
-              to="/latin-albums/$date"
-              params={date ? { date } : { date: "" }}
-              className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
-                activeId === "topLatinAlbums"
-                  ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                  : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
-              }`}
-            >
-              Top Latin Albums
-            </Link>
           </>
         )}
       </div>
@@ -73,18 +62,6 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
             </Link>
           );
         })}
-        <div className="border-t border-[var(--border)] my-1" />
-        <Link
-          to="/latin-albums/$date"
-          params={date ? { date } : { date: "" }}
-          className={`w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center ${
-            activeId === "topLatinAlbums"
-              ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-              : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
-          }`}
-        >
-          Top Latin Albums
-        </Link>
       </div>
     </div>
   );
