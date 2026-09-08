@@ -671,14 +671,6 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   };
 }
 
-async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < TTL) return hit.data as T;
-  const data = await load();
-  cache.set(key, { at: Date.now(), data });
-  return data;
-}
-
 export const getWeeklyChart = createServerFn({ method: "GET" })
   .inputValidator((d: { chartId: string }) => d)
   .handler(async ({ data }) => {
@@ -1663,21 +1655,56 @@ export const getStats2 = createServerFn({ method: "GET" }).handler(async () => {
     const chartIds = ["songs", "streamingSongs", "radioSongs", "digitalSongsSales", "albums", "topStreamingAlbums", "topAlbumSales", "artists"];
     const allData = await Promise.all(
       chartIds.map(async (id) => {
-        const weekly = await getWeeklyChart({ data: { chartId: id } });
-        const entriesByDate: Record<string, { position: number; name: string; artist: string; diff: string; peak: number; weeks: number; metric: number; metricLabel: string }[]> = {};
-        for (const date of weekly.dates) {
-          entriesByDate[date] = (weekly.entriesByDate[date] ?? []).map((e) => ({
-            position: e.position,
-            name: e.name,
-            artist: e.artist,
-            diff: e.diff,
-            peak: e.peak,
-            weeks: e.weeks,
-            metric: toInt(String(e.points ?? e.units ?? e.streams ?? e.sales ?? e.audience ?? 0)),
-            metricLabel: "points" in e ? "points" : "units" in e ? "units" : "streams" in e ? "streams" : "sales" in e ? "sales" : "audience" in e ? "audience" : "units",
-          }));
+        const cfg = chartsConfig[id];
+        const rows = await fetchCsv(cfg.url);
+        const header = rows[0].map((h) => h.toLowerCase().trim());
+        const idx = {
+          date: findIdx(header, ["date", "chart date"]),
+          position: findIdx(header, ["position", "rank", "pos"]),
+          song: findIdx(header, ["song", "title", "track"]),
+          album: findIdx(header, ["album"]),
+          artist: findIdx(header, ["artist", "artists"]),
+          diff: findIdx(header, ["dif", "diff", "▲▼"]),
+          peak: findIdx(header, ["peak"]),
+          weeks: findIdx(header, ["weeks", "wks"]),
+          units: findIdx(header, ["units"]),
+          sales: findIdx(header, ["sales", "pure sales", "sales/streams", "sales/streaming"]),
+          streams: findIdx(header, ["streams", "sea", "streaming"]),
+          audience: findIdx(header, ["audience"]),
+        };
+        if (cfg.id === "radioSongs") {
+          const a = header.indexOf("audience");
+          if (a !== -1) idx.units = a;
         }
-        return { id, title: weekly.title, kind: weekly.kind, dates: weekly.dates, entriesByDate, metricLabel: weekly.kind === "song" ? "points" : "units" };
+        const nameIdx = cfg.kind === "artist" ? idx.artist : cfg.kind === "album" ? idx.album : idx.song;
+        const entriesByDate: Record<string, { position: number; name: string; artist: string; diff: string; peak: number; weeks: number; metric: number; metricLabel: string }[]> = {};
+        for (const r of rows.slice(1)) {
+          const date = normalizeDate(r[idx.date]);
+          if (!date) continue;
+          const position = toInt(r[idx.position]);
+          const name = (r[nameIdx] ?? "").trim();
+          const artist = (r[idx.artist] ?? "").trim();
+          if (!name || !position) continue;
+          const metricValue = toInt(r[idx.units]) || toInt(r[idx.sales]) || toInt(r[idx.streams]) || toInt(r[idx.audience]);
+          let metricLabel = "units";
+          if (idx.units >= 0 && r[idx.units]) metricLabel = "units";
+          else if (idx.sales >= 0 && r[idx.sales]) metricLabel = "sales";
+          else if (idx.streams >= 0 && r[idx.streams]) metricLabel = "streams";
+          else if (idx.audience >= 0 && r[idx.audience]) metricLabel = "audience";
+          (entriesByDate[date] ||= []).push({
+            position,
+            name,
+            artist,
+            diff: idx.diff >= 0 ? (r[idx.diff] ?? "") : "",
+            peak: toInt(r[idx.peak]),
+            weeks: toInt(r[idx.weeks]),
+            metric: metricValue,
+            metricLabel,
+          });
+        }
+        const dates = Object.keys(entriesByDate).sort();
+        for (const d of dates) entriesByDate[d].sort((a, b) => a.position - b.position);
+        return { id, title: cfg.title, kind: cfg.kind, dates, entriesByDate, metricLabel: entriesByDate[Object.keys(entriesByDate)[0]]?.[0]?.metricLabel ?? "units" };
       })
     );
 
