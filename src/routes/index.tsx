@@ -11,13 +11,18 @@ export const Route = createFileRoute("/")({
   loader: async () => {
     const remainingIds = weeklyChartIds.filter(id => id !== "songs" && id !== "albums" && id !== "artists");
 
+    const safeChart = async (chartId: string) => {
+      try { return await getWeeklyChart({ data: { chartId } }); }
+      catch { return { chartId, title: chartId, kind: "song" as const, dates: [] as string[], entriesByDate: {} as Record<string, any[]> }; }
+    };
+
     const [songsData, albumsData, artistsData, artistStats, latestArticles, ...remainingResults] = await Promise.all([
-      getWeeklyChart({ data: { chartId: "songs" } }),
-      getWeeklyChart({ data: { chartId: "albums" } }),
-      getWeeklyChart({ data: { chartId: "artists" } }),
-      getAllArtistStats(),
-      getLatestBeatArticles(),
-      ...remainingIds.map(id => getWeeklyChart({ data: { chartId: id } })),
+      safeChart("songs"),
+      safeChart("albums"),
+      safeChart("artists"),
+      getAllArtistStats().catch(() => ({} as Record<string, any>)),
+      getLatestBeatArticles().catch(() => []),
+      ...remainingIds.map(id => safeChart(id)),
     ]);
 
     const knownData: Record<string, any> = { songs: songsData, albums: albumsData, artists: artistsData };
@@ -27,21 +32,22 @@ export const Route = createFileRoute("/")({
 
     const numberOnes = weeklyChartIds.map((id) => {
       const chart = knownData[id];
-      const latestDate = chart.dates[chart.dates.length - 1];
-      const entries = chart.entriesByDate[latestDate];
-      const no1 = entries?.[0] ?? null;
-      return { chartId: chart.chartId, title: chart.title, kind: chart.kind, date: latestDate, entry: no1 };
+      if (!chart) return { chartId: id, title: id, kind: "song", date: "", entry: null };
+      const latestDate = chart.dates?.[chart.dates.length - 1] ?? "";
+      const entries = latestDate ? (chart.entriesByDate?.[latestDate] ?? []) : [];
+      const no1 = entries[0] ?? null;
+      return { chartId: chart.chartId ?? id, title: chart.title ?? id, kind: chart.kind ?? "song", date: latestDate, entry: no1 };
     });
 
-    const artistList = Object.values(artistStats)
+    const artistList = Object.values(artistStats ?? {})
       .map((a) => ({ name: a.name, slug: slugifyArtist(a.name) }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     // First Timers for Artist 50
-    const artistsChartDates = artistsData.dates.slice().reverse(); // newest first
+    const artistsChartDates = (artistsData?.dates ?? []).slice().reverse(); // newest first
     const firstTimers: Array<{ name: string; artist: string; position: number; date: string; kind: "song" | "album" | "artist"; chartId: string; chartTitle: string }> = [];
     for (const date of artistsChartDates) {
-      const entries = artistsData.entriesByDate[date] || [];
+      const entries = artistsData?.entriesByDate?.[date] || [];
       for (const e of entries) {
         if (e.diff === "NEW" && !firstTimers.find(ft => ft.name === e.name && ft.artist === e.artist)) {
           firstTimers.push({ name: e.name, artist: e.artist, position: e.position, date, kind: "artist", chartId: "artists", chartTitle: chartsConfig["artists"].title });
@@ -57,8 +63,8 @@ export const Route = createFileRoute("/")({
       { id: "albums", kind: "album" as const, cfg: chartsConfig.albums },
       { id: "artists", kind: "artist" as const, cfg: chartsConfig.artists },
     ];
-    const latestDate = songsData.dates[songsData.dates.length - 1];
-    const currentYear = new Date(latestDate + "T00:00:00").getFullYear();
+    const latestDate = songsData?.dates?.[songsData.dates.length - 1] ?? "";
+    const currentYear = latestDate ? new Date(latestDate + "T00:00:00").getFullYear() : new Date().getFullYear();
     // Find the oldest year available across all main charts
     let oldestYear = currentYear;
     for (const chart of mainCharts) {
@@ -80,7 +86,7 @@ export const Route = createFileRoute("/")({
         targetDate.setFullYear(year);
         let bestDate: string | null = null;
         let bestDiff = Infinity;
-        for (const d of chartData.dates) {
+        for (const d of (chartData?.dates ?? [])) {
           const diff = Math.abs(new Date(d + "T00:00:00").getTime() - targetDate.getTime());
           if (diff < bestDiff) { bestDiff = diff; bestDate = d; }
         }
@@ -92,9 +98,9 @@ export const Route = createFileRoute("/")({
 
     return {
       charts: {
-        songs: { data: songsData, latestDate: songsData.dates[songsData.dates.length - 1] },
-        albums: { data: albumsData, latestDate: albumsData.dates[albumsData.dates.length - 1] },
-        artists: { data: artistsData, latestDate: artistsData.dates[artistsData.dates.length - 1] },
+        songs: { data: songsData, latestDate: songsData?.dates?.[songsData.dates.length - 1] ?? "" },
+        albums: { data: albumsData, latestDate: albumsData?.dates?.[albumsData.dates.length - 1] ?? "" },
+        artists: { data: artistsData, latestDate: artistsData?.dates?.[artistsData.dates.length - 1] ?? "" },
       },
       latestArticles,
       numberOnes,
@@ -165,9 +171,11 @@ function TopChartsSection({ charts }: { charts: any }) {
     setTimeout(() => setPaused(false), 10000);
   };
 
-  const { data, latestDate } = charts[active];
+  const chartData = charts[active];
+  const data = chartData?.data;
+  const latestDate = chartData?.latestDate;
   const maxEntries = isMobile ? 4 : 5;
-  const entries = data.entriesByDate[latestDate]?.slice(0, maxEntries) ?? [];
+  const entries = (data?.entriesByDate?.[latestDate] ?? []).slice(0, maxEntries);
   const cfg = chartsConfig[active];
 
   return (
