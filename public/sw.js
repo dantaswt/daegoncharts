@@ -1,36 +1,29 @@
-const CACHE_NAME = "daegon-charts-v1";
-const PRECACHE_URLS = ["/", "/chart/songs", "/chart/albums", "/artists", "/songs", "/albums"];
-
+const CACHE_NAME = "daegon-charts-assets-v2";
 self.addEventListener("install", (event) => {
-  (event as ExtendableEvent).waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting()),
-  );
+  event.waitUntil(self.skipWaiting());
 });
-
 self.addEventListener("activate", (event) => {
-  (event as ExtendableEvent).waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
-    ).then(() => self.clients.claim()),
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key.startsWith("daegon-charts-") && key !== CACHE_NAME).map((key) => caches.delete(key)),
+    )).then(() => self.clients.claim()),
   );
 });
-
 self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  if (req.method !== "GET") return;
-  if (req.url.includes("/api/")) return;
-
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      const fetched = fetch(req).then((res) => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-        }
-        return res;
-      }).catch(() => cached);
-
-      return cached || fetched;
-    }),
-  );
+  const request = event.request;
+  const url = new URL(request.url);
+  // Cache versioned assets only; HTML and server functions always use live data.
+  if (request.method !== "GET" || url.origin !== self.location.origin || !url.pathname.startsWith("/assets/")) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    const response = await fetch(request);
+    if (response.ok) {
+      await cache.put(request, response.clone());
+      const keys = await cache.keys();
+      await Promise.all(keys.slice(0, Math.max(0, keys.length - 150)).map((key) => cache.delete(key)));
+    }
+    return response;
+  })());
 });

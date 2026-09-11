@@ -499,7 +499,7 @@ export function ChartImage({ entries, chartTitle, chartId, date, kind, hideWeeks
       {/* ─── TOP 10 IMAGE (hidden, for html-to-image) ─── */}
       <div style={{ position: "fixed", top: 0, left: 0, width: 1080, opacity: 0, pointerEvents: "none", zIndex: -1, overflow: "hidden" }}>
         <div
-          ref={top10Ref}
+          ref={top10Ref} aria-hidden="true"
           style={{
             width: 1080,
             background: "linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0d0d0d 100%)",

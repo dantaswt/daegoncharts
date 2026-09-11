@@ -1,3 +1,4 @@
+import { externalFetch } from "./external-fetch";
 import { createServerFn } from "@tanstack/react-start";
 
 const SPOTIFY_CLIENT_ID = "08a6cea61aaa4828b173bf2b40e14134";
@@ -31,7 +32,7 @@ const KNOWN_ARTIST_IDS: Record<string, string> = {
 
 async function getAccessToken() {
   if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
-  const response = await fetch("https://accounts.spotify.com/api/token", {
+  const response = await externalFetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -88,7 +89,7 @@ async function fetchJson(url: string, init?: RequestInit): Promise<any> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(url, { ...init, signal: controller.signal });
+    const response = await externalFetch(url, { ...init, signal: controller.signal });
     clearTimeout(timeout);
     if (!response.ok) return null;
     return await response.json();
@@ -103,7 +104,7 @@ async function spotifySearch(token: string, query: string, type: "album" | "arti
   url.searchParams.set("type", type);
   url.searchParams.set("limit", String(limit));
   try {
-    const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    const response = await externalFetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) return null;
     return await response.json();
   } catch {
@@ -117,7 +118,7 @@ async function searchDeviantArt(albumName: string, artistName: string): Promise<
     const url = `https://backend.deviantart.com/rss.xml?q=${encodeURIComponent(q)}&type=deviation`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await externalFetch(url, { signal: controller.signal });
     clearTimeout(timeout);
     if (!response.ok) return null;
     const text = await response.text();
@@ -267,7 +268,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
                 try {
                   const controller = new AbortController();
                   const timeout = setTimeout(() => controller.abort(), 3000);
-                  const caaResponse = await fetch(`https://coverartarchive.org/release/${release.id}/front-500`, { method: "HEAD", signal: controller.signal });
+                  const caaResponse = await externalFetch(`https://coverartarchive.org/release/${release.id}/front-500`, { method: "HEAD", signal: controller.signal });
                   clearTimeout(timeout);
                   if (caaResponse.ok) { imageUrl = `https://coverartarchive.org/release/${release.id}/front-500`; break; }
                 } catch {}
@@ -503,7 +504,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
         const knownId = KNOWN_ARTIST_IDS[normalizedArtist];
         if (knownId && !title && token) {
           try {
-            const response = await fetch(`https://api.spotify.com/v1/artists/${knownId}`, { headers: { Authorization: `Bearer ${token}` } });
+            const response = await externalFetch(`https://api.spotify.com/v1/artists/${knownId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (response.ok) {
               const data = await response.json();
               imageUrl = data.images?.[0]?.url ?? null;
@@ -606,7 +607,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           const track = tracks.find((item: any) => item.artists?.some((artist: any) => exactMatch(artist.name ?? "", artistName)));
           const artist = track?.artists?.find((item: any) => exactMatch(item.name ?? "", artistName));
           if (artist?.id) {
-            const response = await fetch(`https://api.spotify.com/v1/artists/${artist.id}`, { headers: { Authorization: `Bearer ${token}` } });
+            const response = await externalFetch(`https://api.spotify.com/v1/artists/${artist.id}`, { headers: { Authorization: `Bearer ${token}` } });
             if (response.ok) imageUrl = (await response.json()).images?.[0]?.url ?? null;
           }
         }
@@ -819,7 +820,7 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
         const normalized = comparable(data.artistName).replace(/\s+/g, "_");
         const knownId = KNOWN_ARTIST_IDS[normalized];
         const artist = knownId
-          ? await fetch(`https://api.spotify.com/v1/artists/${knownId}`, { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
+          ? await externalFetch(`https://api.spotify.com/v1/artists/${knownId}`, { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null)
           : (await spotifySearch(token, `artist:"${data.artistName}"`, "artist"))?.artists?.items?.sort((a: any, b: any) => Number(exactMatch(b.name ?? "", data.artistName)) - Number(exactMatch(a.name ?? "", data.artistName)))[0];
         if (artist) {
           if (!imageUrl && artist.images?.[0]?.url) imageUrl = artist.images[0].url;

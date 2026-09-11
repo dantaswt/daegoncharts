@@ -136,7 +136,7 @@ export const Route = createFileRoute("/artist/$slug")({
       const goatArtists = await getGoatGenerated({ data: { chartId: "goatArtists" } }).catch(() => null);
       const foundInGoat = goatArtists?.entries?.find(e => e.name.toLowerCase() === match.name.toLowerCase());
       if (foundInGoat) {
-        goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
+        goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.totalPoints };
       }
 
       yecPositions = await getArtistYearEndPositions({ data: { artistName: match.name } }).catch(() => []);
@@ -339,7 +339,7 @@ function ArtistPage() {
             </div>
           )}
           <div className="text-sm text-muted-foreground leading-relaxed">
-            {profile?.bio ? profile.bio : `${artist.name} has ${Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0)} chart entries across all charts.`}
+            {`${artist.name} has ${Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0)} chart entries across all charts.`}
           </div>
         </div>
       </motion.div>

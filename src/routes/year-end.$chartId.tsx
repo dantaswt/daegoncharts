@@ -5,8 +5,7 @@ import { chartsConfig, yearEndChartIds, slugifyArtist, songSlug, stripAlbumEditi
 import { ChartImage } from "@/components/chart-image";
 import { SpotifyItemImage } from "@/components/spotify-item-image";
 import { TrackArtists, stripFeatFromTitle, getFeatArtistsFromTitle } from "@/components/track-artists";
-import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/year-end/$chartId")({
   loader: async ({ params }) => {
@@ -80,80 +79,17 @@ function formatMetric(v: number, metricKey: string): string {
   return v.toLocaleString("en-US");
 }
 
-function YearDropdown({ years, selectedYear, onSelect, label = "Year" }: { years: string[]; selectedYear: string; onSelect: (y: string) => void; label?: string }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const yearIdx = years.indexOf(selectedYear);
-  const prevYear = yearIdx < years.length - 1 ? years[yearIdx + 1] : null;
-  const nextYear = yearIdx > 0 ? years[yearIdx - 1] : null;
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  useEffect(() => {
-    if (open && listRef.current) {
-      const selected = listRef.current.querySelector("[data-selected]");
-      if (selected) selected.scrollIntoView({ block: "center" });
-    }
-  }, [open]);
-
-  return (
-    <div className="flex flex-col items-center gap-2 md:gap-3 mb-4">
-      <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{label}</div>
-      <div className="flex flex-wrap items-center gap-2 md:gap-3">
-        {prevYear ? (
-          <button onClick={() => onSelect(prevYear)} className="btn-gold">
-            <i className="fas fa-chevron-left" /> Prev
-          </button>
-        ) : (
-          <button className="btn-gold" disabled><i className="fas fa-chevron-left" /> Prev</button>
-        )}
-        <div ref={ref} className="relative">
-          <button
-            onClick={() => setOpen(!open)}
-            className="bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] text-sm font-bold px-4 py-2 min-w-[160px] text-center focus:outline-none cursor-pointer flex items-center justify-center gap-2"
-          >
-            {selectedYear}
-            <i className={`fas fa-chevron-down text-xs transition-transform ${open ? "rotate-180" : ""}`} />
-          </button>
-          {open && (
-            <div ref={listRef} className="absolute top-full left-0 right-0 z-50 bg-[var(--card)] border border-[var(--border)] max-h-[300px] overflow-y-auto">
-              {years.map((y) => (
-                <button
-                  key={y}
-                  data-selected={y === selectedYear || undefined}
-                  onClick={() => {
-                    setOpen(false);
-                    if (y !== selectedYear) onSelect(y);
-                  }}
-                  className={`w-full text-center text-sm font-bold px-4 py-2 border-b border-white/20 cursor-pointer transition-colors ${
-                    y === selectedYear
-                    ? "bg-[var(--accent)] text-black"
-                    : "text-[var(--foreground)] hover:bg-[var(--muted)]"
-                  }`}
-                >
-                  {y}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {nextYear ? (
-          <button onClick={() => onSelect(nextYear)} className="btn-gold">
-            Next <i className="fas fa-chevron-right" />
-          </button>
-        ) : (
-          <button className="btn-gold" disabled>Next <i className="fas fa-chevron-right" /></button>
-        )}
-      </div>
-    </div>
-  );
+function YearDropdown({ years, selectedYear, onSelect }: { years: string[]; selectedYear: string; onSelect: (year: string) => void }) {
+  const index = years.indexOf(selectedYear);
+  return <div className="flex items-center justify-center gap-2 my-5">
+    <button className="btn-gold min-h-11" disabled={index < 0 || index >= years.length - 1} onClick={() => onSelect(years[index + 1])} aria-label="Previous year">←</button>
+    <label className="sr-only" htmlFor="chart-year">Year</label>
+    <select id="chart-year" value={selectedYear} disabled={!years.length} onChange={(event) => onSelect(event.target.value)} className="min-h-11 px-4 border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-bold">
+      {!years.length && <option value="">No years available</option>}
+      {years.map((year) => <option key={year} value={year}>{year}</option>)}
+    </select>
+    <button className="btn-gold min-h-11" disabled={index <= 0} onClick={() => onSelect(years[index - 1])} aria-label="Next year">→</button>
+  </div>;
 }
 
 function YearEndChartPage() {
@@ -163,7 +99,9 @@ function YearEndChartPage() {
   const items = (data.years ?? []).filter((y: string) => y !== "2026" || new Date() >= lockedUntil);
   const entriesByKey = data.entriesByYear;
   const [selectedYear, setSelectedYear] = useState<string>(items[0] || "");
-  const selectedKey = selectedYear;
+  const selectedKey = items.includes(selectedYear) ? selectedYear : items[0] || "";
+  const [visibleCount, setVisibleCount] = useState(25);
+  useEffect(() => { setVisibleCount(25); setDetailsOpen({}); }, [chartId, selectedKey]);
   const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
   const entries = selectedKey ? entriesByKey[selectedKey] ?? [] : [];
   const isAlbum = data.kind === "album";
@@ -183,12 +121,12 @@ function YearEndChartPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className="max-w-7xl mx-auto w-full grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
       {/* Fixed chart type nav sidebar */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <div className="flex flex-col gap-2 justify-center md:justify-start mb-6">
           {/* Mobile: collapse */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <Link
               to="/year-end/$chartId"
               params={{ chartId }}
@@ -199,7 +137,7 @@ function YearEndChartPage() {
             <YECMobExpand activeId={chartId} />
           </div>
           {/* Desktop: show all */}
-          <div className="hidden md:flex flex-col gap-2 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+          <div className="hidden lg:flex flex-col gap-1 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
             {yearEndChartIds.map((id) => {
               const c = chartsConfig[id];
               return (
@@ -207,7 +145,7 @@ function YearEndChartPage() {
                   key={id}
                   to="/year-end/$chartId"
                   params={{ chartId: id }}
-                  className={`w-full text-center text-sm font-bold px-4 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
+                  className={`w-full text-left text-xs font-semibold px-3 py-2 border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide ${
                     id === chartId
                       ? "bg-[var(--accent)] text-black border-[var(--accent)]"
                       : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
@@ -225,7 +163,7 @@ function YearEndChartPage() {
       </aside>
 
       {/* Content */}
-      <main>
+      <section className="min-w-0" aria-label="Year-end ranking">
         {/* Header */}
         <div className="mb-2 text-center md:text-left">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -256,27 +194,23 @@ function YearEndChartPage() {
 
         {/* Entries */}
         {entries.length > 0 ? (
-          <div className="space-y-3 max-w-4xl mx-auto">
-            {entries.map((e: YECEntry) => {
+          <div className="space-y-2 max-w-4xl mx-auto">
+            {entries.slice(0, visibleCount).map((e: YECEntry) => {
               const isFirst = e.position === 1;
               const entryKey = `${selectedKey}-${e.position}-${e.name}`;
               const isOpen = detailsOpen[entryKey] ?? false;
               return (
-                <motion.div
+                <div
                   key={entryKey}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all overflow-hidden"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] transition-colors overflow-hidden"
                 >
                   {/* Desktop layout */}
-                  <div className="hidden md:grid gap-3 items-center p-4" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
+                  <div className="hidden md:grid gap-3 items-center p-3" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
                     <div className="flex flex-col items-center justify-center w-16">
-                      <div className={`rank-num font-black ${isFirst ? "text-4xl bg-[var(--accent)] text-black w-16 h-16 flex items-center justify-center" : "text-3xl"}`}>{e.position}</div>
+                      <div className={`rank-num font-black ${isFirst ? "text-3xl bg-[var(--accent)] text-black w-12 h-12 flex items-center justify-center" : "text-3xl"}`}>{e.position}</div>
                     </div>
-                    <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${isFirst ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)]" : "w-24 h-24"}`}>
-                      <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={isFirst ? 180 : 96} />
+                    <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${isFirst ? "w-20 h-20 border-l-4 border-[var(--accent)]" : "w-16 h-16"}`}>
+                      <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={isFirst ? 80 : 64} />
                     </div>
                     <div className="min-w-0 flex flex-col flex-1 pl-3">
                       <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isFirst ? "text-xl" : "text-base"}`}>
@@ -296,7 +230,7 @@ function YearEndChartPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
+                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-11 h-11 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label={`Details for ${e.name}`} aria-expanded={isOpen} aria-controls={`details-${selectedKey}-${e.position}`}>
                         {isOpen ? "−" : "+"}
                       </button>
                     </div>
@@ -312,7 +246,7 @@ function YearEndChartPage() {
                         <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={56} />
                       </div>
                       <div className={`min-w-0 flex-1 ${isArtist ? "flex items-center" : ""}`}>
-                        <div className={`font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isArtist ? "text-center justify-center" : ""}`}>
+                        <div className={`font-bold text-sm break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isArtist ? "text-center justify-center" : ""}`}>
                           {e.kind === "artist" ? (
                             <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
                           ) : e.kind === "album" ? (
@@ -322,12 +256,12 @@ function YearEndChartPage() {
                           )}
                         </div>
                         {e.kind !== "artist" && (
-                          <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
+                          <div className="text-xs text-[var(--muted-foreground)] break-words line-clamp-2">
                             <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist}</Link>
                           </div>
                         )}
                       </div>
-                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
+                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-11 h-11 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label={`Details for ${e.name}`} aria-expanded={isOpen} aria-controls={`details-${selectedKey}-${e.position}`}>
                         {isOpen ? "−" : "+"}
                       </button>
                     </div>
@@ -335,7 +269,7 @@ function YearEndChartPage() {
 
                   {/* Details panel */}
                   {isOpen && (
-                    <div className="details-panel mx-4 mb-4 mt-2 rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
+                    <div id={`details-${selectedKey}-${e.position}`} className="details-panel mx-4 mb-4 mt-2 rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
                       <div className="grid grid-cols-3 gap-3">
                         <div className="text-center">
                           <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--accent)]">{isArtistChart ? "Entries" : "Peak"}</div>
@@ -352,9 +286,10 @@ function YearEndChartPage() {
                       </div>
                     </div>
                   )}
-                </motion.div>
+                </div>
               );
             })}
+            {visibleCount < entries.length && <button className="w-full min-h-11 border border-[var(--border)] bg-[var(--card)] text-sm font-semibold hover:border-[var(--accent)]" onClick={() => setVisibleCount((count) => count + 25)}>Show more ({Math.min(visibleCount, entries.length)} of {entries.length})</button>}
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground text-sm">
@@ -362,7 +297,7 @@ function YearEndChartPage() {
           </div>
         )}
 
-      </main>
+      </section>
     </div>
   );
 }
@@ -373,6 +308,7 @@ function YECMobExpand({ activeId }: { activeId: string }) {
     <>
       <button
         onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
         className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center gap-2 bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
       >
         {expanded ? "− Less" : "+ More Charts"}
@@ -384,6 +320,7 @@ function YECMobExpand({ activeId }: { activeId: string }) {
             key={id}
             to="/year-end/$chartId"
             params={{ chartId: id }}
+            onClick={() => setExpanded(false)}
             className="w-full text-center text-sm font-bold px-4 py-2 min-h-[44px] border border-[var(--border)] cursor-pointer transition-colors uppercase tracking-wide flex items-center justify-center bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)]"
           >
             {c.title}

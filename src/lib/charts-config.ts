@@ -10,8 +10,8 @@ export interface ChartConfig {
   secondaryUrl?: string;
 }
 
-const SHEET = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tqx=out:csv&gid=";
-const SHEET_HOT100 = "https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tqx=out:csv&gid=";
+const SHEET = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tq=select%20*&tqx=out:csv&gid=";
+const SHEET_HOT100 = "https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tq=select%20*&tqx=out:csv&gid=";
 
 export const chartsConfig: Record<string, ChartConfig> = {
   songs: { id: "songs", url: SHEET + "904867620", title: "Hot 100", icon: "fa-music", kind: "song", group: "weekly", secondaryUrl: SHEET_HOT100 + "1011796371" },

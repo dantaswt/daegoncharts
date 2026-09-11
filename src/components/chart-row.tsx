@@ -66,7 +66,7 @@ function AwardIcon({ type }: { type: "gainer" | "performance" }) {
     );
   }
   return (
-    <svg viewBox="0 0 24 24" fill="black" className="award-icon w-5 h-5" title="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+    <svg viewBox="0 0 24 24" fill="black" className="award-icon w-5 h-5" role="img" aria-label="Gains In Performance"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
   );
 }
 
@@ -206,138 +206,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
 
     return { gainerStreams: isGainerStreams, gainerSales: isGainerSales, performance: !isGainer, hasStar: true };
   }, [date, chartEntriesByDate, entry, isGoat, chartId]);
-
-  const detailFields = useMemo(() => {
-    const items: Array<{ label: string; value: string | undefined }> = [];
-
-    if (chartId === "artists") {
-      const salesVal = parseEuropeanNumber(entry.sales);
-      const totalSalesVal = parseEuropeanNumber(entry.totalSales);
-      const streamsVal = parseEuropeanNumber(entry.streams);
-      const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
-      const unitsVal = parseEuropeanNumber(entry.units);
-      const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
-      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
-      items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
-      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
-      items.push({ label: "Total Sales", value: totalSalesVal > 0 ? formatValue(entry.totalSales, chartId) : "-" });
-      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-      items.push({ label: "Total Streams", value: totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-" });
-      return items;
-    }
-
-    if (chartId === "songs") {
-      if (entry.points) items.push({ label: "Points", value: formatValue(entry.points, chartId) });
-      const streamsVal = parseEuropeanNumber(entry.streams);
-      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-      if (entry.airplay !== undefined) {
-        const airVal = parseEuropeanNumber(entry.airplay);
-        items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId, true) : "-" });
-      }
-      const salesVal = parseEuropeanNumber(entry.sales);
-      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
-      const unitsVal = parseEuropeanNumber(entry.units);
-      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
-      if (entry.totalUnits !== undefined) {
-        const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
-        items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
-      }
-      if (certLevel) items.push({ label: "Certification", value: certLevel });
-      return items;
-    }
-
-    if (chartId === "albums") {
-      const unitsVal = parseEuropeanNumber(entry.units);
-      items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
-      if (entry.totalUnits !== undefined) {
-        const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
-        items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
-      }
-      const salesVal = parseEuropeanNumber(entry.sales);
-      items.push({ label: "Pure Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
-      const streamsVal = parseEuropeanNumber(entry.streams);
-      items.push({ label: "SEA", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-      if (certLevel) items.push({ label: "Certification", value: certLevel });
-      return items;
-    }
-
-    if (chartId === "yearEndRadio" || chartId === "goatRadio") {
-      if (entry.units) items.push({ label: "Total Audience", value: formatValue(entry.units, chartId) });
-      return items;
-    }
-
-    if (chartId === "topStreamingAlbums" || chartId === "streamingSongs") {
-      const streamsVal = parseEuropeanNumber(entry.streams);
-      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-      if (entry.totalStreams !== undefined) {
-        const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
-        items.push({ label: "Total Streams", value: totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-" });
-      }
-      if (certLevel) items.push({ label: "Certification", value: certLevel });
-      return items;
-    }
-
-    if (chartId === "topAlbumSales" || chartId === "digitalSongsSales") {
-      const salesVal = parseEuropeanNumber(entry.sales);
-      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
-      if (entry.totalSales !== undefined) {
-        const totalSalesVal = parseEuropeanNumber(entry.totalSales);
-        items.push({ label: "Total Sales", value: totalSalesVal > 0 ? formatValue(entry.totalSales, chartId) : "-" });
-      }
-      if (certLevel) items.push({ label: "Certification", value: certLevel });
-      return items;
-    }
-
-    // Fallback for other charts
-    if (chartId !== "radioSongs" && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
-      if (entry.units) {
-        const unitsVal = parseEuropeanNumber(entry.units);
-        items.push({ label: "Units", value: unitsVal > 0 ? formatValue(entry.units, chartId) : "-" });
-      }
-    }
-    if (chartId !== "radioSongs" && chartId !== "yearEndRadio" && chartId !== "goatRadio") {
-      if (entry.totalUnits) {
-        const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
-        items.push({ label: "Total Units", value: totalUnitsVal > 0 ? formatValue(entry.totalUnits, chartId) : "-" });
-      }
-    }
-    if (entry.sales) {
-      const salesVal = parseEuropeanNumber(entry.sales);
-      items.push({ label: "Sales", value: salesVal > 0 ? formatValue(entry.sales, chartId) : "-" });
-    }
-    if (entry.streams) {
-      const streamsVal = parseEuropeanNumber(entry.streams);
-      items.push({ label: "Streams", value: streamsVal > 0 ? formatValue(entry.streams, chartId, true) : "-" });
-    }
-    if (entry.totalStreams) {
-      const totalStreamsVal = parseEuropeanNumber(entry.totalStreams);
-      items.push({ label: "Total Streams", value: totalStreamsVal > 0 ? formatValue(entry.totalStreams, chartId, true) : "-" });
-    }
-    if (entry.audience !== undefined) {
-      const audVal = parseEuropeanNumber(entry.audience);
-      items.push({ label: "Audience", value: audVal > 0 ? formatValue(entry.audience, chartId) : "-" });
-    }
-    if (entry.airplay !== undefined) {
-      const airVal = parseEuropeanNumber(entry.airplay);
-      items.push({ label: "Airplay", value: airVal > 0 ? formatValue(entry.airplay, chartId, true) : "-" });
-    }
-    if (entry.certification) items.push({ label: "Certification", value: entry.certification });
-    else if (entry.totalUnits) {
-      const totalUnitsVal = parseEuropeanNumber(entry.totalUnits);
-      const certLevel = getCertificationLevel(totalUnitsVal, kind === "album" ? "album" : "song");
-      if (certLevel) items.push({ label: "Certification", value: certLevel });
-    }
-    if (awards.gainerStreams) {
-      items.push({ label: "Award", value: "Greatest Gainer of the Week — Streams" });
-    }
-    if (awards.gainerSales) {
-      items.push({ label: "Award", value: "Greatest Gainer of the Week — Sales" });
-    }
-    if (awards.performance) {
-      items.push({ label: "Award", value: "Gains In Performance" });
-    }
-    return items;
-  }, [awards, chartId, entry.airplay, entry.audience, entry.certification, entry.points, entry.sales, entry.streams, entry.totalStreams, entry.totalUnits, entry.units, entry.lastWeek, isGoat, kind]);
 
   const metric = kind === "song" ? entry.points ?? entry.units : entry.units ?? entry.points;
 
@@ -645,19 +513,6 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
       {/* Details panel (shared) */}
       {showDetails && (
         <div className="details-panel mt-3 w-full rounded-xl bg-[var(--muted)] p-3 border border-[var(--border)] text-sm animate-fade-in">
-          {!hideDetailFields && detailFields.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              {detailFields.map((item) => {
-                const isTotal = item.label.toLowerCase().startsWith("total");
-                return (
-                  <div key={item.label} className={`rounded-3xl border p-4 ${isTotal ? "bg-[rgba(255,215,0,0.06)] border-[rgba(255,215,0,0.15)]" : item.label === "Certification" ? `${certMeta?.bg ?? ""} ${certMeta?.border ?? ""}` : "bg-[var(--card)] border-[var(--border)]"}`}>
-                    <div className={`text-[10px] uppercase tracking-[0.2em] ${isTotal ? "text-[#FFD600]" : item.label === "Certification" ? "text-[var(--muted-foreground)]" : "text-[var(--accent)]"}`}>{item.label}</div>
-                    <div className={`mt-2 text-sm font-semibold ${item.label === "Certification" ? `uppercase ${certMeta?.color ?? "text-[var(--foreground)]"}` : "text-[var(--foreground)]"}`}>{item.value}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
           {runEntries.length > 0 ? (
             <div>
               <div className="font-semibold mb-2 text-[var(--foreground)]">Chart run</div>

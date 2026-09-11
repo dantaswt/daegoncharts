@@ -72,7 +72,7 @@ export async function fetchAwardEdition(year: number): Promise<AwardEditionData>
   if (editionCache.has(year)) return editionCache.get(year)!;
   const edition = EDITIONS[year];
   if (!edition) throw new Error(`Edition ${year} not found`);
-  const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
+  const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tq=select%20*&tqx=out:json&gid=${edition.gid}`;
   const text = await fetchWithRetry(targetUrl);
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}") + 1;

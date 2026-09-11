@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNearViewport } from "@/hooks/use-near-viewport";
 import { Link } from "@tanstack/react-router";
 import { getSpotifyTrackArtists } from "@/lib/spotify.functions";
 import { getAllArtistList } from "@/lib/charts.functions";
 
-let cachedArtists: { name: string; slug: string }[] | null = null;
+
 
 export function stripFeatFromTitle(name: string): string {
   const lower = name.toLowerCase().trim();
@@ -47,22 +48,21 @@ interface TrackArtistsProps {
 }
 
 export function TrackArtists({ song, artist, className = "" }: TrackArtistsProps) {
-  const [artists, setArtists] = useState<{ name: string; slug: string }[] | null>(null);
-  const [knownArtists, setKnownArtists] = useState<{ name: string; slug: string }[]>([]);
+  const { ref, visible } = useNearViewport<HTMLSpanElement>();
+  return <span ref={ref}>{visible && <TrackArtistNames song={song} artist={artist} className={className} />}</span>;
+}
 
-  useEffect(() => {
-    let active = true;
-    getSpotifyTrackArtists({ data: { song, artist } }).then((result) => {
-      if (active) setArtists(result);
-    });
-    getAllArtistList().then((list) => {
-      if (active) {
-        cachedArtists = list;
-        setKnownArtists(list);
-      }
-    });
-    return () => { active = false; };
-  }, [song, artist]);
+function TrackArtistNames({ song, artist, className = "" }: TrackArtistsProps) {
+  const { data: artists } = useQuery({
+    queryKey: ["track-artists", song, artist],
+    queryFn: () => getSpotifyTrackArtists({ data: { song, artist } }),
+    staleTime: 30 * 60_000, retry: false, refetchOnWindowFocus: false,
+  });
+  const { data: knownArtists = [] } = useQuery({
+    queryKey: ["artist-list"], queryFn: () => getAllArtistList(),
+    enabled: artist.includes("&"), staleTime: 30 * 60_000, retry: false,
+    refetchOnWindowFocus: false,
+  });
 
   if (!artists || artists.length <= 1) return null;
 
