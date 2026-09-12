@@ -6,7 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
-  useRouterState,
+  useNavigate,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode, useState, useRef, useCallback } from "react";
 
@@ -36,7 +36,7 @@ function NotFoundComponent() {
   );
 }
 
-export function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -66,7 +66,7 @@ export function ErrorComponent({ error, reset }: { error: Error; reset: () => vo
   );
 }
 
-export function PendingComponent() {
+function PendingComponent() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <div className="space-y-4">
@@ -199,9 +199,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const menuRef = useRef<HTMLElement>(null);
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  const navigate = useNavigate();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -209,13 +208,8 @@ function SiteHeader() {
         setMenuOpen(false);
       }
     }
-    const handleKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
     document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const navItems = [
@@ -231,39 +225,49 @@ function SiteHeader() {
   ];
 
   return (
-    <header ref={menuRef} className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
+      <div className="max-w-7xl mx-auto px-4 py-3 grid grid-cols-[auto_1fr_auto] items-center gap-4">
         {/* Logo */}
-        <Link to="/" className="text-lg md:text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0 whitespace-nowrap">
+        <Link to="/" className="text-lg md:text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0">
           daegon charts
         </Link>
 
         {/* Desktop nav — centered */}
-        <nav className="hidden xl:flex items-center justify-center gap-3">
+        <nav className="hidden lg:flex items-center justify-center gap-5">
           {navItems.map((item) => (
             <Link
               key={item.label}
               to={item.to}
               params={item.params}
-              className="text-[11px] font-bold uppercase tracking-wide text-[#9CA3AF] hover:text-[#f5f5f5] transition-colors whitespace-nowrap"
+              className="text-[11px] font-bold uppercase tracking-widest text-[#9CA3AF] hover:text-[#f5f5f5] transition-colors whitespace-nowrap"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Search + Theme */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           <CommandSearch />
           <ThemeToggle />
-          <button onClick={() => setMenuOpen((open) => !open)} className="xl:hidden text-[#f5f5f5] min-w-11 min-h-11 cursor-pointer" aria-label="Menu" aria-expanded={menuOpen} aria-controls="site-menu">
-            <i aria-hidden="true" className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
+        </div>
+
+        {/* Mobile hamburger + theme */}
+        <div className="lg:hidden flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-[#f5f5f5] text-2xl p-1 cursor-pointer"
+            aria-label="Menu"
+          >
+            <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div id="site-menu" className="xl:hidden max-h-[calc(100dvh-64px)] overflow-y-auto bg-[#0f0f0f] border-t border-[#2a2a2a]">
+        <div ref={menuRef} className="lg:hidden bg-[#0f0f0f] border-t border-[#2a2a2a]">
           <div className="px-4 py-4 space-y-3">
             {navItems.map((item) => (
               <Link
@@ -276,7 +280,10 @@ function SiteHeader() {
                 {item.label}
               </Link>
             ))}
-
+            {/* Mobile search trigger */}
+            <div className="pt-2">
+              <CommandSearch />
+            </div>
           </div>
         </div>
       )}
@@ -297,7 +304,7 @@ function SiteFooter() {
         </div>
         <div className="text-center text-muted-foreground text-xs">
           <p>Chart generated based on daegon charts archive.</p>
-
+          <p className="mt-1">Powered by TanStack Start.</p>
         </div>
       </div>
     </footer>
@@ -307,7 +314,6 @@ function SiteFooter() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
     trackPageView(window.location.pathname);
@@ -319,7 +325,7 @@ function RootComponent() {
       <div className="flex flex-col min-h-screen">
         <SiteHeader />
         <main className="flex-grow container mx-auto p-3 md:p-6 pt-20 md:pt-24">
-          <ErrorBoundary key={pathname}>
+          <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>

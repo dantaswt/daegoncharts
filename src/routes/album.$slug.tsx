@@ -131,8 +131,7 @@ function AlbumPage() {
             <StatBox label="Peak" value={`#${album.peak}`} />
             <StatBox label="Weeks" value={String(album.weeks)} />
             <StatBox label="Total Units" value={album.totalUnits || "—"} />
-            {album.totalPhysicalSales && <StatBox label="Physical Sales" value={album.totalPhysicalSales} />}
-            <StatBox label="Digital Sales" value={album.totalSales || "—"} />
+            <StatBox label="Sales" value={album.totalSales || "—"} />
             <StatBox label="Streams" value={album.totalStreams || "—"} />
             {album.certificationLevel && <CertificationBox level={album.certificationLevel} />}
           </div>

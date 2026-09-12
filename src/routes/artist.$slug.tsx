@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllArtistStats, getArtistChartHistory, getGoatGenerated, getArtist50TotalUnits, getArtist50Totals, getArtistYearEndPositions, type ArtistYECPosition } from "@/lib/charts.functions";
+import { getArtistChartHistory, getGoatGenerated, getArtist50TotalUnits, getArtist50Totals, getArtistYearEndPositions, type ArtistYECPosition } from "@/lib/charts.functions";
 import { getSpotifyArtistProfile, getSpotifyFeaturedOn } from "@/lib/spotify.functions";
 import { slugifyArtist, chartsConfig, weeklyChartIds, stripAlbumEdition, songSlug } from "@/lib/charts-config";
 import { getArtistAwards, type AwardArtistData } from "@/lib/awards.functions";
@@ -119,43 +119,36 @@ function formatDate(d: string) {
 
 export const Route = createFileRoute("/artist/$slug")({
   loader: async ({ params }) => {
-    const [all, artist50Units, artist50Totals] = await Promise.all([getAllArtistStats(), getArtist50TotalUnits(), getArtist50Totals()]);
-    const match = Object.values(all).find((a) => slugifyArtist(a.name) === params.slug);
+    const [artistChartResult, artist50Units, artist50Totals] = await Promise.all([
+      getArtistChartHistory({ data: { slug: params.slug } }),
+      getArtist50TotalUnits(),
+      getArtist50Totals(),
+    ]);
+
+    const artistName = artistChartResult.artistName;
+    const chartsByKind = artistChartResult.chartsByKind;
 
     let profile = null;
     let goatData = null;
     let featuredOn = null;
-    let chartHistory = null;
     let yecPositions: ArtistYECPosition[] = [];
-    if (match) {
-      [profile, featuredOn, chartHistory] = await Promise.all([
-        getSpotifyArtistProfile({ data: { artistName: match.name } }),
-        getSpotifyFeaturedOn({ data: { artistName: match.name } }),
-        getArtistChartHistory({ data: { artistName: match.name } }),
+
+    if (artistName) {
+      [profile, featuredOn] = await Promise.all([
+        getSpotifyArtistProfile({ data: { artistName } }),
+        getSpotifyFeaturedOn({ data: { artistName } }),
       ]);
       const goatArtists = await getGoatGenerated({ data: { chartId: "goatArtists" } }).catch(() => null);
-      const foundInGoat = goatArtists?.entries?.find(e => e.name.toLowerCase() === match.name.toLowerCase());
+      const foundInGoat = goatArtists?.entries?.find(e => e.name.toLowerCase() === artistName.toLowerCase());
       if (foundInGoat) {
-        goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.totalPoints };
+        goatData = { position: foundInGoat.position, totalUnits: foundInGoat.totalUnits || foundInGoat.points };
       }
-
-      yecPositions = await getArtistYearEndPositions({ data: { artistName: match.name } }).catch(() => []);
-
-      if (chartHistory) {
-        for (const [label, entries] of Object.entries(chartHistory)) {
-          const existing = match.chartsByKind[label] || [];
-          const existingKeys = new Set(existing.map((e: any) => e.item.toLowerCase()));
-          for (const entry of entries) {
-            if (!existingKeys.has(entry.item.toLowerCase())) {
-              (match.chartsByKind[label] ||= []).push(entry);
-            }
-          }
-          match.chartsByKind[label]?.sort((a: any, b: any) => a.peak - b.peak || b.weeks - a.weeks);
-        }
-      }
+      yecPositions = await getArtistYearEndPositions({ data: { artistName } }).catch(() => []);
     }
 
-    return { artist: match ?? null, slug: params.slug, profile, goatData, featuredOn, artist50Units, artist50Totals, yecPositions };
+    const artist = artistName ? { name: artistName, chartsByKind } : null;
+
+    return { artist, slug: params.slug, profile, goatData, featuredOn, artist50Units, artist50Totals, yecPositions };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.artist?.name ?? "Artist";
@@ -339,7 +332,7 @@ function ArtistPage() {
             </div>
           )}
           <div className="text-sm text-muted-foreground leading-relaxed">
-            {`${artist.name} has ${Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0)} chart entries across all charts.`}
+            {profile?.bio ? profile.bio : `${artist.name} has ${Object.values(artist.chartsByKind).reduce((sum, entries) => sum + entries.length, 0)} chart entries across all charts.`}
           </div>
         </div>
       </motion.div>

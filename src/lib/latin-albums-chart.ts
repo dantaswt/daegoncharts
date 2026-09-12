@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getWeeklyChart, type ChartEntry, type WeeklyChartData } from "./charts.functions";
 
-const RELEASES_URL = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/export?format=csv&gid=1618822736";
+const RELEASES_URL = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tq=select%20*&tqx=out:csv&gid=1618822736";
 
 async function fetchReleasesCsv(): Promise<Map<string, string>> {
   const res = await fetch(RELEASES_URL, { headers: { "cache-control": "public, max-age=300" } });

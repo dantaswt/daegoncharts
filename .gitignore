@@ -32,3 +32,12 @@ dist-ssr
 *.sw?
 .vercel
 .netlify
+
+# Temporary / analysis files
+bb_archive.html
+bb_test.html
+billboard_br_archive.html
+billboard_br_home.html
+billboard_br_raw.html
+gen_chart_weeks.ps1
+uk-singles-*.csv

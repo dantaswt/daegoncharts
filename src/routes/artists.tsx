@@ -1,12 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { getAllArtistList } from "@/lib/charts.functions";
-import { SpotifyItemImage } from "@/components/spotify-item-image";
+import { getSpotifyImage } from "@/lib/spotify.functions";
 import { slugifyArtist } from "@/lib/charts-config";
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/artists")({
-  validateSearch: (search: Record<string, unknown>): { q?: string } => ({ q: typeof search.q === "string" ? search.q : undefined }),
   loader: async () => {
     const list = await getAllArtistList();
     return { list };
@@ -20,15 +19,35 @@ export const Route = createFileRoute("/artists")({
   component: AllArtistsPage,
 });
 
+function ArtistThumbnail({ name }: { name: string }) {
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    getSpotifyImage({ data: { query: name, type: "artist" } }).then((url) => {
+      if (active && url) setImageUrl(url);
+    });
+    return () => { active = false; };
+  }, [name]);
+
+  return (
+    <div className="w-14 h-14 rounded-full overflow-hidden bg-[var(--card)] flex items-center justify-center text-sm font-semibold text-[var(--foreground)] uppercase border border-[var(--border)]">
+      {imageUrl ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover animate-fade-in" />
+      ) : (
+        <span className="animate-pulse">{name.charAt(0)}</span>
+      )}
+    </div>
+  );
+}
+
 function AllArtistsPage() {
   const { list } = Route.useLoaderData();
   const navigate = useNavigate();
-  const { q = "" } = Route.useSearch();
-  const initialQ = q;
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQ = urlParams.get("q") ?? "";
   const [search, setSearch] = useState(initialQ);
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  React.useEffect(() => { setSearch(q); }, [q]);
-  React.useEffect(() => () => clearTimeout(debounceRef.current), []);
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout>>();
   const letters = useMemo(() => {
     return Array.from(new Set(list.map((a) => a.name[0].toUpperCase()))).sort();
   }, [list]);
@@ -42,16 +61,22 @@ function AllArtistsPage() {
     setSearch(value);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      void navigate({ to: "/artists", search: { q: value || undefined }, replace: true });
+      const params = new URLSearchParams(window.location.search);
+      if (value) {
+        params.set("q", value);
+      } else {
+        params.delete("q");
+      }
+      navigate({ search: Object.fromEntries(params), replace: true });
     }, 400);
   };
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return list.filter((a) => {
-      const matchesLetter = !!query || !selectedLetter || a.name[0].toUpperCase() === selectedLetter;
+      const matchesLetter = !query || a.name[0].toUpperCase() === selectedLetter;
       const matchesSearch = !query || a.name.toLowerCase().includes(query);
-      return matchesLetter && matchesSearch;
+      return matchesSearch;
     });
   }, [list, search, selectedLetter]);
 
@@ -80,7 +105,6 @@ function AllArtistsPage() {
               key={letter}
               type="button"
               onClick={() => setSelectedLetter(letter)}
-              aria-pressed={selectedLetter === letter}
               className={`btn-nav ${selectedLetter === letter ? "active" : ""}`}
             >
               {letter}
@@ -90,7 +114,6 @@ function AllArtistsPage() {
         <div className="w-full sm:w-auto">
           <input
             type="search"
-            aria-label="Search artists"
             placeholder="Search artists"
             value={search}
             onChange={(event) => handleSearchChange(event.target.value)}
@@ -118,7 +141,7 @@ function AllArtistsPage() {
                   params={{ slug: artist.slug }}
                   className="group bg-[var(--card)] border border-[var(--border)] rounded-3xl p-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors shadow-sm"
                 >
-                  <SpotifyItemImage name={artist.name} artist={artist.name} kind="artist" size={56} rounded="full" />
+                  <ArtistThumbnail name={artist.name} />
                   <div className="min-w-0">
                     <div className="font-semibold truncate group-hover:text-[var(--accent)]">{artist.name}</div>
                     <div className="text-xs text-muted-foreground mt-1">{artist.entries} entries</div>

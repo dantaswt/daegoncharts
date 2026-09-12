@@ -177,7 +177,7 @@ export function StatsGridImage({ records, title, chartId, kind }: StatsGridImage
         const resp = await fetch(url);
         if (!resp.ok) return null;
         const blob = await resp.blob();
-        return await new Promise<string | null>((resolve) => {
+        return await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
           reader.onerror = () => resolve(null);

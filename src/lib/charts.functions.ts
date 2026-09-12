@@ -1,7 +1,6 @@
-import { externalFetch } from "./external-fetch";
 import { createServerFn } from "@tanstack/react-start";
 import Papa from "papaparse";
-import { chartsConfig, chartBeatConfig, slugify, songSlug, parseSongSlug, weeklyChartIds } from "./charts-config";
+import { chartsConfig, chartBeatConfig, slugify, slugifyArtist, songSlug, parseSongSlug, weeklyChartIds } from "./charts-config";
 
 export interface ChartEntry {
   position: number;
@@ -23,7 +22,6 @@ export interface ChartEntry {
   totalUnits?: string;
   totalStreams?: string;
   totalSales?: string;
-  isSecondary?: boolean;
 }
 
 export interface WeeklyChartData {
@@ -70,7 +68,6 @@ export interface AlbumDetails {
   peak: number;
   weeks: number;
   totalUnits?: string;
-  totalPhysicalSales?: string;
   totalSales?: string;
   totalStreams?: string;
   certification?: string;
@@ -192,7 +189,7 @@ export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await externalFetch(url, { headers: { "cache-control": "public, max-age=300" } });
+      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" } });
       if (res.status === 429) {
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -416,36 +413,57 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
   if (cfg.secondaryUrl) {
     const entries2 = parseSheet(await fetchCsv(cfg.secondaryUrl));
     for (const [d, entries] of Object.entries(entries2)) {
-      for (const e of entries) e.isSecondary = true;
       (entriesByDate[d] ||= []).push(...entries);
     }
   }
   const dates = Object.keys(entriesByDate).sort();
   for (const d of dates) {
     entriesByDate[d].sort((a, b) => a.position - b.position);
-    const deduped: ChartEntry[] = [];
     const seen = new Map<string, ChartEntry>();
     for (const e of entriesByDate[d]) {
       const key = `${e.name.toLowerCase()}|${e.artist.toLowerCase()}`;
       const existing = seen.get(key);
-      if (!existing) {
-        seen.set(key, e);
-        deduped.push(e);
-      } else if (e.position < existing.position) {
-        const idx = deduped.indexOf(existing);
-        if (idx !== -1) {
-          e.weeks = (existing.weeks || 0) + (e.weeks || 0);
-          e.peak = Math.min(existing.peak || Infinity, e.peak || Infinity);
-          deduped[idx] = e;
+      if (existing) {
+        if (e.position < existing.position) {
+          entriesByDate[d] = entriesByDate[d].filter((x) => x !== existing);
+          seen.set(key, e);
+        } else {
+          entriesByDate[d] = entriesByDate[d].filter((x) => x !== e);
         }
-        seen.set(key, e);
       } else {
-        existing.weeks = (existing.weeks || 0) + (e.weeks || 0);
-        existing.peak = Math.min(existing.peak || Infinity, e.peak || Infinity);
+        seen.set(key, e);
       }
     }
-    entriesByDate[d] = deduped;
   }
+
+  if (cfg.secondaryUrl) {
+    const runningState = new Map<string, { weeks: number; peak: number; weeksAt1: number }>();
+    const prevDatePositions = new Map<string, number>();
+
+    for (const d of dates) {
+      for (const e of entriesByDate[d]) {
+        const key = `${e.name.toLowerCase()}|${e.artist.toLowerCase()}`;
+        const state = runningState.get(key) ?? { weeks: 0, peak: Infinity, weeksAt1: 0 };
+
+        state.weeks++;
+        state.peak = Math.min(state.peak, e.position);
+        if (e.position === 1) state.weeksAt1++;
+
+        e.lastWeek = prevDatePositions.has(key) ? String(prevDatePositions.get(key)!) : undefined;
+        e.weeks = state.weeks;
+        e.peak = state.peak;
+        e.weeksAt1 = state.weeksAt1 > 0 ? state.weeksAt1 : undefined;
+
+        runningState.set(key, state);
+      }
+
+      prevDatePositions.clear();
+      for (const e of entriesByDate[d]) {
+        prevDatePositions.set(`${e.name.toLowerCase()}|${e.artist.toLowerCase()}`, e.position);
+      }
+    }
+  }
+
   computeDiffs(dates, entriesByDate);
   return { chartId, title: cfg.title, kind: cfg.kind, dates, entriesByDate };
 }
@@ -538,10 +556,8 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   let bestPeak = Number.MAX_SAFE_INTEGER;
   let bestWeeks = 0;
   let totalUnits: string | undefined;
-  let totalPhysicalSales: string | undefined;
   let certification: string | undefined;
   let totalUnitsRaw = 0;
-  let totalPhysicalSalesRaw = 0;
 
   let albumUnitsRaw = 0;
   let albumStreamsRaw = 0;
@@ -550,7 +566,6 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   // Per-chart stats accumulator
   const chartStatsAcc: Record<string, { weeksAt1: number; top5: number; top10: number; totalEntries: number; totalUnits: number; totalSales: number; totalStreams: number }> = {};
 
-  const allDatesForAlbum = new Set<string>();
   for (const chartId of albumChartIds) {
     const chartData = await loadWeekly(chartId);
     let chartSales = 0;
@@ -566,19 +581,10 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         albumArtist ||= entry.artist;
         if (chartId === "albums") {
           if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+          bestWeeks = Math.max(bestWeeks, entry.weeks);
         }
         certification ||= entry.certification;
-        if (chartId === "albums") {
-          if (entry.isSecondary) {
-            if (date < "2017-06-24") {
-              const psRaw = toInt(entry.totalUnits);
-              if (psRaw > 0) { totalPhysicalSales = entry.totalUnits; totalPhysicalSalesRaw = psRaw; }
-            }
-          } else {
-            const entryUnitsRaw = toInt(entry.totalUnits);
-            if (entryUnitsRaw > totalUnitsRaw) { totalUnits = entry.totalUnits; totalUnitsRaw = entryUnitsRaw; }
-          }
-        }
+        if (chartId === "albums") { totalUnits = entry.totalUnits; totalUnitsRaw = toInt(entry.totalUnits); }
         const s = toInt(entry.sales);
         const st = toInt(entry.streams);
         chartSales += s;
@@ -587,7 +593,6 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
         if (entry.position === 1) weeksAt1++;
         if (entry.position <= 5) top5++;
         if (entry.position <= 10) top10++;
-        allDatesForAlbum.add(date);
         albumRuns.push({
           chartId,
           chartTitle: chartsConfig[chartId].title,
@@ -633,14 +638,13 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
               totalUnits: entry.totalUnits,
             });
             if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+            bestWeeks = Math.max(bestWeeks, entry.weeks);
           }
         }
       }
     } catch {}
   }
   yecEntries.sort((a, b) => Number(b.year) - Number(a.year) || a.position - b.position);
-
-  bestWeeks = allDatesForAlbum.size;
 
   // GOAT position
   let goatPosition: number | undefined;
@@ -676,19 +680,16 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
     }
   } catch {}
 
-  const combinedUnitsRaw = totalUnitsRaw + totalPhysicalSalesRaw;
-
   return {
     name: albumName,
     artist: albumArtist,
     peak: bestPeak === Number.MAX_SAFE_INTEGER ? 0 : bestPeak,
     weeks: bestWeeks,
-    totalUnits: combinedUnitsRaw > 0 ? combinedUnitsRaw.toLocaleString("en-US") : undefined,
-    totalPhysicalSales: totalPhysicalSalesRaw > 0 ? formatNumber(totalPhysicalSalesRaw) : undefined,
+    totalUnits: formatTotalUnits(totalUnits),
     totalSales: albumSalesRaw > 0 ? formatMetric(albumSalesRaw, "topAlbumSales") : undefined,
     totalStreams: albumStreamsRaw > 0 ? formatMetric(albumStreamsRaw, "topStreamingAlbums") : undefined,
     certification,
-    certificationLevel: getCertificationLevel(combinedUnitsRaw, "album"),
+    certificationLevel: getCertificationLevel(totalUnitsRaw, "album"),
     goatPosition,
     goatWeeks,
     yecEntries,
@@ -752,7 +753,6 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
     fetchCsv(chartsConfig.statsData.url).catch(() => null),
   ]);
 
-  const allDatesForSong = new Set<string>();
   for (let ci = 0; ci < songChartIds.length; ci++) {
     const chartId = songChartIds[ci];
     const chartData = allCharts[ci];
@@ -773,12 +773,10 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
         songArtist ||= entry.artist;
         if (chartId === "songs") {
           if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+          bestWeeks = Math.max(bestWeeks, entry.weeks);
         }
         certification ||= entry.certification;
-        if (chartId === "songs") {
-          const entryUnitsRaw = toInt(entry.totalUnits);
-          if (entryUnitsRaw > totalUnitsRaw) { totalUnits = entry.totalUnits; totalUnitsRaw = entryUnitsRaw; }
-        }
+        if (chartId === "songs") { totalUnits = entry.totalUnits; totalUnitsRaw = toInt(entry.totalUnits); }
         const p = toInt(entry.points);
         const s = toInt(entry.sales);
         const st = toInt(entry.streams);
@@ -791,7 +789,6 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
         if (entry.position === 1) weeksAt1++;
         if (entry.position <= 5) top5++;
         if (entry.position <= 10) top10++;
-        allDatesForSong.add(date);
         songRuns.push({
           chartId,
           chartTitle: chartsConfig[chartId].title,
@@ -814,7 +811,6 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
     if (chartId === "radioSongs") totalAudience.raw = chartAudience;
     chartStatsAcc[chartId] = { weeksAt1, top5, top10, totalEntries, totalPoints: chartPoints, totalSales: chartSales, totalStreams: chartStreams, totalAudience: chartAudience };
   }
-  bestWeeks = allDatesForSong.size;
 
   if (!songName) return null;
 
@@ -844,13 +840,12 @@ async function loadSongDetails(slug: string): Promise<SongDetails | null> {
             totalUnits: entry.totalUnits,
           });
           if (entry.peak > 0 && entry.peak < bestPeak) bestPeak = entry.peak;
+          bestWeeks = Math.max(bestWeeks, entry.weeks);
         }
       }
     }
   }
   yecEntries.sort((a, b) => Number(b.year) - Number(a.year) || a.position - b.position);
-
-  bestWeeks = allDatesForSong.size;
 
   let goatPosition: number | undefined;
   let goatWeeks: number | undefined;
@@ -1124,7 +1119,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       if (featVerifyCache.has(key)) return featVerifyCache.get(key)!;
       try {
         const q = encodeURIComponent(`${song} ${mainArtist}`);
-        const resp = await externalFetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`, {}, 3000);
+        const resp = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`);
         const data = await resp.json();
         for (const r of data.results ?? []) {
           const nameMatch = normalize(r.trackName ?? "") === normalize(song);
@@ -1176,7 +1171,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
 });
 
 const artistChartMapping: { chartId: string; label: string }[] = [
-  { chartId: "artists", label: "Artist 50" },
+  { chartId: "artists", label: "Top 50 Artists" },
   { chartId: "songs", label: "Hot 100 Songs" },
   { chartId: "digitalSongsSales", label: "Digital Songs Sales" },
   { chartId: "streamingSongs", label: "Streaming Songs" },
@@ -1194,100 +1189,125 @@ function matchesArtist(entryArtist: string, artistName: string): boolean {
 }
 
 export const getArtistChartHistory = createServerFn({ method: "GET" })
-  .validator((d: { artistName: string }) => d)
+  .validator((d: { artistName?: string; slug?: string }) => d)
   .handler(async ({ data }) => {
-    const { artistName } = data;
+    const { artistName: inputName, slug } = data;
 
-    const results = await Promise.all(
-      artistChartMapping.map(async ({ chartId, label }) => {
-        try {
-          const chart = await getWeeklyChart({ data: { chartId } });
-          const dates = chart.dates;
-          const entriesByDate = chart.entriesByDate;
-          const seen: Record<string, {
-            item: string;
-            bestPos: number;
-            weeks: number;
-            weeksAt1: number;
-            totalUnits: number;
-            firstDate: string | null;
-            peakDate: string | null;
-          }> = {};
-
-          for (const date of dates) {
-            for (const e of entriesByDate[date]) {
-              const nameArtistMatch = matchesArtist(e.artist, artistName);
-              const songFeatMatch = e.name.match(/\((?:feat\.?|ft\.?|featuring|with)\s+([^)]+)\)/i);
-              const songFeat = songFeatMatch ? matchesArtist(songFeatMatch[1], artistName) : false;
-              if (!nameArtistMatch && !songFeat) continue;
-              const key = e.name.toLowerCase();
-              if (!seen[key]) {
-                seen[key] = {
-                  item: e.name,
-                  bestPos: e.position,
-                  weeks: 0,
-                  weeksAt1: 0,
-                  totalUnits: 0,
-                  firstDate: null,
-                  peakDate: null,
-                };
-              }
-              const s = seen[key];
-              s.weeks++;
-              if (e.position <= s.bestPos) {
-                s.bestPos = e.position;
-                s.peakDate = date;
-              }
-              if (e.position === 1) s.weeksAt1++;
-              if (e.units) s.totalUnits += parseEuropeanFloat(e.units);
-              if (!s.firstDate) s.firstDate = date;
-            }
-          }
-
-          const isSalesChart = label.includes("Sales");
-          const isStreamsChart = label.includes("Streaming");
-          const entries = Object.values(seen).map((s) => ({
-            item: s.item,
-            peak: s.bestPos,
-            weeks: s.weeks,
-            weeksAt1: s.weeksAt1,
-            unitsSold: isSalesChart ? formatNumber(s.totalUnits) : null as string | null,
-            totalUnits: isStreamsChart ? formatNumber(s.totalUnits) : s.totalUnits.toLocaleString("en-US"),
-            firstEntry: s.firstDate,
-            peakDate: s.peakDate,
-          }));
-
-          entries.sort((a, b) => a.peak - b.peak || b.weeks - a.weeks);
-          return { label, entries };
-        } catch {
-          return { label, entries: [] };
-        }
+    const allCharts = await Promise.all(
+      artistChartMapping.map(async ({ chartId }) => {
+        try { return await getWeeklyChart({ data: { chartId } }); } catch { return null; }
       })
     );
 
-    const map: Record<string, { item: string; peak: number; weeks: number; weeksAt1?: number; unitsSold?: string | null; totalUnits?: string | null; firstEntry?: string | null; peakDate?: string | null }[]> = {};
-    for (const r of results) {
-      if (r.entries.length > 0) map[r.label] = r.entries;
+    let artistName = inputName;
+    if (!artistName && slug) {
+      for (const chart of allCharts) {
+        if (!chart) continue;
+        for (const date of chart.dates) {
+          for (const e of chart.entriesByDate[date]) {
+            if (slugifyArtist(e.artist) === slug) { artistName = e.artist; break; }
+          }
+          if (artistName) break;
+        }
+        if (artistName) break;
+      }
     }
-    return map;
+
+    if (!artistName) return { artistName: null as string | null, chartsByKind: {} as Record<string, any[]> };
+
+    const results = artistChartMapping.map(({ label }, idx) => {
+      const chart = allCharts[idx];
+      if (!chart) return { label, entries: [] as any[] };
+      const { dates, entriesByDate } = chart;
+      const seen: Record<string, {
+        item: string;
+        bestPos: number;
+        weeks: number;
+        weeksAt1: number;
+        totalUnits: number;
+        firstDate: string | null;
+        peakDate: string | null;
+      }> = {};
+
+      for (const date of dates) {
+        for (const e of entriesByDate[date]) {
+          const nameArtistMatch = matchesArtist(e.artist, artistName);
+          const songFeatMatch = e.name.match(/\((?:feat\.?|ft\.?|featuring|with)\s+([^)]+)\)/i);
+          const songFeat = songFeatMatch ? matchesArtist(songFeatMatch[1], artistName) : false;
+          if (!nameArtistMatch && !songFeat) continue;
+          const key = e.name.toLowerCase();
+          if (!seen[key]) {
+            seen[key] = {
+              item: e.name,
+              bestPos: e.position,
+              weeks: 0,
+              weeksAt1: 0,
+              totalUnits: 0,
+              firstDate: null,
+              peakDate: null,
+            };
+          }
+          const s = seen[key];
+          s.weeks++;
+          if (e.position <= s.bestPos) {
+            s.bestPos = e.position;
+            s.peakDate = date;
+          }
+          if (e.position === 1) s.weeksAt1++;
+          if (e.units) s.totalUnits += parseEuropeanFloat(e.units);
+          if (!s.firstDate) s.firstDate = date;
+        }
+      }
+
+      const isSalesChart = label.includes("Sales");
+      const isStreamsChart = label.includes("Streaming");
+      const entries = Object.values(seen).map((s) => ({
+        item: s.item,
+        peak: s.bestPos,
+        weeks: s.weeks,
+        weeksAt1: s.weeksAt1,
+        unitsSold: isSalesChart ? formatNumber(s.totalUnits) : null as string | null,
+        totalUnits: isStreamsChart ? formatNumber(s.totalUnits) : s.totalUnits.toLocaleString("en-US"),
+        firstEntry: s.firstDate,
+        peakDate: s.peakDate,
+      }));
+
+      entries.sort((a, b) => a.peak - b.peak || b.weeks - a.weeks);
+      return { label, entries };
+    });
+
+    const chartsByKind: Record<string, any[]> = {};
+    for (const r of results) {
+      if (r.entries.length > 0) chartsByKind[r.label] = r.entries;
+    }
+    return { artistName, chartsByKind };
   });
 
 export const getArtist50TotalUnits = createServerFn({ method: "GET" }).handler(async () => {
   return cached("artist50TotalUnits", async () => {
-    const chart = await loadWeekly("artists");
-    const map: Record<string, { date: string; totalUnits: string }> = {};
-    for (const date of chart.dates) {
-      for (const e of chart.entriesByDate[date]) {
-        if (!e.artist || !e.totalUnits) continue;
-        const existing = map[e.artist];
-        if (!existing || date > existing.date) {
-          map[e.artist] = { date, totalUnits: e.totalUnits };
-        }
+    const cfg = chartsConfig.artists;
+    const rows = await fetchCsv(cfg.url);
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const idx = {
+      artist: findIdx(header, ["artist", "artists"]),
+      date: findIdx(header, ["chart date", "date"]),
+      totalUnits: findIdx(header, ["total units", "total", "total audience"]),
+    };
+    const map: Record<string, string> = {};
+    for (const r of rows.slice(1)) {
+      const artist = (r[idx.artist] ?? "").trim();
+      if (!artist || idx.totalUnits < 0) continue;
+      const date = normalizeDate(r[idx.date]);
+      const totalUnits = r[idx.totalUnits] ?? "";
+      if (!date || !totalUnits) continue;
+      const existing = map[artist];
+      if (!existing || date > existing.split("||")[0]) {
+        map[artist] = `${date}||${totalUnits}`;
       }
     }
     const result: Record<string, string> = {};
     for (const [artist, val] of Object.entries(map)) {
-      result[artist] = val.totalUnits;
+      result[artist] = val.split("||")[1];
     }
     return result;
   });
@@ -1295,18 +1315,28 @@ export const getArtist50TotalUnits = createServerFn({ method: "GET" }).handler(a
 
 export const getArtist50Totals = createServerFn({ method: "GET" }).handler(async () => {
   return cached("artist50Totals", async () => {
-    const chart = await loadWeekly("artists");
+    const cfg = chartsConfig.artists;
+    const rows = await fetchCsv(cfg.url);
+    const header = rows[0].map((h) => h.toLowerCase().trim());
+    const idx = {
+      artist: findIdx(header, ["artist", "artists"]),
+      date: findIdx(header, ["chart date", "date"]),
+      totalUnits: findIdx(header, ["total units", "total", "total audience"]),
+      totalSales: findIdx(header, ["total sales", "sales"]),
+      totalStreams: findIdx(header, ["total streams", "total streaming"]),
+    };
     const map: Record<string, { date: string; totalUnits: string; totalSales: string; totalStreams: string }> = {};
-    for (const date of chart.dates) {
-      for (const e of chart.entriesByDate[date]) {
-        if (!e.artist) continue;
-        const totalUnits = e.totalUnits ?? "";
-        const totalSales = e.totalSales ?? "";
-        const totalStreams = e.totalStreams ?? "";
-        const existing = map[e.artist];
-        if (!existing || date > existing.date) {
-          map[e.artist] = { date, totalUnits, totalSales, totalStreams };
-        }
+    for (const r of rows.slice(1)) {
+      const artist = (r[idx.artist] ?? "").trim();
+      if (!artist) continue;
+      const date = normalizeDate(r[idx.date]);
+      if (!date) continue;
+      const totalUnits = idx.totalUnits >= 0 ? (r[idx.totalUnits] ?? "") : "";
+      const totalSales = idx.totalSales >= 0 ? (r[idx.totalSales] ?? "") : "";
+      const totalStreams = idx.totalStreams >= 0 ? (r[idx.totalStreams] ?? "") : "";
+      const existing = map[artist];
+      if (!existing || date > existing.date) {
+        map[artist] = { date, totalUnits, totalSales, totalStreams };
       }
     }
     return map;
