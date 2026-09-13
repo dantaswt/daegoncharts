@@ -1,12 +1,13 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { getWeeklyChart } from "@/lib/charts.functions";
 import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
 import { ChartTypeNav, WeekNavigator } from "@/components/chart-nav";
 import { ChartRow } from "@/components/chart-row";
 import { ChartImage } from "@/components/chart-image";
 import { getSpotifyImage } from "@/lib/spotify.functions";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useServerData } from "@/lib/use-server-data";
 
 function ChartPageSkeleton() {
   return (
@@ -57,94 +58,69 @@ function ChartPageSkeleton() {
 
 export const Route = createFileRoute("/chart/$chartId/$date")({
   loader: async ({ params }) => {
-    if (!weeklyChartIds.includes(params.chartId)) throw notFound();
-    const data = await getWeeklyChart({ data: { chartId: params.chartId } });
-    // normalize incoming date to the Saturday of that week (charts publish on Saturdays)
-    function toSaturdayIso(dStr: string) {
-      try {
-        const d = new Date(dStr + "T00:00:00");
-        const diff = 6 - d.getDay();
-        const sat = new Date(d);
-        sat.setDate(d.getDate() + diff);
-        return sat.toISOString().slice(0, 10);
-      } catch { return dStr; }
-    }
-    const normalized = toSaturdayIso(params.date);
-    if (data.entriesByDate[params.date]) {
-      return { data, date: params.date, chartId: params.chartId };
-    }
-    if (data.entriesByDate[normalized]) {
-      // return normalized date so the page can render correct data; component may replace URL
-      return { data, date: normalized, chartId: params.chartId, originalRequestedDate: params.date };
-    }
-    throw notFound();
+    if (!weeklyChartIds.includes(params.chartId)) throw new Error("Unknown chart");
+    return { data: null as any, date: params.date, chartId: params.chartId };
   },
-  head: ({ loaderData }) => {
-    if (!loaderData) return { meta: [{ title: "Chart not found | daegon charts" }] };
-    const cfg = chartsConfig[loaderData.chartId];
-    const label = new Date(loaderData.date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-    const title = `${cfg.title} — ${label} | daegon charts`;
-    const desc = `${cfg.title} chart for the week of ${label}.`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: desc },
-        { property: "og:title", content: title },
-        { property: "og:description", content: desc },
-      ],
-    };
-  },
-  notFoundComponent: () => (
-    <div className="text-center py-16">
-      <h2 className="text-2xl font-bold gold">Chart week not found</h2>
-      <p className="text-muted-foreground mt-2">That chart or date has no data.</p>
-    </div>
-  ),
-  errorComponent: ({ error }) => (
-    <div className="text-center py-16">
-      <h2 className="text-xl font-bold gold">Something broke</h2>
-      <p className="text-muted-foreground mt-2 text-sm">{error.message}</p>
-    </div>
-  ),
-  pendingComponent: ChartPageSkeleton,
+  head: () => ({
+    meta: [{ title: "Chart | daegon charts" }],
+  }),
   component: WeeklyChartPage,
 });
 
 function WeeklyChartPage() {
-  const loader = Route.useLoaderData() as any;
-  const { data, date, chartId, originalRequestedDate } = loader;
-  const cfg = chartsConfig[chartId];
+  const { chartId, date: requestedDate } = Route.useLoaderData() as any;
+  const { data: chartData, isLoading } = useServerData(
+    `chart:${chartId}`,
+    () => getWeeklyChart({ data: { chartId } })
+  );
+
+  const [resolvedDate, setResolvedDate] = useState<string>(requestedDate);
   const [filters, setFilters] = useState<Set<string>>(new Set(["all"]));
   const [diffColors, setDiffColors] = useState(false);
+
+  const toSaturdayIso = (dStr: string) => {
+    try {
+      const d = new Date(dStr + "T00:00:00");
+      const diff = 6 - d.getDay();
+      const sat = new Date(d);
+      sat.setDate(d.getDate() + diff);
+      return sat.toISOString().slice(0, 10);
+    } catch { return dStr; }
+  };
+
+  useEffect(() => {
+    if (!chartData || !chartData.dates) return;
+    if (requestedDate === "latest") {
+      setResolvedDate(chartData.dates[chartData.dates.length - 1] ?? "");
+      return;
+    }
+    if (chartData.entriesByDate[requestedDate]) {
+      setResolvedDate(requestedDate);
+      return;
+    }
+    const normalized = toSaturdayIso(requestedDate);
+    if (chartData.entriesByDate[normalized]) {
+      setResolvedDate(normalized);
+      return;
+    }
+  }, [chartData, requestedDate]);
+
+  const cfg = chartsConfig[chartId];
+  const date = resolvedDate;
+  const data = chartData!;
 
   const toggleFilter = (key: string) => {
     setFilters((prev) => {
       const next = new Set(prev);
-      if (key === "all") {
-        return new Set(["all"]);
-      }
+      if (key === "all") return new Set(["all"]);
       next.delete("all");
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+      if (next.has(key)) next.delete(key); else next.add(key);
       if (next.size === 0) next.add("all");
       return next;
     });
   };
-  // if loader normalized the date, replace the URL so it always shows the Saturday
-  useEffect(() => {
-    if (originalRequestedDate && originalRequestedDate !== date) {
-      // client-side replace
-      try {
-        const nav = (window as any).history;
-        const newPath = window.location.pathname.replace(originalRequestedDate, date);
-        nav.replaceState(nav.state, nav.title, newPath + window.location.search);
-      } catch { /* ignore */ }
-    }
-  }, [originalRequestedDate, date]);
-  const entries = data.entriesByDate[date];
+
+  const entries = data.entriesByDate[date] ?? [];
   const currentIndex = data.dates.indexOf(date);
   const previousDate = currentIndex > 0 ? data.dates[currentIndex - 1] : null;
   const dropouts = previousDate
@@ -153,6 +129,26 @@ function WeeklyChartPage() {
       )
     : [];
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  if (isLoading && !chartData) return <ChartPageSkeleton />;
+
+  if (!chartData || !chartData.dates || chartData.dates.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <h2 className="text-2xl font-bold gold">Chart week not found</h2>
+        <p className="text-muted-foreground mt-2">That chart or date has no data.</p>
+      </div>
+    );
+  }
+
+  if (requestedDate !== "latest" && !data.entriesByDate[date]) {
+    return (
+      <div className="text-center py-16">
+        <h2 className="text-2xl font-bold gold">Chart week not found</h2>
+        <p className="text-muted-foreground mt-2">That chart or date has no data.</p>
+      </div>
+    );
+  }
 
   const arrowRight = <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>;
   const arrowUp = <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M4 7l4-4 4 4"/></svg>;

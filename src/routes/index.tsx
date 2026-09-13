@@ -6,95 +6,24 @@ import { getLatestBeatArticles, type GeneratedBeatArticle } from "@/lib/chart-be
 import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useServerData } from "@/lib/use-server-data";
 
 const MAIN_CHART_IDS = ["songs", "albums", "artists"] as const;
 const SECONDARY_CHART_IDS = weeklyChartIds.filter(id => id !== "songs" && id !== "albums" && id !== "artists");
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const safeChart = async (chartId: string) => {
-      try { return await getWeeklyChart({ data: { chartId } }); }
-      catch { return { chartId, title: chartId, kind: "song" as const, dates: [] as string[], entriesByDate: {} as Record<string, any[]> }; }
-    };
-
-    const [songsData, albumsData, artistsData] = await Promise.all([
-      safeChart("songs"),
-      safeChart("albums"),
-      safeChart("artists"),
-    ]);
-
-    const knownData: Record<string, any> = { songs: songsData, albums: albumsData, artists: artistsData };
-
-    const numberOnes = MAIN_CHART_IDS.map((id) => {
-      const chart = knownData[id];
-      if (!chart) return { chartId: id, title: id, kind: "song" as const, date: "", entry: null };
-      const latestDate = chart.dates?.[chart.dates.length - 1] ?? "";
-      const entries = latestDate ? (chart.entriesByDate?.[latestDate] ?? []) : [];
-      const no1 = entries[0] ?? null;
-      return { chartId: chart.chartId ?? id, title: chart.title ?? id, kind: chart.kind ?? "song" as const, date: latestDate, entry: no1 };
-    });
-
-    const firstTimers: Array<{ name: string; artist: string; position: number; date: string; kind: "song" | "album" | "artist"; chartId: string; chartTitle: string }> = [];
-    const artistsChartDates = (artistsData?.dates ?? []).slice().reverse();
-    for (const date of artistsChartDates) {
-      const entries = artistsData?.entriesByDate?.[date] || [];
-      for (const e of entries) {
-        if (e.diff === "NEW" && !firstTimers.find(ft => ft.name === e.name && ft.artist === e.artist)) {
-          firstTimers.push({ name: e.name, artist: e.artist, position: e.position, date, kind: "artist", chartId: "artists", chartTitle: chartsConfig["artists"].title });
-          if (firstTimers.length >= 4) break;
-        }
-      }
-      if (firstTimers.length >= 4) break;
-    }
-
-    const mainCharts = [
-      { id: "songs", kind: "song" as const, cfg: chartsConfig.songs },
-      { id: "albums", kind: "album" as const, cfg: chartsConfig.albums },
-      { id: "artists", kind: "artist" as const, cfg: chartsConfig.artists },
-    ];
-    const latestDate = songsData?.dates?.[songsData.dates.length - 1] ?? "";
-    const currentYear = latestDate ? new Date(latestDate + "T00:00:00").getFullYear() : new Date().getFullYear();
-    let oldestYear = currentYear;
-    for (const chart of mainCharts) {
-      const chartData = knownData[chart.id];
-      if (chartData?.dates?.length > 0) {
-        const oldestDate = chartData.dates[0];
-        const y = new Date(oldestDate + "T00:00:00").getFullYear();
-        if (y < oldestYear) oldestYear = y;
-      }
-    }
-    const onThisWeekYears: number[] = [];
-    for (let y = currentYear; y >= oldestYear; y--) onThisWeekYears.push(y);
-    const onThisWeekData: Record<number, Array<{ chartId: string; chartTitle: string; kind: string; entry: any; date: string }>> = {};
-    for (const year of onThisWeekYears) {
-      onThisWeekData[year] = [];
-      for (const chart of mainCharts) {
-        const chartData = knownData[chart.id];
-        const targetDate = new Date(latestDate + "T00:00:00");
-        targetDate.setFullYear(year);
-        let bestDate: string | null = null;
-        let bestDiff = Infinity;
-        for (const d of (chartData?.dates ?? [])) {
-          const diff = Math.abs(new Date(d + "T00:00:00").getTime() - targetDate.getTime());
-          if (diff < bestDiff) { bestDiff = diff; bestDate = d; }
-        }
-        const entries = bestDate ? (chartData.entriesByDate[bestDate] || []) : [];
-        const no1 = entries[0] ?? null;
-        onThisWeekData[year].push({ chartId: chart.id, chartTitle: chart.cfg.title, kind: chart.kind, entry: no1, date: bestDate || "" });
-      }
-    }
-
     return {
       charts: {
-        songs: { data: songsData, latestDate: songsData?.dates?.[songsData.dates.length - 1] ?? "" },
-        albums: { data: albumsData, latestDate: albumsData?.dates?.[albumsData.dates.length - 1] ?? "" },
-        artists: { data: artistsData, latestDate: artistsData?.dates?.[artistsData.dates.length - 1] ?? "" },
+        songs: { data: null, latestDate: "" },
+        albums: { data: null, latestDate: "" },
+        artists: { data: null, latestDate: "" },
       },
-      numberOnes,
-      firstTimers,
-      onThisWeekData,
-      onThisWeekYears,
-      onThisWeekLatestDate: latestDate,
+      numberOnes: [] as any[],
+      firstTimers: [] as any[],
+      onThisWeekData: {} as Record<number, any[]>,
+      onThisWeekYears: [] as number[],
+      onThisWeekLatestDate: "",
     };
   },
   head: () => ({
@@ -118,6 +47,38 @@ function SpotifyImg({ query, type, rounded }: { query: string; type: "artist" | 
   return <img src={url} alt={query} className={`w-full h-full object-cover animate-fade-in ${rounded ? 'rounded-full' : 'rounded-lg'}`} />;
 }
 
+function ChartSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="aspect-square bg-gradient-to-br from-[var(--muted)] to-[var(--border)] animate-pulse" />
+          <div className="p-3 space-y-2">
+            <div className="h-4 bg-[var(--muted)] rounded animate-pulse w-3/4" />
+            <div className="h-3 bg-[var(--muted)] rounded animate-pulse w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SectionSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="aspect-square bg-gradient-to-br from-[var(--muted)] to-[var(--border)] animate-pulse" />
+          <div className="p-3 space-y-2">
+            <div className="h-4 bg-[var(--muted)] rounded animate-pulse w-3/4" />
+            <div className="h-3 bg-[var(--muted)] rounded animate-pulse w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ────── TOP CHARTS Section ────── */
 function TopChartsSection({ charts }: { charts: any }) {
   const tabs: Array<"songs" | "albums" | "artists"> = ["songs", "albums", "artists"];
@@ -138,7 +99,6 @@ function TopChartsSection({ charts }: { charts: any }) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Auto-rotate every 4 seconds, paused on hover/manual click
   useEffect(() => {
     if (paused) return;
     const timer = setInterval(() => {
@@ -153,7 +113,6 @@ function TopChartsSection({ charts }: { charts: any }) {
   const handleManualClick = (key: "songs" | "albums" | "artists") => {
     setActive(key);
     setPaused(true);
-    // Resume auto-rotation after 10s of inactivity
     setTimeout(() => setPaused(false), 10000);
   };
 
@@ -168,9 +127,11 @@ function TopChartsSection({ charts }: { charts: any }) {
     <section className="mb-14" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="section-banner">
         <span>Top Charts</span>
-        <Link to="/chart/$chartId/$date" params={{ chartId: active, date: latestDate }} className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
-          View Chart <i className="fas fa-arrow-right ml-1" />
-        </Link>
+        {latestDate && (
+          <Link to="/chart/$chartId/$date" params={{ chartId: active, date: latestDate }} className="text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity">
+            View Chart <i className="fas fa-arrow-right ml-1" />
+          </Link>
+        )}
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {labels.map(l => (
@@ -181,55 +142,58 @@ function TopChartsSection({ charts }: { charts: any }) {
           >{l.label}</button>
         ))}
       </div>
-      <motion.div
-        key={active}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
-      >
-        {entries.map((e: ChartEntry, i: number) => (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06 }} key={`${active}-${e.position}`} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] hover:shadow-lg hover:shadow-[var(--accent)]/10 hover:-translate-y-1 transition-all duration-300 group shadow-sm">
-            <div className="aspect-square relative">
-              <SpotifyImg
-                query={cfg.kind === "album" ? `album:"${e.name}" artist:"${e.artist}"` : cfg.kind === "artist" ? `artist:"${e.name}"` : `artist:"${e.artist}" track:"${e.name}"`}
-                type={cfg.kind === "album" ? "album" : cfg.kind === "artist" ? "artist" : "track"}
-                rounded={false}
-              />
-              <div className="rank-badge">{e.position}</div>
-            </div>
-            <div className="p-3">
-              <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
-                {cfg.kind === "artist" ? (
-                  <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
-                    {e.name}
-                  </Link>
-                ) : cfg.kind === "album" ? (
-                  <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
-                    {stripFeatFromTitle(e.name)}
-                  </Link>
-                ) : (
-                  <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:underline">
-                    {stripFeatFromTitle(e.name)}
-                  </Link>
+      {entries.length === 0 ? <ChartSkeleton /> : (
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
+        >
+          {entries.map((e: ChartEntry, i: number) => (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06 }} key={`${active}-${e.position}`} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] hover:shadow-lg hover:shadow-[var(--accent)]/10 hover:-translate-y-1 transition-all duration-300 group shadow-sm">
+              <div className="aspect-square relative">
+                <SpotifyImg
+                  query={cfg.kind === "album" ? `album:"${e.name}" artist:"${e.artist}"` : cfg.kind === "artist" ? `artist:"${e.name}"` : `artist:"${e.artist}" track:"${e.name}"`}
+                  type={cfg.kind === "album" ? "album" : cfg.kind === "artist" ? "artist" : "track"}
+                  rounded={false}
+                />
+                <div className="rank-badge">{e.position}</div>
+              </div>
+              <div className="p-3">
+                <div className="font-bold text-sm whitespace-normal break-words group-hover:text-[var(--accent)] transition-colors">
+                  {cfg.kind === "artist" ? (
+                    <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
+                      {e.name}
+                    </Link>
+                  ) : cfg.kind === "album" ? (
+                    <Link to="/album/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:underline">
+                      {stripFeatFromTitle(e.name)}
+                    </Link>
+                  ) : (
+                    <Link to="/song/$slug" params={{ slug: songSlug(e.name, e.artist) }} className="hover:underline">
+                      {stripFeatFromTitle(e.name)}
+                    </Link>
+                  )}
+                </div>
+                {cfg.kind !== "artist" && (
+                  <div className="text-xs text-muted-foreground whitespace-normal break-words">
+                    {e.artist}
+                    <TrackArtists song={e.name} artist={e.artist} className="text-xs text-muted-foreground" />
+                  </div>
                 )}
               </div>
-              {cfg.kind !== "artist" && (
-                <div className="text-xs text-muted-foreground whitespace-normal break-words">
-                  {e.artist}
-                  <TrackArtists song={e.name} artist={e.artist} className="text-xs text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
     </section>
   );
 }
 
 /* ────── NO.1 THIS WEEK Section ────── */
 function NumberOnesSection({ numberOnes }: { numberOnes: any[] }) {
+  if (numberOnes.length === 0) return <section className="mb-14"><div className="section-banner"><span>No. 1 This Week</span></div><SectionSkeleton count={4} /></section>;
   return (
     <section className="mb-14">
       <div className="section-banner">
@@ -363,30 +327,18 @@ function OnThisWeekWidget({ years, data, latestDate }: { years: number[]; data: 
 
   const entries = data[selectedYear] || [];
   const hasAny = entries.some((e) => e.entry);
-  // Find the first chart's date for the "view chart" link
   const chartDate = entries[0]?.date || latestDate;
 
+  if (years.length === 0) return null;
   if (!hasAny) return null;
 
   return (
     <div className="sidebar-section mt-4">
       <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">On This Week</div>
-      {/* Year selector — horizontal scroll */}
       <div className="relative mb-3">
-        <div
-          ref={scrollRef}
-          className="flex gap-1.5 overflow-x-auto scroll-thin pb-1"
-        >
+        <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto scroll-thin pb-1">
           {years.map((y) => (
-            <button
-              key={y}
-              onClick={() => setSelectedYear(y)}
-              className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all shrink-0 ${
-                selectedYear === y
-                  ? "bg-[var(--accent)] text-black shadow-[0_0_10px_rgba(255,109,0,0.3)]"
-                  : "bg-[var(--muted)] text-muted-foreground hover:text-[var(--foreground)] hover:bg-[var(--border)]"
-              }`}
-            >
+            <button key={y} onClick={() => setSelectedYear(y)} className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all shrink-0 ${selectedYear === y ? "bg-[var(--accent)] text-black shadow-[0_0_10px_rgba(255,109,0,0.3)]" : "bg-[var(--muted)] text-muted-foreground hover:text-[var(--foreground)] hover:bg-[var(--border)]"}`}>
               {y}
             </button>
           ))}
@@ -396,16 +348,10 @@ function OnThisWeekWidget({ years, data, latestDate }: { years: number[]; data: 
         {entries.map((item) => {
           if (!item.entry) return null;
           const kindIcon = item.kind === "artist" ? "fa-user" : item.kind === "album" ? "fa-compact-disc" : "fa-music";
-          return (
-            <OnThisWeekItem key={`${selectedYear}-${item.chartId}`} item={item} kindIcon={kindIcon} />
-          );
+          return <OnThisWeekItem key={`${selectedYear}-${item.chartId}`} item={item} kindIcon={kindIcon} />;
         })}
       </div>
-      <Link
-        to="/chart/$chartId/$date"
-        params={{ chartId: "songs", date: chartDate }}
-        className="mt-3 block text-center text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] hover:opacity-80 transition-opacity"
-      >
+      <Link to="/chart/$chartId/$date" params={{ chartId: "songs", date: chartDate }} className="mt-3 block text-center text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] hover:opacity-80 transition-opacity">
         View Full Chart <i className="fas fa-arrow-right ml-1" />
       </Link>
     </div>
@@ -425,10 +371,7 @@ function OnThisWeekItem({ item, kindIcon }: { item: { chartId: string; chartTitl
     else if (item.kind === "album") query = `album:"${entry.name}" artist:"${entry.artist}"`;
     else query = `track:"${entry.name}" artist:"${entry.artist}"`;
     getSpotifyImage({ data: { query, type: item.kind as any } }).then((url) => {
-      if (active) {
-        setImageUrl(url ?? null);
-        setLoading(false);
-      }
+      if (active) { setImageUrl(url ?? null); setLoading(false); }
     });
     return () => { active = false; };
   }, [entry.name, entry.artist, item.kind]);
@@ -436,30 +379,14 @@ function OnThisWeekItem({ item, kindIcon }: { item: { chartId: string; chartTitl
   return (
     <div className="flex items-center gap-2.5 group">
       <div className="w-10 h-10 rounded-lg overflow-hidden bg-[var(--muted)] shrink-0 flex items-center justify-center">
-        {loading ? (
-          <div className="w-full h-full bg-gradient-to-br from-[var(--muted)] to-[var(--border)] animate-pulse" />
-        ) : imageUrl ? (
-          <img src={imageUrl} alt={entry.name} className="w-full h-full object-cover animate-fade-in" loading="lazy" />
-        ) : (
-          <i className={`fas ${kindIcon} text-muted-foreground text-xs`} />
-        )}
+        {loading ? <div className="w-full h-full bg-gradient-to-br from-[var(--muted)] to-[var(--border)] animate-pulse" /> : imageUrl ? <img src={imageUrl} alt={entry.name} className="w-full h-full object-cover animate-fade-in" loading="lazy" /> : <i className={`fas ${kindIcon} text-muted-foreground text-xs`} />}
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{item.chartTitle}</div>
         <div className="font-bold text-xs truncate group-hover:text-[var(--accent)] transition-colors">
-          {item.kind === "artist" ? (
-            <Link to="/artist/$slug" params={{ slug: slugifyArtist(entry.name) }} className="hover:underline">{entry.name}</Link>
-          ) : item.kind === "album" ? (
-            <Link to="/album/$slug" params={{ slug: slugifyArtist(entry.name) }} className="hover:underline">{stripFeatFromTitle(entry.name)}</Link>
-          ) : (
-            <Link to="/song/$slug" params={{ slug: songSlug(entry.name, entry.artist) }} className="hover:underline">{stripFeatFromTitle(entry.name)}</Link>
-          )}
+          {item.kind === "artist" ? <Link to="/artist/$slug" params={{ slug: slugifyArtist(entry.name) }} className="hover:underline">{entry.name}</Link> : item.kind === "album" ? <Link to="/album/$slug" params={{ slug: slugifyArtist(entry.name) }} className="hover:underline">{stripFeatFromTitle(entry.name)}</Link> : <Link to="/song/$slug" params={{ slug: songSlug(entry.name, entry.artist) }} className="hover:underline">{stripFeatFromTitle(entry.name)}</Link>}
         </div>
-        {item.kind !== "artist" && (
-          <div className="text-[10px] text-muted-foreground truncate">
-            <Link to="/artist/$slug" params={{ slug: slugifyArtist(entry.artist) }} className="hover:text-[var(--accent)]">{entry.artist}</Link>
-          </div>
-        )}
+        {item.kind !== "artist" && <div className="text-[10px] text-muted-foreground truncate"><Link to="/artist/$slug" params={{ slug: slugifyArtist(entry.artist) }} className="hover:text-[var(--accent)]">{entry.artist}</Link></div>}
       </div>
     </div>
   );
@@ -468,7 +395,6 @@ function OnThisWeekItem({ item, kindIcon }: { item: { chartId: string; chartTitl
 /* ────── CHART BEAT Section ────── */
 function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
   if (!articles || articles.length === 0) return null;
-
   return (
     <section className="mb-14">
       <div className="section-banner">
@@ -484,11 +410,7 @@ function ChartBeatSection({ articles }: { articles: GeneratedBeatArticle[] }) {
           return (
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.05 }} key={article.chartId}>
               <Link to="/chart-beat-2/$chartId/$date" params={{ chartId: article.chartId, date: article.date }} className="bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden hover:border-[var(--accent)] transition-all flex items-stretch group shadow-sm">
-                {article.artist && (
-                  <div className="w-20 sm:w-32 h-auto shrink-0">
-                    <SpotifyImg query={`artist:"${article.artist}"`} type="artist" rounded={false} />
-                  </div>
-                )}
+                {article.artist && <div className="w-20 sm:w-32 h-auto shrink-0"><SpotifyImg query={`artist:"${article.artist}"`} type="artist" rounded={false} /></div>}
                 <div className="p-3 sm:p-4 flex flex-col justify-center flex-1 min-w-0">
                   <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1 truncate">{cfg?.title ?? article.chartTitle}</div>
                   <div className="font-bold text-xs sm:text-base mb-1 group-hover:text-[var(--accent)] transition-colors line-clamp-2 break-words">{article.headline}</div>
@@ -516,46 +438,26 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
 
   return (
     <aside className="space-y-4">
-      {/* Search Artists */}
       <div className="sidebar-section">
         <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Search Artists</div>
         <div className="relative">
-          <input
-            type="text"
-            placeholder="Search Artists"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="sidebar-search"
-          />
+          <input type="text" placeholder="Search Artists" value={search} onChange={(e) => setSearch(e.target.value)} className="sidebar-search" />
           <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
         </div>
         {filteredArtists.length > 0 && (
           <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
             {filteredArtists.map(a => (
-              <Link key={a.slug} to="/artist/$slug" params={{ slug: a.slug }} className="sidebar-link whitespace-normal break-words">
-                {a.name}
-              </Link>
+              <Link key={a.slug} to="/artist/$slug" params={{ slug: a.slug }} className="sidebar-link whitespace-normal break-words">{a.name}</Link>
             ))}
           </div>
         )}
       </div>
-
-      {/* Weekly Charts */}
       <div className="sidebar-section">
         <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest mb-3">Weekly Charts</div>
         <div className="space-y-1">
-          {weeklyChartIds.map(id => {
-            const cfg = chartsConfig[id];
-            return (
-              <Link key={id} to="/chart/$chartId" params={{ chartId: id }} className="sidebar-link">
-                {cfg.title}
-              </Link>
-            );
-          })}
+          {weeklyChartIds.map(id => <Link key={id} to="/chart/$chartId" params={{ chartId: id }} className="sidebar-link">{chartsConfig[id].title}</Link>)}
         </div>
       </div>
-
-      {/* Greatest of All Time */}
       <div className="sidebar-section">
         <button onClick={() => setGoatOpen(!goatOpen)} className="flex items-center justify-between w-full cursor-pointer">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Greatest of All Time</div>
@@ -570,8 +472,6 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
           </div>
         )}
       </div>
-
-      {/* Year-End */}
       <div className="sidebar-section">
         <button onClick={() => setYeOpen(!yeOpen)} className="flex items-center justify-between w-full cursor-pointer">
           <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Year-End Charts</div>
@@ -591,8 +491,6 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
           </div>
         )}
       </div>
-
-      {/* Stats */}
       <Link to="/stats" className="sidebar-section block hover:border-[var(--accent)] transition-all">
         <div className="text-xs uppercase text-muted-foreground font-bold tracking-widest">Stats</div>
       </Link>
@@ -602,31 +500,13 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
 
 /* ────── LANDING PAGE ────── */
 function LandingPage() {
-  const { charts, numberOnes: serverNumberOnes, firstTimers, onThisWeekData, onThisWeekYears, onThisWeekLatestDate } = Route.useLoaderData();
+  const { data: songsData } = useServerData("chart:songs", () => getWeeklyChart({ data: { chartId: "songs" } }));
+  const { data: albumsData } = useServerData("chart:albums", () => getWeeklyChart({ data: { chartId: "albums" } }));
+  const { data: artistsData } = useServerData("chart:artists", () => getWeeklyChart({ data: { chartId: "artists" } }));
+  const { data: artistStats } = useServerData("artistStats", () => getAllArtistStats());
+  const { data: latestArticles } = useServerData("beatArticles", () => getLatestBeatArticles());
 
-  const [artistList, setArtistList] = useState<{ name: string; slug: string }[]>([]);
-  const [latestArticles, setLatestArticles] = useState<GeneratedBeatArticle[]>([]);
   const [extraNumberOnes, setExtraNumberOnes] = useState<Array<{ chartId: string; title: string; kind: string; date: string; entry: any }>>([]);
-
-  useEffect(() => {
-    let active = true;
-    getAllArtistStats().then((stats) => {
-      if (!active) return;
-      const list = Object.values(stats ?? {})
-        .map((a: any) => ({ name: a.name, slug: slugifyArtist(a.name) }))
-        .sort((a: any, b: any) => a.name.localeCompare(b.name));
-      setArtistList(list);
-    }).catch(() => {});
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    getLatestBeatArticles().then((articles) => {
-      if (active) setLatestArticles(articles ?? []);
-    }).catch(() => {});
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -648,12 +528,91 @@ function LandingPage() {
     return () => { active = false; };
   }, []);
 
-  const numberOnes = useMemo(() => [...serverNumberOnes, ...extraNumberOnes], [serverNumberOnes, extraNumberOnes]);
+  const artistList = useMemo(() => {
+    if (!artistStats) return [];
+    return Object.values(artistStats ?? {})
+      .map((a: any) => ({ name: a.name, slug: slugifyArtist(a.name) }))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+  }, [artistStats]);
+
+  const charts = useMemo(() => {
+    const toChartData = (data: WeeklyChartData | null) => ({
+      data,
+      latestDate: data?.dates?.[data.dates.length - 1] ?? "",
+    });
+    return { songs: toChartData(songsData), albums: toChartData(albumsData), artists: toChartData(artistsData) };
+  }, [songsData, albumsData, artistsData]);
+
+  const numberOnes = useMemo(() => {
+    const mainOnes = MAIN_CHART_IDS.map((id) => {
+      const chart = charts[id]?.data;
+      if (!chart) return { chartId: id, title: id, kind: "song" as const, date: "", entry: null };
+      const latestDate = chart.dates?.[chart.dates.length - 1] ?? "";
+      const entries = latestDate ? (chart.entriesByDate?.[latestDate] ?? []) : [];
+      const no1 = entries[0] ?? null;
+      return { chartId: chart.chartId ?? id, title: chart.title ?? id, kind: chart.kind ?? "song" as const, date: latestDate, entry: no1 };
+    });
+    return [...mainOnes, ...extraNumberOnes];
+  }, [charts, extraNumberOnes]);
+
+  const firstTimers = useMemo(() => {
+    const result: Array<{ name: string; artist: string; position: number; date: string; kind: "song" | "album" | "artist"; chartId: string; chartTitle: string }> = [];
+    const artistsChartDates = (artistsData?.dates ?? []).slice().reverse();
+    for (const date of artistsChartDates) {
+      const entries = artistsData?.entriesByDate?.[date] || [];
+      for (const e of entries) {
+        if (e.diff === "NEW" && !result.find(ft => ft.name === e.name && ft.artist === e.artist)) {
+          result.push({ name: e.name, artist: e.artist, position: e.position, date, kind: "artist", chartId: "artists", chartTitle: chartsConfig["artists"].title });
+          if (result.length >= 4) break;
+        }
+      }
+      if (result.length >= 4) break;
+    }
+    return result;
+  }, [artistsData]);
+
+  const { onThisWeekData, onThisWeekYears, onThisWeekLatestDate } = useMemo(() => {
+    const mainCharts = [
+      { id: "songs", kind: "song" as const, cfg: chartsConfig.songs },
+      { id: "albums", kind: "album" as const, cfg: chartsConfig.albums },
+      { id: "artists", kind: "artist" as const, cfg: chartsConfig.artists },
+    ];
+    const latestDate = songsData?.dates?.[songsData.dates.length - 1] ?? "";
+    const currentYear = latestDate ? new Date(latestDate + "T00:00:00").getFullYear() : new Date().getFullYear();
+    let oldestYear = currentYear;
+    for (const chart of mainCharts) {
+      const chartData = charts[chart.id]?.data;
+      if (chartData?.dates?.length > 0) {
+        const y = new Date(chartData.dates[0] + "T00:00:00").getFullYear();
+        if (y < oldestYear) oldestYear = y;
+      }
+    }
+    const years: number[] = [];
+    for (let y = currentYear; y >= oldestYear; y--) years.push(y);
+    const data: Record<number, Array<{ chartId: string; chartTitle: string; kind: string; entry: any; date: string }>> = {};
+    for (const year of years) {
+      data[year] = [];
+      for (const chart of mainCharts) {
+        const chartData = charts[chart.id]?.data;
+        const targetDate = new Date(latestDate + "T00:00:00");
+        targetDate.setFullYear(year);
+        let bestDate: string | null = null;
+        let bestDiff = Infinity;
+        for (const d of (chartData?.dates ?? [])) {
+          const diff = Math.abs(new Date(d + "T00:00:00").getTime() - targetDate.getTime());
+          if (diff < bestDiff) { bestDiff = diff; bestDate = d; }
+        }
+        const entries = bestDate ? (chartData?.entriesByDate?.[bestDate] || []) : [];
+        const no1 = entries[0] ?? null;
+        data[year].push({ chartId: chart.id, chartTitle: chart.cfg.title, kind: chart.kind, entry: no1, date: bestDate || "" });
+      }
+    }
+    return { onThisWeekData: data, onThisWeekYears: years, onThisWeekLatestDate: latestDate };
+  }, [songsData, charts]);
 
   return (
     <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
-      {/* Hero Title */}
       <div className="text-center py-10 md:py-16 relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <span className="text-[8rem] md:text-[14rem] font-black font-sans text-[var(--foreground)] opacity-[0.06] uppercase tracking-tighter leading-none">Charts</span>
@@ -661,49 +620,37 @@ function LandingPage() {
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-[var(--foreground)] tracking-tight relative z-10">daegon charts</h1>
         <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Weekly music charts, year-end rankings & greatest of all time lists</p>
       </div>
-
-      {/* Main Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar - Left Side */}
         <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-8 lg:h-fit">
           <Sidebar artistList={artistList} />
           <OnThisWeekWidget years={onThisWeekYears} data={onThisWeekData} latestDate={onThisWeekLatestDate} />
         </div>
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <TopChartsSection charts={charts} />
           <NumberOnesSection numberOnes={numberOnes} />
           <FirstTimersSection firstTimers={firstTimers} />
-          <ChartBeatSection articles={latestArticles} />
-          
-          {/* Chart Battle Mobile Link */}
+          <ChartBeatSection articles={(latestArticles as GeneratedBeatArticle[]) ?? []} />
           <div className="md:hidden mt-10">
             <Link to="/chart-battle" className="block bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(255,109,0,0.3)] p-4 rounded-xl flex items-center justify-center gap-4 group">
-              <div className="bg-[var(--accent)] text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-110 transition-transform">
-                VS
-              </div>
+              <div className="bg-[var(--accent)] text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-110 transition-transform">VS</div>
               <div className="text-left">
                 <div className="text-xs font-bold text-[var(--card-foreground)] uppercase tracking-widest">New Mini-Game!</div>
-                <div className="text-lg font-black uppercase text-[var(--card-foreground)]">Play Chart Battle 🏆</div>
+                <div className="text-lg font-black uppercase text-[var(--card-foreground)]">Play Chart Battle</div>
               </div>
             </Link>
           </div>
         </div>
       </div>
     </div>
-      
-      {/* Chart Battle Floating Tooltip */}
-      <Link to="/chart-battle" className="fixed bottom-6 left-6 z-50 animate-bounce cursor-pointer group hidden md:block">
-        <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(255,109,0,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
-          <div className="bg-[var(--accent)] text-white w-10 h-10 rounded-full flex items-center justify-center font-black">
-            VS
-          </div>
-          <div>
-            <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
-            <div className="text-sm font-semibold text-[var(--card-foreground)]">Play Chart Battle 🏆</div>
-          </div>
+    <Link to="/chart-battle" className="fixed bottom-6 left-6 z-50 animate-bounce cursor-pointer group hidden md:block">
+      <div className="bg-[var(--card)] border border-[var(--accent)] shadow-[0_0_15px_rgba(255,109,0,0.3)] px-4 py-3 rounded-2xl flex items-center gap-3">
+        <div className="bg-[var(--accent)] text-white w-10 h-10 rounded-full flex items-center justify-center font-black">VS</div>
+        <div>
+          <div className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">New Mini-Game!</div>
+          <div className="text-sm font-semibold text-[var(--card-foreground)]">Play Chart Battle</div>
         </div>
-      </Link>
+      </div>
+    </Link>
     </>
   );
 }

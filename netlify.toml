@@ -1,5 +1,5 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm install && npm run build && node -e \"const fs=require('fs');const src='node_modules/tslib/tslib.es6.mjs';const dst='.netlify/functions-internal/server/node_modules/tslib/tslib.es6.mjs';if(fs.existsSync(src)){fs.copyFileSync(src,dst);console.log('Copied tslib.es6.mjs')}\""
   publish = "dist"
 
 [build.environment]
