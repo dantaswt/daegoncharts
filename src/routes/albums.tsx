@@ -4,10 +4,12 @@ import { getSpotifyImage } from "@/lib/spotify.functions";
 import { stripAlbumEdition } from "@/lib/charts-config";
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { useServerData } from "@/lib/use-server-data";
 
 export const Route = createFileRoute("/albums")({
-  loader: async () => ({ list: [] as any[] }),
+  loader: async () => {
+    const list = await getAllAlbumList();
+    return { list };
+  },
   head: () => ({
     meta: [
       { title: "Albums — daegon charts" },
@@ -19,48 +21,54 @@ export const Route = createFileRoute("/albums")({
 
 function AlbumThumbnail({ name, artist }: { name: string; artist: string }) {
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     let active = true;
-    getSpotifyImage({ data: { query: `album:"${name}" artist:"${artist}"`, type: "album" } }).then((url) => { if (active && url) setImageUrl(url); });
+    getSpotifyImage({ data: { query: `album:"${name}" artist:"${artist}"`, type: "album" } }).then((url) => {
+      if (active && url) setImageUrl(url);
+    });
     return () => { active = false; };
   }, [name, artist]);
+
   return (
     <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--card)] flex items-center justify-center text-sm font-semibold text-[var(--foreground)] border border-[var(--border)]">
-      {imageUrl ? <img src={imageUrl} alt={name} className="w-full h-full object-cover animate-fade-in" /> : <i className="fas fa-compact-disc text-[var(--muted-foreground)] animate-pulse" />}
+      {imageUrl ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover animate-fade-in" />
+      ) : (
+        <i className="fas fa-compact-disc text-[var(--muted-foreground)] animate-pulse" />
+      )}
     </div>
   );
 }
 
 function AllAlbumsPage() {
-  const { data: albumsData, isLoading } = useServerData<any[]>("albumList", () => getAllAlbumList() as any);
-  const albums = (albumsData as any[]) ?? [];
+  const { list } = Route.useLoaderData();
   const [search, setSearch] = useState("");
-  const letters = useMemo(() => Array.from(new Set(albums.map((a: any) => a.name[0].toUpperCase()))).sort(), [albums]);
+  const letters = useMemo(() => {
+    return Array.from(new Set(list.map((a) => a.name[0].toUpperCase()))).sort();
+  }, [list]);
   const [selectedLetter, setSelectedLetter] = useState<string>(() => letters[0] ?? "");
-  React.useEffect(() => { if (!selectedLetter && letters.length) setSelectedLetter(letters[0]); }, [letters]);
+
+  React.useEffect(() => {
+    if (!selectedLetter && letters.length) setSelectedLetter(letters[0]);
+  }, [letters]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return albums.filter((a: any) => {
+    return list.filter((a) => {
       const matchesLetter = query || a.name[0].toUpperCase() === selectedLetter;
       const matchesSearch = !query || a.name.toLowerCase().includes(query) || a.artist.toLowerCase().includes(query);
       return matchesLetter && matchesSearch;
     });
-  }, [albums, search, selectedLetter]);
+  }, [list, search, selectedLetter]);
 
-  const grouped = useMemo(() => filtered.reduce<Record<string, any[]>>((groups, album) => { const letter = album.name[0].toUpperCase(); (groups[letter] ||= []).push(album); return groups; }, {}), [filtered]);
-
-  if (isLoading && albums.length === 0) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-        <div className="relative text-center py-10 md:py-14 mb-8 overflow-hidden">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Albums</h1>
-          <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">Loading albums...</p>
-        </div>
-        <div className="space-y-4">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-20 bg-[var(--muted)] rounded-3xl animate-pulse" />)}</div>
-      </div>
-    );
-  }
+  const grouped = useMemo(() => {
+    return filtered.reduce<Record<string, typeof list>>((groups, album) => {
+      const letter = album.name[0].toUpperCase();
+      (groups[letter] ||= []).push(album);
+      return groups;
+    }, {});
+  }, [filtered]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
@@ -69,30 +77,58 @@ function AllAlbumsPage() {
           <span className="text-[6rem] md:text-[10rem] font-black text-[var(--foreground)] opacity-[0.06] font-sans uppercase tracking-tighter leading-none">ALBUMS</span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black gold tracking-tight relative z-10 uppercase">Albums</h1>
-        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{albums.length} albums tracked across all charts</p>
+        <p className="text-muted-foreground text-sm md:text-base mt-3 relative z-10">{list.length} albums tracked across all charts</p>
       </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex flex-wrap gap-2">
-          {letters.map((letter) => (<button key={letter} type="button" onClick={() => setSelectedLetter(letter)} className={`btn-nav ${selectedLetter === letter ? "active" : ""}`}>{letter}</button>))}
+          {letters.map((letter) => (
+            <button
+              key={letter}
+              type="button"
+              onClick={() => setSelectedLetter(letter)}
+              className={`btn-nav ${selectedLetter === letter ? "active" : ""}`}
+            >
+              {letter}
+            </button>
+          ))}
         </div>
         <div className="w-full sm:w-auto">
-          <input type="search" placeholder="Search albums or artists" value={search} onChange={(event) => setSearch(event.target.value)} className="w-full sm:w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]" />
+          <input
+            type="search"
+            placeholder="Search albums or artists"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="w-full sm:w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          />
         </div>
       </div>
-      {filtered.length === 0 ? <div className="text-sm text-muted-foreground">No albums found for that filter.</div> : (
+
+      {filtered.length === 0 ? (
+        <div className="text-sm text-muted-foreground">No albums found for that filter.</div>
+      ) : (
         Object.keys(grouped).sort().map((letter) => (
           <section key={letter} className="mb-8">
             <h2 className="text-xl font-bold mb-3">{letter}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {grouped[letter].map((album: any, i: number) => (
-                <motion.div key={album.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.4) }}>
-                  <Link to="/album/$slug" params={{ slug: album.slug }} className="group bg-[var(--card)] border border-[var(--border)] rounded-3xl p-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors shadow-sm">
-                    <AlbumThumbnail name={album.name} artist={album.artist} />
-                    <div className="min-w-0">
-                      <div className="font-semibold truncate group-hover:text-[var(--accent)]">{stripAlbumEdition(album.name)}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{album.artist} · {album.entries} entries</div>
-                    </div>
-                  </Link>
+              {grouped[letter].map((album, i) => (
+                <motion.div
+                  key={album.slug}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.4) }}
+                >
+                <Link
+                  to="/album/$slug"
+                  params={{ slug: album.slug }}
+                  className="group bg-[var(--card)] border border-[var(--border)] rounded-3xl p-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors shadow-sm"
+                >
+                  <AlbumThumbnail name={album.name} artist={album.artist} />
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate group-hover:text-[var(--accent)]">{stripAlbumEdition(album.name)}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{album.artist} · {album.entries} entries</div>
+                  </div>
+                </Link>
                 </motion.div>
               ))}
             </div>
