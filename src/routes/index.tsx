@@ -7,45 +7,35 @@ import { TrackArtists, stripFeatFromTitle } from "@/components/track-artists";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 
+const MAIN_CHART_IDS = ["songs", "albums", "artists"] as const;
+const SECONDARY_CHART_IDS = weeklyChartIds.filter(id => id !== "songs" && id !== "albums" && id !== "artists");
+
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const remainingIds = weeklyChartIds.filter(id => id !== "songs" && id !== "albums" && id !== "artists");
-
     const safeChart = async (chartId: string) => {
       try { return await getWeeklyChart({ data: { chartId } }); }
       catch { return { chartId, title: chartId, kind: "song" as const, dates: [] as string[], entriesByDate: {} as Record<string, any[]> }; }
     };
 
-    const [songsData, albumsData, artistsData, artistStats, latestArticles, ...remainingResults] = await Promise.all([
+    const [songsData, albumsData, artistsData] = await Promise.all([
       safeChart("songs"),
       safeChart("albums"),
       safeChart("artists"),
-      getAllArtistStats().catch(() => ({} as Record<string, any>)),
-      getLatestBeatArticles().catch(() => []),
-      ...remainingIds.map(id => safeChart(id)),
     ]);
 
     const knownData: Record<string, any> = { songs: songsData, albums: albumsData, artists: artistsData };
-    for (let i = 0; i < remainingIds.length; i++) {
-      knownData[remainingIds[i]] = remainingResults[i];
-    }
 
-    const numberOnes = weeklyChartIds.map((id) => {
+    const numberOnes = MAIN_CHART_IDS.map((id) => {
       const chart = knownData[id];
-      if (!chart) return { chartId: id, title: id, kind: "song", date: "", entry: null };
+      if (!chart) return { chartId: id, title: id, kind: "song" as const, date: "", entry: null };
       const latestDate = chart.dates?.[chart.dates.length - 1] ?? "";
       const entries = latestDate ? (chart.entriesByDate?.[latestDate] ?? []) : [];
       const no1 = entries[0] ?? null;
-      return { chartId: chart.chartId ?? id, title: chart.title ?? id, kind: chart.kind ?? "song", date: latestDate, entry: no1 };
+      return { chartId: chart.chartId ?? id, title: chart.title ?? id, kind: chart.kind ?? "song" as const, date: latestDate, entry: no1 };
     });
 
-    const artistList = Object.values(artistStats ?? {})
-      .map((a) => ({ name: a.name, slug: slugifyArtist(a.name) }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    // First Timers for Artist 50
-    const artistsChartDates = (artistsData?.dates ?? []).slice().reverse(); // newest first
     const firstTimers: Array<{ name: string; artist: string; position: number; date: string; kind: "song" | "album" | "artist"; chartId: string; chartTitle: string }> = [];
+    const artistsChartDates = (artistsData?.dates ?? []).slice().reverse();
     for (const date of artistsChartDates) {
       const entries = artistsData?.entriesByDate?.[date] || [];
       for (const e of entries) {
@@ -57,7 +47,6 @@ export const Route = createFileRoute("/")({
       if (firstTimers.length >= 4) break;
     }
 
-    // On This Week — #1s from all available years
     const mainCharts = [
       { id: "songs", kind: "song" as const, cfg: chartsConfig.songs },
       { id: "albums", kind: "album" as const, cfg: chartsConfig.albums },
@@ -65,7 +54,6 @@ export const Route = createFileRoute("/")({
     ];
     const latestDate = songsData?.dates?.[songsData.dates.length - 1] ?? "";
     const currentYear = latestDate ? new Date(latestDate + "T00:00:00").getFullYear() : new Date().getFullYear();
-    // Find the oldest year available across all main charts
     let oldestYear = currentYear;
     for (const chart of mainCharts) {
       const chartData = knownData[chart.id];
@@ -102,10 +90,8 @@ export const Route = createFileRoute("/")({
         albums: { data: albumsData, latestDate: albumsData?.dates?.[albumsData.dates.length - 1] ?? "" },
         artists: { data: artistsData, latestDate: artistsData?.dates?.[artistsData.dates.length - 1] ?? "" },
       },
-      latestArticles,
       numberOnes,
       firstTimers,
-      artistList,
       onThisWeekData,
       onThisWeekYears,
       onThisWeekLatestDate: latestDate,
@@ -616,7 +602,53 @@ function Sidebar({ artistList }: { artistList: { name: string; slug: string }[] 
 
 /* ────── LANDING PAGE ────── */
 function LandingPage() {
-  const { charts, latestArticles, numberOnes, firstTimers, artistList, onThisWeekData, onThisWeekYears, onThisWeekLatestDate } = Route.useLoaderData();
+  const { charts, numberOnes: serverNumberOnes, firstTimers, onThisWeekData, onThisWeekYears, onThisWeekLatestDate } = Route.useLoaderData();
+
+  const [artistList, setArtistList] = useState<{ name: string; slug: string }[]>([]);
+  const [latestArticles, setLatestArticles] = useState<GeneratedBeatArticle[]>([]);
+  const [extraNumberOnes, setExtraNumberOnes] = useState<Array<{ chartId: string; title: string; kind: string; date: string; entry: any }>>([]);
+
+  useEffect(() => {
+    let active = true;
+    getAllArtistStats().then((stats) => {
+      if (!active) return;
+      const list = Object.values(stats ?? {})
+        .map((a: any) => ({ name: a.name, slug: slugifyArtist(a.name) }))
+        .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      setArtistList(list);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getLatestBeatArticles().then((articles) => {
+      if (active) setLatestArticles(articles ?? []);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const safeChart = async (chartId: string) => {
+      try { return await getWeeklyChart({ data: { chartId } }); }
+      catch { return { chartId, title: chartId, kind: "song" as const, dates: [] as string[], entriesByDate: {} as Record<string, any[]> }; }
+    };
+    Promise.all(SECONDARY_CHART_IDS.map(id => safeChart(id))).then((results) => {
+      if (!active) return;
+      const extras = SECONDARY_CHART_IDS.map((id, i) => {
+        const chart = results[i];
+        const latestDate = chart.dates?.[chart.dates.length - 1] ?? "";
+        const entries = latestDate ? (chart.entriesByDate?.[latestDate] ?? []) : [];
+        const no1 = entries[0] ?? null;
+        return { chartId: chart.chartId ?? id, title: chart.title ?? id, kind: chart.kind ?? "song", date: latestDate, entry: no1 };
+      });
+      setExtraNumberOnes(extras);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const numberOnes = useMemo(() => [...serverNumberOnes, ...extraNumberOnes], [serverNumberOnes, extraNumberOnes]);
 
   return (
     <>

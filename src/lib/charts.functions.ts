@@ -189,7 +189,7 @@ export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(7_000) });
+      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(4_000) });
       if (res.status === 429) {
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -410,9 +410,13 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     return result;
   }
 
-  const entriesByDate = parseSheet(await fetchCsv(cfg.url));
-  if (cfg.secondaryUrl) {
-    const entries2 = parseSheet(await fetchCsv(cfg.secondaryUrl));
+  const [primaryRows, secondaryRows] = await Promise.all([
+    fetchCsv(cfg.url),
+    cfg.secondaryUrl ? fetchCsv(cfg.secondaryUrl) : Promise.resolve(null),
+  ]);
+  const entriesByDate = parseSheet(primaryRows);
+  if (secondaryRows) {
+    const entries2 = parseSheet(secondaryRows);
     for (const [d, entries] of Object.entries(entries2)) {
       (entriesByDate[d] ||= []).push(...entries);
     }
