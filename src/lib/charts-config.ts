@@ -12,9 +12,10 @@ export interface ChartConfig {
 
 const SHEET = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tq=select%20*&tqx=out:csv&gid=";
 const SHEET_HOT100 = "https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tq=select%20*&tqx=out:csv&gid=";
+const SHEET_HOT100_SONGS = "https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tq=select%20A,B,C,D,E,F,G,H,I,J&tqx=out:csv&gid=";
 
 export const chartsConfig: Record<string, ChartConfig> = {
-  songs: { id: "songs", url: SHEET + "904867620", title: "Hot 100", icon: "fa-music", kind: "song", group: "weekly", secondaryUrl: SHEET_HOT100 + "1011796371" },
+  songs: { id: "songs", url: SHEET + "904867620", title: "Hot 100", icon: "fa-music", kind: "song", group: "weekly", secondaryUrl: SHEET_HOT100_SONGS + "1011796371" },
   artists: { id: "artists", url: SHEET + "1568177610", title: "Artist 50", icon: "fa-user", kind: "artist", group: "weekly", secondaryUrl: SHEET_HOT100 + "1959135946" },
   albums: { id: "albums", url: SHEET + "1940039611", title: "Top 100 Albums", icon: "fa-compact-disc", kind: "album", group: "weekly", secondaryUrl: SHEET_HOT100 + "765580865" },
   radioSongs: { id: "radioSongs", url: SHEET + "1681272096", title: "Radio Songs", icon: "fa-broadcast-tower", kind: "song", group: "weekly" },
