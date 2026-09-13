@@ -164,7 +164,7 @@ export interface ChartBeatPost {
 // simple in-memory cache with TTL and size limit
 const cache = new Map<string, { at: number; data: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
-const TTL = 30 * 60 * 1000;
+const TTL = 5 * 60 * 1000;
 const MAX_CACHE = 80;
 
 export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
@@ -189,7 +189,7 @@ export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(4_000) });
+      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(15_000) });
       if (res.status === 429) {
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
