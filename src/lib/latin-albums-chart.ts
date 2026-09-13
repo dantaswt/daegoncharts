@@ -4,7 +4,7 @@ import { getWeeklyChart, type ChartEntry, type WeeklyChartData } from "./charts.
 const RELEASES_URL = "https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tq=select%20*&tqx=out:csv&gid=1618822736";
 
 async function fetchReleasesCsv(): Promise<Map<string, string>> {
-  const res = await fetch(RELEASES_URL, { headers: { "cache-control": "public, max-age=300" } });
+  const res = await fetch(RELEASES_URL, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`Releases CSV fetch failed ${res.status}`);
   let text = await res.text();
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);

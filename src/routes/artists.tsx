@@ -44,9 +44,12 @@ function ArtistThumbnail({ name }: { name: string }) {
 function AllArtistsPage() {
   const { list } = Route.useLoaderData();
   const navigate = useNavigate();
-  const urlParams = new URLSearchParams(window.location.search);
-  const initialQ = urlParams.get("q") ?? "";
-  const [search, setSearch] = useState(initialQ);
+  const [search, setSearch] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("q") ?? "";
+    }
+    return "";
+  });
   const debounceRef = React.useRef<ReturnType<typeof setTimeout>>();
   const letters = useMemo(() => {
     return Array.from(new Set(list.map((a) => a.name[0].toUpperCase()))).sort();

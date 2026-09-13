@@ -10,8 +10,5 @@ export default defineConfig({
     server: {
       allowedHosts: true,
     },
-    nitro: {
-      preset: "netlify",
-    },
   },
 });

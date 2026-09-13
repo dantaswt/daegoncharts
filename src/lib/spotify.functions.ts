@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-const SPOTIFY_CLIENT_ID = "08a6cea61aaa4828b173bf2b40e14134";
-const SPOTIFY_CLIENT_SECRET = "24da1ad56cf34cd8b6731a2bda503fdb";
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID ?? "";
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET ?? "";
 
 let accessToken: string | null = null;
 let tokenExpiresAt = 0;
@@ -38,6 +38,7 @@ async function getAccessToken() {
       Authorization: "Basic " + btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`),
     },
     body: "grant_type=client_credentials",
+    signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) return null;
   const data = await response.json();
@@ -103,7 +104,7 @@ async function spotifySearch(token: string, query: string, type: "album" | "arti
   url.searchParams.set("type", type);
   url.searchParams.set("limit", String(limit));
   try {
-    const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000) });
     if (!response.ok) return null;
     return await response.json();
   } catch {

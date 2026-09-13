@@ -189,7 +189,7 @@ export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" } });
+      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(7_000) });
       if (res.status === 429) {
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -202,6 +202,7 @@ async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
       const parsed = Papa.parse<string[]>(text, { skipEmptyLines: true });
       return parsed.data as string[][];
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") throw err;
       if (attempt < retries) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         continue;
@@ -1119,7 +1120,7 @@ export const getAllArtistStats = createServerFn({ method: "GET" }).handler(async
       if (featVerifyCache.has(key)) return featVerifyCache.get(key)!;
       try {
         const q = encodeURIComponent(`${song} ${mainArtist}`);
-        const resp = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`);
+        const resp = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`, { signal: AbortSignal.timeout(10_000) });
         const data = await resp.json();
         for (const r of data.results ?? []) {
           const nameMatch = normalize(r.trackName ?? "") === normalize(song);
