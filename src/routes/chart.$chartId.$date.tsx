@@ -70,14 +70,24 @@ export const Route = createFileRoute("/chart/$chartId/$date")({
       } catch { return dStr; }
     }
     const normalized = toSaturdayIso(params.date);
-    if (data.entriesByDate[params.date]) {
-      return { data, date: params.date, chartId: params.chartId };
+    const targetDate = data.entriesByDate[params.date] ? params.date : data.entriesByDate[normalized] ? normalized : null;
+    if (!targetDate) throw notFound();
+
+    // Trim SSR payload: keep dates array for navigation but only ±1 year of entries
+    const targetYear = new Date(targetDate + "T00:00:00").getFullYear();
+    const trimmedEntries: Record<string, any[]> = {};
+    for (const d of data.dates) {
+      const dYear = new Date(d + "T00:00:00").getFullYear();
+      if (Math.abs(dYear - targetYear) <= 1 && data.entriesByDate[d]) {
+        trimmedEntries[d] = data.entriesByDate[d];
+      }
     }
-    if (data.entriesByDate[normalized]) {
-      // return normalized date so the page can render correct data; component may replace URL
-      return { data, date: normalized, chartId: params.chartId, originalRequestedDate: params.date };
+    const trimmedData = { ...data, entriesByDate: trimmedEntries };
+
+    if (targetDate === params.date) {
+      return { data: trimmedData, date: params.date, chartId: params.chartId };
     }
-    throw notFound();
+    return { data: trimmedData, date: normalized, chartId: params.chartId, originalRequestedDate: params.date };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Chart not found | daegon charts" }] };

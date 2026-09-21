@@ -2,9 +2,16 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import React from "react";
 import { chartsConfig, weeklyChartIds } from "@/lib/charts-config";
 
+const PRE_2017_CHARTS = ["songs", "artists", "albums"] as const;
+
 export function ChartTypeNav({ activeId, date }: { activeId: string; date?: string }) {
   const [expanded, setExpanded] = React.useState(false);
   const activeCfg = chartsConfig[activeId];
+
+  const visibleChartIds = React.useMemo(() => {
+    if (date && date < "2017-01-01") return PRE_2017_CHARTS;
+    return weeklyChartIds;
+  }, [date]);
 
   return (
     <div className="flex flex-col gap-2 justify-center md:justify-start mb-6">
@@ -25,7 +32,7 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
         </button>
         {expanded && (
           <>
-            {weeklyChartIds.filter((id) => id !== activeId).map((id) => {
+            {visibleChartIds.filter((id) => id !== activeId).map((id) => {
               const cfg = chartsConfig[id];
               return (
                 <Link
@@ -45,7 +52,7 @@ export function ChartTypeNav({ activeId, date }: { activeId: string; date?: stri
 
       {/* Desktop: show all */}
       <div className="hidden md:flex flex-col gap-2">
-        {weeklyChartIds.map((id) => {
+        {visibleChartIds.map((id) => {
           const cfg = chartsConfig[id];
           return (
             <Link

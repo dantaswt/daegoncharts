@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SongsRouteImport } from './routes/songs'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as NumberOnesRouteImport } from './routes/number-ones'
+import { Route as DecadeEndRouteImport } from './routes/decade-end'
 import { Route as ChartBattleRouteImport } from './routes/chart-battle'
 import { Route as AwardsRouteImport } from './routes/awards'
 import { Route as ArtistsRouteImport } from './routes/artists'
@@ -21,12 +22,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as YearEndIndexRouteImport } from './routes/year-end.index'
 import { Route as StatsIndexRouteImport } from './routes/stats.index'
 import { Route as GoatIndexRouteImport } from './routes/goat.index'
+import { Route as DecadeEndIndexRouteImport } from './routes/decade-end.index'
 import { Route as AwardsIndexRouteImport } from './routes/awards.index'
 import { Route as YearEndChartIdRouteImport } from './routes/year-end.$chartId'
 import { Route as StatsCategoryRouteImport } from './routes/stats.$category'
 import { Route as SongSlugRouteImport } from './routes/song.$slug'
 import { Route as LatinAlbumsDateRouteImport } from './routes/latin-albums.$date'
 import { Route as GoatChartIdRouteImport } from './routes/goat.$chartId'
+import { Route as DecadeEndChartIdRouteImport } from './routes/decade-end.$chartId'
 import { Route as ChartChartIdRouteImport } from './routes/chart.$chartId'
 import { Route as ChartBeatBlogRouteImport } from './routes/chart-beat.$blog'
 import { Route as AwardsStatsRouteImport } from './routes/awards.stats'
@@ -54,6 +57,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const NumberOnesRoute = NumberOnesRouteImport.update({
   id: '/number-ones',
   path: '/number-ones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DecadeEndRoute = DecadeEndRouteImport.update({
+  id: '/decade-end',
+  path: '/decade-end',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChartBattleRoute = ChartBattleRouteImport.update({
@@ -101,6 +109,11 @@ const GoatIndexRoute = GoatIndexRouteImport.update({
   path: '/goat/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DecadeEndIndexRoute = DecadeEndIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DecadeEndRoute,
+} as any)
 const AwardsIndexRoute = AwardsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -130,6 +143,11 @@ const GoatChartIdRoute = GoatChartIdRouteImport.update({
   id: '/goat/$chartId',
   path: '/goat/$chartId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DecadeEndChartIdRoute = DecadeEndChartIdRouteImport.update({
+  id: '/$chartId',
+  path: '/$chartId',
+  getParentRoute: () => DecadeEndRoute,
 } as any)
 const ChartChartIdRoute = ChartChartIdRouteImport.update({
   id: '/chart/$chartId',
@@ -204,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/artists': typeof ArtistsRoute
   '/awards': typeof AwardsRouteWithChildren
   '/chart-battle': typeof ChartBattleRoute
+  '/decade-end': typeof DecadeEndRouteWithChildren
   '/number-ones': typeof NumberOnesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/songs': typeof SongsRoute
@@ -216,12 +235,14 @@ export interface FileRoutesByFullPath {
   '/awards/stats': typeof AwardsStatsRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
+  '/decade-end/$chartId': typeof DecadeEndChartIdRoute
   '/goat/$chartId': typeof GoatChartIdRoute
   '/latin-albums/$date': typeof LatinAlbumsDateRoute
   '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/awards/': typeof AwardsIndexRoute
+  '/decade-end/': typeof DecadeEndIndexRoute
   '/goat/': typeof GoatIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/year-end/': typeof YearEndIndexRoute
@@ -247,12 +268,14 @@ export interface FileRoutesByTo {
   '/awards/categories': typeof AwardsCategoriesRoute
   '/awards/stats': typeof AwardsStatsRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
+  '/decade-end/$chartId': typeof DecadeEndChartIdRoute
   '/goat/$chartId': typeof GoatChartIdRoute
   '/latin-albums/$date': typeof LatinAlbumsDateRoute
   '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/awards': typeof AwardsIndexRoute
+  '/decade-end': typeof DecadeEndIndexRoute
   '/goat': typeof GoatIndexRoute
   '/stats': typeof StatsIndexRoute
   '/year-end': typeof YearEndIndexRoute
@@ -269,6 +292,7 @@ export interface FileRoutesById {
   '/artists': typeof ArtistsRoute
   '/awards': typeof AwardsRouteWithChildren
   '/chart-battle': typeof ChartBattleRoute
+  '/decade-end': typeof DecadeEndRouteWithChildren
   '/number-ones': typeof NumberOnesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/songs': typeof SongsRoute
@@ -281,12 +305,14 @@ export interface FileRoutesById {
   '/awards/stats': typeof AwardsStatsRoute
   '/chart-beat/$blog': typeof ChartBeatBlogRouteWithChildren
   '/chart/$chartId': typeof ChartChartIdRouteWithChildren
+  '/decade-end/$chartId': typeof DecadeEndChartIdRoute
   '/goat/$chartId': typeof GoatChartIdRoute
   '/latin-albums/$date': typeof LatinAlbumsDateRoute
   '/song/$slug': typeof SongSlugRoute
   '/stats/$category': typeof StatsCategoryRoute
   '/year-end/$chartId': typeof YearEndChartIdRoute
   '/awards/': typeof AwardsIndexRoute
+  '/decade-end/': typeof DecadeEndIndexRoute
   '/goat/': typeof GoatIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/year-end/': typeof YearEndIndexRoute
@@ -304,6 +330,7 @@ export interface FileRouteTypes {
     | '/artists'
     | '/awards'
     | '/chart-battle'
+    | '/decade-end'
     | '/number-ones'
     | '/sitemap.xml'
     | '/songs'
@@ -316,12 +343,14 @@ export interface FileRouteTypes {
     | '/awards/stats'
     | '/chart-beat/$blog'
     | '/chart/$chartId'
+    | '/decade-end/$chartId'
     | '/goat/$chartId'
     | '/latin-albums/$date'
     | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
     | '/awards/'
+    | '/decade-end/'
     | '/goat/'
     | '/stats/'
     | '/year-end/'
@@ -347,12 +376,14 @@ export interface FileRouteTypes {
     | '/awards/categories'
     | '/awards/stats'
     | '/chart-beat/$blog'
+    | '/decade-end/$chartId'
     | '/goat/$chartId'
     | '/latin-albums/$date'
     | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
     | '/awards'
+    | '/decade-end'
     | '/goat'
     | '/stats'
     | '/year-end'
@@ -368,6 +399,7 @@ export interface FileRouteTypes {
     | '/artists'
     | '/awards'
     | '/chart-battle'
+    | '/decade-end'
     | '/number-ones'
     | '/sitemap.xml'
     | '/songs'
@@ -380,12 +412,14 @@ export interface FileRouteTypes {
     | '/awards/stats'
     | '/chart-beat/$blog'
     | '/chart/$chartId'
+    | '/decade-end/$chartId'
     | '/goat/$chartId'
     | '/latin-albums/$date'
     | '/song/$slug'
     | '/stats/$category'
     | '/year-end/$chartId'
     | '/awards/'
+    | '/decade-end/'
     | '/goat/'
     | '/stats/'
     | '/year-end/'
@@ -402,6 +436,7 @@ export interface RootRouteChildren {
   ArtistsRoute: typeof ArtistsRoute
   AwardsRoute: typeof AwardsRouteWithChildren
   ChartBattleRoute: typeof ChartBattleRoute
+  DecadeEndRoute: typeof DecadeEndRouteWithChildren
   NumberOnesRoute: typeof NumberOnesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SongsRoute: typeof SongsRoute
@@ -441,6 +476,13 @@ declare module '@tanstack/react-router' {
       path: '/number-ones'
       fullPath: '/number-ones'
       preLoaderRoute: typeof NumberOnesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/decade-end': {
+      id: '/decade-end'
+      path: '/decade-end'
+      fullPath: '/decade-end'
+      preLoaderRoute: typeof DecadeEndRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chart-battle': {
@@ -506,6 +548,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GoatIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/decade-end/': {
+      id: '/decade-end/'
+      path: '/'
+      fullPath: '/decade-end/'
+      preLoaderRoute: typeof DecadeEndIndexRouteImport
+      parentRoute: typeof DecadeEndRoute
+    }
     '/awards/': {
       id: '/awards/'
       path: '/'
@@ -547,6 +596,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/goat/$chartId'
       preLoaderRoute: typeof GoatChartIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/decade-end/$chartId': {
+      id: '/decade-end/$chartId'
+      path: '/$chartId'
+      fullPath: '/decade-end/$chartId'
+      preLoaderRoute: typeof DecadeEndChartIdRouteImport
+      parentRoute: typeof DecadeEndRoute
     }
     '/chart/$chartId': {
       id: '/chart/$chartId'
@@ -663,6 +719,20 @@ const AwardsRouteChildren: AwardsRouteChildren = {
 const AwardsRouteWithChildren =
   AwardsRoute._addFileChildren(AwardsRouteChildren)
 
+interface DecadeEndRouteChildren {
+  DecadeEndChartIdRoute: typeof DecadeEndChartIdRoute
+  DecadeEndIndexRoute: typeof DecadeEndIndexRoute
+}
+
+const DecadeEndRouteChildren: DecadeEndRouteChildren = {
+  DecadeEndChartIdRoute: DecadeEndChartIdRoute,
+  DecadeEndIndexRoute: DecadeEndIndexRoute,
+}
+
+const DecadeEndRouteWithChildren = DecadeEndRoute._addFileChildren(
+  DecadeEndRouteChildren,
+)
+
 interface ChartBeatBlogRouteChildren {
   ChartBeatBlogSlugRoute: typeof ChartBeatBlogSlugRoute
 }
@@ -696,6 +766,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArtistsRoute: ArtistsRoute,
   AwardsRoute: AwardsRouteWithChildren,
   ChartBattleRoute: ChartBattleRoute,
+  DecadeEndRoute: DecadeEndRouteWithChildren,
   NumberOnesRoute: NumberOnesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SongsRoute: SongsRoute,

@@ -114,11 +114,11 @@ export function CommandSearch() {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 bg-transparent border border-[var(--border)] text-[var(--muted-foreground)] text-xs font-bold uppercase tracking-wider px-4 py-2 w-56 hover:border-[var(--accent)] hover:text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 bg-transparent border border-[var(--border)] text-[var(--muted-foreground)] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 w-36 hover:border-[var(--accent)] hover:text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none transition-colors cursor-pointer"
       >
         <i className="fas fa-search" />
         <span>SEARCH</span>
-        <kbd className="ml-auto text-[10px] bg-[var(--muted)] border border-[var(--border)] px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+        <kbd className="ml-auto text-[9px] bg-[var(--muted)] border border-[var(--border)] px-1 py-0.5 rounded font-mono">⌘K</kbd>
       </button>
 
       {/* Dialog */}

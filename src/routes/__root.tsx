@@ -18,6 +18,7 @@ import { CommandSearch } from "@/components/command-search";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { trackPageView } from "@/lib/analytics";
+import { AudioPlayerBar } from "@/components/audio-player";
 
 function NotFoundComponent() {
   return (
@@ -216,7 +217,7 @@ function SiteHeader() {
     { label: "HOT 100", to: "/chart/$chartId" as const, params: { chartId: "songs" } },
     { label: "CHART BEAT", to: "/chart-beat-2/$chartId/$date" as const, params: { chartId: "songs", date: "2026-07-06" } },
     { label: "YEAR-END CHARTS", to: "/year-end" as const },
-
+    { label: "DECADE-END", to: "/decade-end" as const },
     { label: "GREATEST OF ALL TIME", to: "/goat" as const },
     { label: "STATS", to: "/stats" as const, params: {} },
     { label: "AWARDS", to: "/awards" as const, params: {} },
@@ -226,35 +227,32 @@ function SiteHeader() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
-      <div className="max-w-7xl mx-auto px-4 py-3 grid grid-cols-[auto_1fr_auto] items-center gap-4">
-        {/* Logo */}
-        <Link to="/" className="text-lg md:text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0">
+      {/* Desktop header */}
+      <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto px-4 py-3">
+        <Link to="/" className="text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0 mr-4">
           daegon charts
         </Link>
-
-        {/* Desktop nav — centered */}
-        <nav className="hidden lg:flex items-center justify-center gap-5">
+        <nav className="flex items-center justify-center gap-2 flex-1 min-w-0">
           {navItems.map((item) => (
             <Link
               key={item.label}
               to={item.to}
               params={item.params}
-              className="text-[11px] font-bold uppercase tracking-widest text-[#9CA3AF] hover:text-[#f5f5f5] transition-colors whitespace-nowrap"
+              className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#9CA3AF] hover:text-[#f5f5f5] transition-colors whitespace-nowrap shrink-0"
             >
               {item.label}
             </Link>
           ))}
         </nav>
-
-        {/* Search + Theme */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 ml-4">
           <CommandSearch />
           <ThemeToggle />
         </div>
+      </div>
 
-        {/* Mobile hamburger + theme */}
-        <div className="lg:hidden flex items-center gap-2">
-          <ThemeToggle />
+      {/* Mobile header — title truly centered */}
+      <div className="lg:hidden relative flex items-center justify-between px-4 py-3">
+        <div className="w-9 flex items-center justify-center flex-shrink-0">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="text-[#f5f5f5] text-2xl p-1 cursor-pointer"
@@ -262,6 +260,12 @@ function SiteHeader() {
           >
             <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
           </button>
+        </div>
+        <Link to="/" className="absolute left-0 right-0 text-center text-lg font-extrabold text-[#f5f5f5] lowercase tracking-wide pointer-events-auto">
+          daegon charts
+        </Link>
+        <div className="w-9 flex items-center justify-center flex-shrink-0">
+          <ThemeToggle />
         </div>
       </div>
 
@@ -331,6 +335,7 @@ function RootComponent() {
         </main>
         <SiteFooter />
         <BackToTop />
+        <AudioPlayerBar />
       </div>
     </QueryClientProvider>
   );

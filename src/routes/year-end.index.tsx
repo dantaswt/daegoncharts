@@ -29,9 +29,9 @@ const ALBUM_CHARTS = [
 
 const ARTIST_CHARTS = [
   { id: "yecHot100Artists", title: "Hot 100 — Artists" },
-  { id: "yecArtist50Female", title: "Artist 50 — Female" },
-  { id: "yecArtist50Male", title: "Artist 50 — Male" },
-  { id: "yecArtist50DuoGroup", title: "Artist 50 — Duo/Group" },
+  { id: "yecArtist50Female", title: "Top Artists — Female" },
+  { id: "yecArtist50Male", title: "Top Artists — Male" },
+  { id: "yecArtist50DuoGroup", title: "Top Artists — Duo/Group" },
   { id: "yearEndNewArtists", title: "Top New Artists" },
   { id: "yecTop100AlbumsArtists", title: "Top 200 Albums — Artists" },
   { id: "yecRadioSongsArtists", title: "Radio Songs — Artists" },

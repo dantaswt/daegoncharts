@@ -1,6 +1,63 @@
 import { createServerFn } from "@tanstack/react-start";
 import Papa from "papaparse";
 import { chartsConfig, chartBeatConfig, slugify, slugifyArtist, songSlug, parseSongSlug, weeklyChartIds } from "./charts-config";
+import { getSupabase } from "./supabase";
+
+// ─── Points Formula: Rank-based scoring ───
+// Points = 1000 × ((N - Rank + 1) / N) ^ 1.5
+// N=100 for Hot 100 Songs, N=50 for Top Albums / Artist 50
+function computeChartPoints(position: number, chartId: string): number {
+  const n = (chartId === "songs" || chartId === "streamingSongs" || chartId === "radioSongs" || chartId === "digitalSongsSales") ? 100 : 50;
+  return Math.round(1000 * Math.pow(Math.max(0, (n - position + 1)) / n, 1.5));
+}
+
+// ─── DB Layer: reads secondary sheet data (2000-2017) from Supabase ───
+// In-memory cache: loads once per server process, subsequent requests are instant
+const secondaryDbCache = new Map<string, Record<string, ChartEntry[]> | null>();
+
+async function loadSecondaryFromDB(chartId: string): Promise<Record<string, ChartEntry[]> | null> {
+  if (secondaryDbCache.has(chartId)) return secondaryDbCache.get(chartId)!;
+  try {
+    const sb = getSupabase();
+    const BATCH = 1000;
+    const allRows: { data: WeeklyChartData }[] = [];
+    let offset = 0;
+    while (true) {
+      const { data, error } = await sb.from("chart_data").select("data").like("chart_id", `${chartId}_%`).order("chart_id").range(offset, offset + BATCH - 1);
+      if (error || !data || data.length === 0) break;
+      allRows.push(...data);
+      if (data.length < BATCH) break;
+      offset += BATCH;
+    }
+    if (allRows.length === 0) return null;
+    const merged: Record<string, ChartEntry[]> = {};
+    for (const row of allRows) {
+      const chunk = row.data as WeeklyChartData;
+      if (chunk.entriesByDate) {
+        for (const [d, entries] of Object.entries(chunk.entriesByDate)) {
+          for (const entry of entries) {
+            if (chunk.chartId === "songs") {
+              entry.points = String(computeChartPoints(entry.position, "songs"));
+            } else {
+              if (entry.units == null || entry.units === "") {
+                entry.units = String(computeChartPoints(entry.position, chunk.chartId));
+              } else {
+                entry.units = String(entry.units);
+              }
+              if (entry.totalUnits != null && entry.totalUnits !== "") {
+                entry.totalUnits = String(entry.totalUnits);
+              }
+            }
+          }
+          (merged[d] ||= []).push(...entries);
+        }
+      }
+    }
+    const result = Object.keys(merged).length > 0 ? merged : null;
+    secondaryDbCache.set(chartId, result);
+    return result;
+  } catch { return null; }
+}
 
 export interface ChartEntry {
   position: number;
@@ -186,10 +243,16 @@ export function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return p;
 }
 
+// In-memory CSV cache: avoids re-fetching from Google Sheets on every request
+const csvCache = new Map<string, { data: string[][]; fetchedAt: number }>();
+const CSV_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
+  const cached = csvCache.get(url);
+  if (cached && Date.now() - cached.fetchedAt < CSV_CACHE_TTL) return cached.data;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(15_000) });
+      const res = await fetch(url, { headers: { "cache-control": "public, max-age=300" }, signal: AbortSignal.timeout(30_000) });
       if (res.status === 429) {
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -200,7 +263,9 @@ async function fetchCsv(url: string, retries = 3): Promise<string[][]> {
       let text = await res.text();
       if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
       const parsed = Papa.parse<string[]>(text, { skipEmptyLines: true });
-      return parsed.data as string[][];
+      const data = parsed.data as string[][];
+      csvCache.set(url, { data, fetchedAt: Date.now() });
+      return data;
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") throw err;
       if (attempt < retries) {
@@ -340,7 +405,7 @@ function computeDiffs(dates: string[], entriesByDate: Record<string, ChartEntry[
   }
 }
 
-async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
+export async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
   const cfg = chartsConfig[chartId];
   const ALBUM_NAME_OVERRIDES: Record<string, Record<string, string>> = {
     "anitta": { "versions of me": "Girl from Rio" },
@@ -410,12 +475,19 @@ async function loadWeekly(chartId: string): Promise<WeeklyChartData> {
     return result;
   }
 
-  const [primaryRows, secondaryRows] = await Promise.all([
+  // Fetch primary from CSV, secondary from DB (cached in memory, instant after first load)
+  const [primaryRows, secondaryFromDB] = await Promise.all([
     fetchCsv(cfg.url),
-    cfg.secondaryUrl ? fetchCsv(cfg.secondaryUrl) : Promise.resolve(null),
+    cfg.secondaryUrl ? loadSecondaryFromDB(chartId) : Promise.resolve(null),
   ]);
   const entriesByDate = parseSheet(primaryRows);
-  if (secondaryRows) {
+  if (secondaryFromDB) {
+    for (const [d, entries] of Object.entries(secondaryFromDB)) {
+      (entriesByDate[d] ||= []).push(...entries);
+    }
+  } else if (cfg.secondaryUrl) {
+    // Fallback: fetch secondary CSV if DB not populated
+    const secondaryRows = await fetchCsv(cfg.secondaryUrl);
     const entries2 = parseSheet(secondaryRows);
     for (const [d, entries] of Object.entries(entries2)) {
       (entriesByDate[d] ||= []).push(...entries);
@@ -1361,61 +1433,65 @@ export interface YECEntry {
   entries?: number;
 }
 
+export async function computeYearEndGenerated(chartId: string) {
+  return cached(`yec_gen_${chartId}`, async () => {
+    const chartData = await loadWeekly(chartId);
+    const years: Record<string, Record<string, YECEntry>> = {};
+
+    const metricKey = chartId === "songs" ? "points" : chartId === "streamingSongs" || chartId === "topStreamingAlbums" ? "streams" : chartId === "radioSongs" ? "audience" : chartId === "topAlbumSales" || chartId === "digitalSongsSales" ? "sales" : "units";
+
+    const seenGlobal = new Set<string>();
+    for (const date of chartData.dates) {
+      const year = date.slice(0, 4);
+      const entries = chartData.entriesByDate[date] || [];
+      if (!years[year]) years[year] = {};
+
+      for (const e of entries) {
+        const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+        if (!years[year][key]) {
+          years[year][key] = {
+            position: 0,
+            name: e.name,
+            artist: e.artist,
+            peak: e.peak,
+            weeks: 0,
+            weeksAt1: 0,
+            totalUnits: 0,
+            kind: chartData.kind,
+          };
+        }
+        const entry = years[year][key];
+        entry.weeks += 1;
+        if (e.peak < entry.peak) entry.peak = e.peak;
+        entry.weeksAt1 += (e.weeksAt1 ?? 0);
+        const isFirstAppearance = !seenGlobal.has(key);
+        seenGlobal.add(key);
+        if (isFirstAppearance && chartId === "topStreamingAlbums" && e.totalStreams) {
+          entry.totalUnits += toInt(e.totalStreams);
+        } else {
+          const unitsRaw = String(e[metricKey as keyof ChartEntry] ?? e.units ?? "0");
+          entry.totalUnits += toInt(unitsRaw);
+        }
+      }
+    }
+
+    const result: Record<string, YECEntry[]> = {};
+    for (const [year, items] of Object.entries(years)) {
+      result[year] = Object.values(items)
+        .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
+        .slice(0, 100)
+        .map((e, i) => ({ ...e, position: i + 1 }));
+    }
+
+    const sortedYears = Object.keys(result).sort().reverse();
+    return { years: sortedYears, entriesByYear: result, kind: chartData.kind, title: chartsConfig[chartId]?.title ?? chartId };
+  });
+}
+
 export const getYearEndGenerated = createServerFn({ method: "GET" })
   .validator((d: { chartId: string }) => d)
   .handler(async ({ data }) => {
-    return cached(`yec_gen_${data.chartId}`, async () => {
-      const chartData = await getWeeklyChart({ data: { chartId: data.chartId } });
-      const years: Record<string, Record<string, YECEntry>> = {};
-
-      const metricKey = data.chartId === "songs" ? "points" : data.chartId === "streamingSongs" || data.chartId === "topStreamingAlbums" ? "streams" : data.chartId === "radioSongs" ? "audience" : data.chartId === "topAlbumSales" || data.chartId === "digitalSongsSales" ? "sales" : "units";
-
-      const seenGlobal = new Set<string>();
-      for (const date of chartData.dates) {
-        const year = date.slice(0, 4);
-        const entries = chartData.entriesByDate[date] || [];
-        if (!years[year]) years[year] = {};
-
-        for (const e of entries) {
-          const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
-          if (!years[year][key]) {
-            years[year][key] = {
-              position: 0,
-              name: e.name,
-              artist: e.artist,
-              peak: e.peak,
-              weeks: 0,
-              weeksAt1: 0,
-              totalUnits: 0,
-              kind: chartData.kind,
-            };
-          }
-          const entry = years[year][key];
-          entry.weeks += 1;
-          if (e.peak < entry.peak) entry.peak = e.peak;
-          entry.weeksAt1 += (e.weeksAt1 ?? 0);
-          const isFirstAppearance = !seenGlobal.has(key);
-          seenGlobal.add(key);
-          if (isFirstAppearance && data.chartId === "topStreamingAlbums" && e.totalStreams) {
-            entry.totalUnits += toInt(e.totalStreams);
-          } else {
-            const unitsRaw = String(e[metricKey as keyof ChartEntry] ?? e.units ?? "0");
-            entry.totalUnits += toInt(unitsRaw);
-          }
-        }
-      }
-
-      const result: Record<string, YECEntry[]> = {};
-      for (const [year, items] of Object.entries(years)) {
-        result[year] = Object.values(items)
-          .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
-          .slice(0, 100)
-          .map((e, i) => ({ ...e, position: i + 1 }));
-      }
-
-      const sortedYears = Object.keys(result).sort().reverse();
-      return { years: sortedYears, entriesByYear: result, kind: chartData.kind, title: chartsConfig[data.chartId]?.title ?? data.chartId };
-    });
+    return computeYearEndGenerated(data.chartId);
   });
 
 /* ────── Artist Year-End Positions ────── */
@@ -1439,7 +1515,7 @@ export const getArtistYearEndPositions = createServerFn({ method: "GET" })
       ];
       const results: ArtistYECPosition[] = [];
       for (const { id, title } of chartIds) {
-        const yec = await getYearEndGenerated({ data: { chartId: id } }).catch(() => null);
+        const yec = await computeYearEndGenerated(id).catch(() => null);
         if (!yec) continue;
         for (const [year, entries] of Object.entries(yec.entriesByYear)) {
           for (const entry of entries) {

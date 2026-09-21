@@ -7,6 +7,60 @@ let accessToken: string | null = null;
 let tokenExpiresAt = 0;
 const imageCache = new Map<string, string | null>();
 
+function getNodeModules() {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const CACHE_DIR = path.join(process.cwd(), "data");
+    return { fs, path, CACHE_DIR };
+  } catch { return null; }
+}
+
+let persistentCache: Record<string, string> = {};
+let failCache: Record<string, number> = {};
+try {
+  const node = getNodeModules();
+  if (node) {
+    const imgFile = node.path.join(node.CACHE_DIR, "image-cache.json");
+    if (node.fs.existsSync(imgFile)) persistentCache = JSON.parse(node.fs.readFileSync(imgFile, "utf-8"));
+    const failFile = node.path.join(node.CACHE_DIR, "image-fail-cache.json");
+    if (node.fs.existsSync(failFile)) failCache = JSON.parse(node.fs.readFileSync(failFile, "utf-8"));
+  }
+} catch {}
+
+function savePersistentCache() {
+  try {
+    const node = getNodeModules();
+    if (!node) return;
+    const dir = node.path.join(node.CACHE_DIR, "image-cache.json");
+    if (!node.fs.existsSync(node.CACHE_DIR)) node.fs.mkdirSync(node.CACHE_DIR, { recursive: true });
+    node.fs.writeFileSync(dir, JSON.stringify(persistentCache));
+  } catch {}
+}
+
+function saveFailCache() {
+  try {
+    const node = getNodeModules();
+    if (!node) return;
+    const dir = node.path.join(node.CACHE_DIR, "image-fail-cache.json");
+    if (!node.fs.existsSync(node.CACHE_DIR)) node.fs.mkdirSync(node.CACHE_DIR, { recursive: true });
+    node.fs.writeFileSync(dir, JSON.stringify(failCache));
+  } catch {}
+}
+
+const FAIL_TTL = 24 * 60 * 60 * 1000;
+function isFailed(key: string): boolean {
+  const ts = failCache[key];
+  if (!ts) return false;
+  if (Date.now() - ts > FAIL_TTL) { delete failCache[key]; return false; }
+  return true;
+}
+
+function markFailed(key: string) {
+  failCache[key] = Date.now();
+  saveFailCache();
+}
+
 const KNOWN_ARTIST_IDS: Record<string, string> = {
   "jao": "59FrDXDVJz0EKqYg39dnT2",
   "girls": "6IrnQvYWhXayVvhB4qKUSR",
@@ -88,7 +142,7 @@ function artistMatch(album: any, expectedArtist: string): boolean {
 async function fetchJson(url: string, init?: RequestInit): Promise<any> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 3000);
     const response = await fetch(url, { ...init, signal: controller.signal });
     clearTimeout(timeout);
     if (!response.ok) return null;
@@ -117,7 +171,7 @@ async function searchDeviantArt(albumName: string, artistName: string): Promise<
     const q = `${albumName} ${artistName} fan art album cover`;
     const url = `https://backend.deviantart.com/rss.xml?q=${encodeURIComponent(q)}&type=deviation`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 3000);
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
     if (!response.ok) return null;
@@ -129,11 +183,38 @@ async function searchDeviantArt(albumName: string, artistName: string): Promise<
   }
 }
 
+async function searchTheAudioDB(name: string, kind: "artist" | "album", artistName?: string): Promise<string | null> {
+  try {
+    let url: string;
+    if (kind === "artist") {
+      url = `https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(name)}`;
+    } else {
+      url = `https://www.theaudiodb.com/api/v1/json/123/searchalbum.php?s=${encodeURIComponent(artistName || "")}&a=${encodeURIComponent(name)}`;
+    }
+    const data = await fetchJson(url);
+    if (kind === "artist") {
+      const artist = data?.artists?.[0];
+      if (artist?.strArtistThumb) return artist.strArtistThumb;
+    } else {
+      const album = data?.album?.[0];
+      if (album?.strAlbumThumb) return album.strAlbumThumb;
+    }
+  } catch {}
+  return null;
+}
+
 export const getSpotifyImage = createServerFn({ method: "GET" })
   .inputValidator((d: { query: string; type: "album" | "artist" | "track" }) => d)
   .handler(async ({ data }) => {
     const cacheKey = `${data.type}:${data.query.trim()}`;
     if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
+    if (persistentCache[cacheKey]) {
+      imageCache.set(cacheKey, persistentCache[cacheKey]);
+      return persistentCache[cacheKey];
+    }
+    if (isFailed(cacheKey)) {
+      return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" "300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
+    }
     const token = await getAccessToken();
 
     // Hardcoded overrides for albums where Spotify search fails
@@ -177,23 +258,57 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
 
         const isAnitta = comparable(artistName ?? "") === "anitta";
 
-        // 1. Spotify album/EP (exact)
-        if (!imageUrl && token) {
+        // 1. Last.fm
+        if (!imageUrl && artistName) {
           for (const variant of albumVariants(albumName)) {
-            const q = artistName ? `album:"${variant}" artist:"${artistName}"` : `album:"${variant}"`;
-            const r = await spotifySearch(token, q, "album", 10);
-            for (const a of r?.albums?.items ?? []) {
-              const isAlbumOrEp = a.album_type === "album" || a.album_type === "ep";
-              if (!isAlbumOrEp) continue;
-              if (!exactMatch(a.name ?? "", variant)) continue;
-              if (!artistMatch(a, artistName)) continue;
-              if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
+            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&album=${encodeURIComponent(variant)}&format=json`);
+            if (data?.album?.name && exactMatch(data.album.name, variant)) {
+              const images = data.album.image ?? [];
+              for (const img of [...images].reverse()) {
+                if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                  imageUrl = img["#text"];
+                  break;
+                }
+              }
             }
             if (imageUrl) break;
           }
         }
 
-        // 2. Wikipedia
+        // 2. iTunes (exact)
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const q = artistName ? `${variant} ${artistName}` : variant;
+            const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=10`);
+            for (const r of data?.results ?? []) {
+              if (!r.artworkUrl100) continue;
+              if (!exactMatch(r.collectionName ?? "", variant)) continue;
+              if (artistName && !exactMatch(r.artistName ?? "", artistName)) continue;
+              imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
+              break;
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 3. Deezer (exact)
+        if (!imageUrl) {
+          for (const variant of albumVariants(albumName)) {
+            const q = artistName ? `${variant} ${artistName}` : variant;
+            const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(q)}&limit=10`);
+            for (const a of data?.data ?? []) {
+              if (!exactMatch(a.title ?? "", variant)) continue;
+              if (artistName && !exactMatch(a.artist?.name ?? "", artistName)) continue;
+              if (a.cover_xl || a.cover_big || a.cover_medium) {
+                imageUrl = a.cover_xl || a.cover_big || a.cover_medium;
+                break;
+              }
+            }
+            if (imageUrl) break;
+          }
+        }
+
+        // 4. Wikipedia
         if (!imageUrl) {
           const yearMatch = albumName.match(/\b(19|20)\d{2}\b/);
           const year = yearMatch ? yearMatch[0] : null;
@@ -224,39 +339,6 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 3. Last.fm
-        if (!imageUrl && artistName) {
-          for (const variant of albumVariants(albumName)) {
-            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&album=${encodeURIComponent(variant)}&format=json`);
-            if (data?.album?.name && exactMatch(data.album.name, variant)) {
-              const images = data.album.image ?? [];
-              for (const img of [...images].reverse()) {
-                if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
-                  imageUrl = img["#text"];
-                  break;
-                }
-              }
-            }
-            if (imageUrl) break;
-          }
-        }
-
-        // 4. iTunes (exact)
-        if (!imageUrl) {
-          for (const variant of albumVariants(albumName)) {
-            const q = artistName ? `${variant} ${artistName}` : variant;
-            const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=10`);
-            for (const r of data?.results ?? []) {
-              if (!r.artworkUrl100) continue;
-              if (!exactMatch(r.collectionName ?? "", variant)) continue;
-              if (artistName && !exactMatch(r.artistName ?? "", artistName)) continue;
-              imageUrl = r.artworkUrl100.replace("100x100bb", "600x600bb");
-              break;
-            }
-            if (imageUrl) break;
-          }
-        }
-
         // 5. Cover Art Archive
         if (!imageUrl) {
           for (const variant of albumVariants(albumName)) {
@@ -267,7 +349,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
                 if (!exactMatch(release.title ?? "", variant)) continue;
                 try {
                   const controller = new AbortController();
-                  const timeout = setTimeout(() => controller.abort(), 3000);
+                  const timeout = setTimeout(() => controller.abort(), 2000);
                   const caaResponse = await fetch(`https://coverartarchive.org/release/${release.id}/front-500`, { method: "HEAD", signal: controller.signal });
                   clearTimeout(timeout);
                   if (caaResponse.ok) { imageUrl = `https://coverartarchive.org/release/${release.id}/front-500`; break; }
@@ -297,24 +379,33 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 7. Deezer (exact)
+        // 7. TheAudioDB
         if (!imageUrl) {
+          imageUrl = await searchTheAudioDB(albumName, "album", artistName);
+        }
+
+        // 8. DeviantArt
+        if (!imageUrl) {
+          imageUrl = await searchDeviantArt(albumName, artistName);
+        }
+
+        // 9. Spotify album/EP (exact)
+        if (!imageUrl && token) {
           for (const variant of albumVariants(albumName)) {
-            const q = artistName ? `${variant} ${artistName}` : variant;
-            const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(q)}&limit=10`);
-            for (const a of data?.data ?? []) {
-              if (!exactMatch(a.title ?? "", variant)) continue;
-              if (artistName && !exactMatch(a.artist?.name ?? "", artistName)) continue;
-              if (a.cover_xl || a.cover_big || a.cover_medium) {
-                imageUrl = a.cover_xl || a.cover_big || a.cover_medium;
-                break;
-              }
+            const q = artistName ? `album:"${variant}" artist:"${artistName}"` : `album:"${variant}"`;
+            const r = await spotifySearch(token, q, "album", 10);
+            for (const a of r?.albums?.items ?? []) {
+              const isAlbumOrEp = a.album_type === "album" || a.album_type === "ep";
+              if (!isAlbumOrEp) continue;
+              if (!exactMatch(a.name ?? "", variant)) continue;
+              if (!artistMatch(a, artistName)) continue;
+              if (a.images?.[0]?.url) { imageUrl = a.images[0].url; break; }
             }
             if (imageUrl) break;
           }
         }
 
-        // 8. Spotify broader (exact)
+        // 10. Spotify broader (exact)
         if (!imageUrl && token) {
           for (const variant of albumVariants(albumName)) {
             const q = artistName ? `album:"${variant}" artist:"${artistName}"` : `album:"${variant}"`;
@@ -328,12 +419,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 9. DeviantArt
-        if (!imageUrl) {
-          imageUrl = await searchDeviantArt(albumName, artistName);
-        }
-
-        // 10. Spotify album without artist
+        // 11. Spotify album without artist
         if (!imageUrl && token) {
           for (const variant of albumVariants(albumName)) {
             const q = `album:"${variant}"`;
@@ -346,7 +432,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 11. Spotify playlist cover
+        // 12. Spotify playlist cover
         if (!imageUrl && token) {
           for (const variant of albumVariants(albumName)) {
             const r = await spotifySearch(token, `"${variant}"`, "playlist", 5);
@@ -358,7 +444,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 12. Artist image (last resort — Spotify)
+        // 13. Artist image (last resort — Spotify)
         if (!imageUrl && token && artistName) {
           const ra = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (ra?.artists?.items ?? []).filter((a: any) => a.images?.[0]?.url);
@@ -512,20 +598,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           } catch (e) { console.error(`Known artist ${artistName} fetch failed`, e); }
         }
 
-        // 2. Spotify artist search (exact match — most reliable)
-        if (!imageUrl && token) {
-          const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
-          const artists = (result?.artists?.items ?? [])
-            .filter((artist: any) => artist.images?.[0]?.url)
-            .sort((a: any, b: any) => {
-              const nameMatch = Number(exactMatch(b.name ?? "", artistName)) - Number(exactMatch(a.name ?? "", artistName));
-              if (nameMatch !== 0) return nameMatch;
-              return (b.popularity ?? 0) - (a.popularity ?? 0);
-            });
-          imageUrl = artists[0]?.images?.[0]?.url ?? null;
-        }
-
-        // 3. Deezer artist image (exact match)
+        // 2. Deezer artist image (exact match)
         if (!imageUrl) {
           try {
             const data = await fetchJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=5`);
@@ -538,7 +611,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           } catch {}
         }
 
-        // 4. iTunes artist image (exact match)
+        // 3. iTunes artist image (exact match)
         if (!imageUrl) {
           try {
             const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=5`);
@@ -551,7 +624,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           } catch {}
         }
 
-        // 5. Last.fm artist image (exact match)
+        // 4. Last.fm artist image (exact match)
         if (!imageUrl) {
           try {
             const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
@@ -567,7 +640,26 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           } catch {}
         }
 
-        // 6. Wikidata artist image (structured, precise)
+        // 5. Last.fm broader (relaxed match)
+        if (!imageUrl) {
+          try {
+            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
+            const images = data?.artist?.image ?? [];
+            for (const img of [...images].reverse()) {
+              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                imageUrl = img["#text"];
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        // 6. TheAudioDB
+        if (!imageUrl) {
+          imageUrl = await searchTheAudioDB(artistName, "artist");
+        }
+
+        // 7. Wikidata artist image (structured, precise)
         if (!imageUrl) {
           try {
             const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(artistName)}&language=en&limit=5&format=json`;
@@ -587,21 +679,20 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           } catch {}
         }
 
-        // 7. Last.fm broader (relaxed match — last music resort)
-        if (!imageUrl) {
-          try {
-            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
-            const images = data?.artist?.image ?? [];
-            for (const img of [...images].reverse()) {
-              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
-                imageUrl = img["#text"];
-                break;
-              }
-            }
-          } catch {}
+        // 8. Spotify artist search (exact match)
+        if (!imageUrl && token) {
+          const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
+          const artists = (result?.artists?.items ?? [])
+            .filter((artist: any) => artist.images?.[0]?.url)
+            .sort((a: any, b: any) => {
+              const nameMatch = Number(exactMatch(b.name ?? "", artistName)) - Number(exactMatch(a.name ?? "", artistName));
+              if (nameMatch !== 0) return nameMatch;
+              return (b.popularity ?? 0) - (a.popularity ?? 0);
+            });
+          imageUrl = artists[0]?.images?.[0]?.url ?? null;
         }
 
-        // 8. Spotify via track → artist
+        // 9. Spotify via track → artist
         if (!imageUrl && title && token) {
           const tracks = (await spotifySearch(token, `track:"${title}" artist:"${artistName}"`, "track"))?.tracks?.items ?? [];
           const track = tracks.find((item: any) => item.artists?.some((artist: any) => exactMatch(artist.name ?? "", artistName)));
@@ -612,7 +703,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 9. Spotify broader fallback
+        // 10. Spotify broader fallback
         if (!imageUrl && token) {
           const rb = await spotifySearch(token, artistName, "artist");
           const fallback = (rb?.artists?.items ?? []).find((a: any) => a.images?.[0]?.url);
@@ -624,7 +715,13 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
         }
       }
-      if (imageUrl) imageCache.set(cacheKey, imageUrl);
+      if (imageUrl) {
+        imageCache.set(cacheKey, imageUrl);
+        persistentCache[cacheKey] = imageUrl;
+        savePersistentCache();
+      } else {
+        markFailed(cacheKey);
+      }
       return imageUrl;
     } catch (error) {
       console.error("Image search failed", error);

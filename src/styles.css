@@ -257,8 +257,7 @@
 
   @media (max-width: 768px) {
     .chart-card { padding: 0.85rem 0.95rem; }
-    .placeholder-art { width: 56px; height: 56px; }
-    .rank-num { min-width: 3.5rem; }
+    .rank-num { min-width: 2rem; }
     .section-title::after { width: 36px; }
   }
 

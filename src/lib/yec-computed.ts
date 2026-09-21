@@ -1,8 +1,30 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getWeeklyChart, getYearEndGenerated, type YECEntry } from "./charts.functions";
+import { getWeeklyChart, computeYearEndGenerated, getYearEndGenerated, type YECEntry } from "./charts.functions";
+import { chartsConfig } from "./charts-config";
 import { getTopLatinAlbums } from "./latin-albums-chart";
-import { MALE_ARTISTS } from "./male-artists";
-import { GROUP_ARTISTS } from "./group-artists";
+import artistMetadata from "./artist-metadata.json";
+
+/* ────── Artist metadata classification (three-tier) ────── */
+type ArtistMeta = {
+  categoryConfirmed?: boolean;
+  category?: "FEMALE" | "MALE" | "GROUP";
+  typeConfirmed?: boolean;
+  type?: string;
+};
+const metaMap = artistMetadata as Record<string, ArtistMeta>;
+
+function classifyArtist(name: string): "female" | "male" | "group" | "pending" {
+  const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const meta = metaMap[slug];
+
+  if (meta?.categoryConfirmed && meta.category) {
+    if (meta.category === "GROUP") return "group";
+    if (meta.category === "FEMALE") return "female";
+    if (meta.category === "MALE") return "male";
+  }
+
+  return "pending";
+}
 
 /* ────── Hot 100 — Artists (total points per artist across all Hot 100 entries) ────── */
 export const getYearEndHot100Artists = createServerFn({ method: "GET" })
@@ -80,59 +102,48 @@ export const getYearEndTop100AlbumsArtists = createServerFn({ method: "GET" })
     return { years: sortedYears, entriesByYear: result, kind: "artist" as const, title: "Top 100 Albums — Artists" };
   });
 
-/* ────── Artist 50 — Male / Female / Duo+Group ────── */
-function isMale(name: string): boolean {
-  return MALE_ARTISTS.has(name.toLowerCase().trim());
-}
-
-function isGroup(name: string): boolean {
-  const n = name.toLowerCase().trim();
-  if (GROUP_ARTISTS.has(n)) return true;
-  if (/\b&\b/.test(n)) return true;
-  if (/\bx\s/.test(n)) return true;
-  return false;
-}
-
+/* ────── Top Artists — Male / Female / Duo+Group ────── */
 function filterSolo(source: YECEntry[], male: boolean): YECEntry[] {
   return source.filter((e) => {
-    if (isGroup(e.name)) return false;
-    return male ? isMale(e.name) : !isMale(e.name);
-  }).slice(0, 20).map((e, i) => ({ ...e, position: i + 1 }));
+    const c = classifyArtist(e.name);
+    if (c === "group" || c === "pending") return false;
+    return male ? c === "male" : c === "female";
+  }).slice(0, 10).map((e, i) => ({ ...e, position: i + 1 }));
 }
 
 function filterGroups(source: YECEntry[]): YECEntry[] {
-  return source.filter((e) => isGroup(e.name))
+  return source.filter((e) => classifyArtist(e.name) === "group")
     .slice(0, 10).map((e, i) => ({ ...e, position: i + 1 }));
 }
 
 export const getYearEndArtist50Male = createServerFn({ method: "GET" })
   .handler(async () => {
-    const yec = await getYearEndGenerated({ data: { chartId: "artists" } });
+    const yec = await computeYearEndGenerated("artists");
     const result: Record<string, YECEntry[]> = {};
     for (const year of yec.years) {
       result[year] = filterSolo(yec.entriesByYear[year] || [], true);
     }
-    return { years: yec.years, entriesByYear: result, kind: "artist" as const, title: "Artist 50 — Male" };
+    return { years: yec.years, entriesByYear: result, kind: "artist" as const, title: "Top Artists — Male" };
   });
 
 export const getYearEndArtist50Female = createServerFn({ method: "GET" })
   .handler(async () => {
-    const yec = await getYearEndGenerated({ data: { chartId: "artists" } });
+    const yec = await computeYearEndGenerated("artists");
     const result: Record<string, YECEntry[]> = {};
     for (const year of yec.years) {
       result[year] = filterSolo(yec.entriesByYear[year] || [], false);
     }
-    return { years: yec.years, entriesByYear: result, kind: "artist" as const, title: "Artist 50 — Female" };
+    return { years: yec.years, entriesByYear: result, kind: "artist" as const, title: "Top Artists — Female" };
   });
 
 export const getYearEndArtist50DuoGroup = createServerFn({ method: "GET" })
   .handler(async () => {
-    const yec = await getYearEndGenerated({ data: { chartId: "artists" } });
+    const yec = await computeYearEndGenerated("artists");
     const result: Record<string, YECEntry[]> = {};
     for (const year of yec.years) {
       result[year] = filterGroups(yec.entriesByYear[year] || []);
     }
-    return { years: yec.years, entriesByYear: result, kind: "artist" as const, title: "Artist 50 — Duo/Group" };
+    return { years: yec.years, entriesByYear: result, kind: "artist" as const, title: "Top Artists — Duo/Group" };
   });
 
 /* ────── Radio Songs — Artists (total audience per artist across all radio entries) ────── */
@@ -178,7 +189,7 @@ export const getYearEndTopLatinAlbums = createServerFn({ method: "GET" })
   .handler(async () => {
     const [latinData, yecAlbums] = await Promise.all([
       getTopLatinAlbums(),
-      getYearEndGenerated({ data: { chartId: "albums" } }),
+      computeYearEndGenerated("albums"),
     ]);
 
     // Build Latin album keys from weekly Latin chart (all albums that ever appeared)
@@ -296,4 +307,69 @@ export const getYearEndTopLatinAlbums = createServerFn({ method: "GET" })
 
     const sortedYears = Object.keys(result).sort().reverse();
     return { years: sortedYears, entriesByYear: result, kind: "album" as const, title: "Top Latin Albums" };
+  });
+
+/* ────── Decade-End: aggregate YEC data across years in a decade ────── */
+export interface DecadeEntry {
+  position: number;
+  name: string;
+  artist: string;
+  peak: number;
+  weeks: number;
+  weeksAt1: number;
+  totalUnits: number;
+  kind: "song" | "album" | "artist";
+  entries?: number;
+}
+
+export const DECADES = [
+  { label: "1960", startYear: 1960, endYear: 1969 },
+  { label: "1970", startYear: 1970, endYear: 1979 },
+  { label: "1980", startYear: 1980, endYear: 1989 },
+  { label: "1990", startYear: 1990, endYear: 1999 },
+  { label: "2000", startYear: 2000, endYear: 2009 },
+  { label: "2010", startYear: 2010, endYear: 2019 },
+] as const;
+
+export function aggregateYecForDecade(yec: { years: string[]; entriesByYear: Record<string, YECEntry[]>; kind: "song" | "album" | "artist" }, startYear: number, endYear: number): DecadeEntry[] {
+  const aggregated: Record<string, { name: string; artist: string; peak: number; weeks: number; weeksAt1: number; totalUnits: number; kind: "song" | "album" | "artist"; appearances: number }> = {};
+
+  for (const [year, entries] of Object.entries(yec.entriesByYear)) {
+    const y = parseInt(year);
+    if (y < startYear || y > endYear) continue;
+    for (const e of entries) {
+      const key = `${e.name.toLowerCase()}||${e.artist.toLowerCase()}`;
+      if (!aggregated[key]) {
+        aggregated[key] = { name: e.name, artist: e.artist, peak: 100, weeks: 0, weeksAt1: 0, totalUnits: 0, kind: e.kind, appearances: 0 };
+      }
+      const a = aggregated[key];
+      a.weeks += e.weeks;
+      a.weeksAt1 += e.weeksAt1;
+      a.totalUnits += e.totalUnits;
+      a.appearances += 1;
+      if (e.peak < a.peak) a.peak = e.peak;
+    }
+  }
+
+  return Object.values(aggregated)
+    .sort((a, b) => b.totalUnits - a.totalUnits || a.peak - b.peak)
+    .slice(0, 100)
+    .map((e, i) => ({ ...e, position: i + 1 }));
+}
+
+export const getDecadeEndGenerated = createServerFn({ method: "GET" })
+  .validator((d: { chartId: string; decadeLabel: string }) => d)
+  .handler(async ({ data }) => {
+    const decade = DECADES.find((d) => d.label === data.decadeLabel) ?? DECADES[0];
+    const weeklyChartId = data.chartId.replace("decadeEnd", "").replace(/^./, (c) => c.toLowerCase());
+    const weeklyMap: Record<string, string> = {
+      songs: "songs", artists: "artists", albums: "albums", radio: "radioSongs",
+      streamingSongs: "streamingSongs", topStreamingAlbums: "topStreamingAlbums",
+      topAlbumSales: "topAlbumSales", digitalSongsSales: "digitalSongsSales",
+    };
+    const mappedId = weeklyMap[weeklyChartId] ?? weeklyChartId;
+    const yec = await computeYearEndGenerated(mappedId);
+    const entries = aggregateYecForDecade(yec, decade.startYear, decade.endYear);
+    const title = chartsConfig[data.chartId]?.title ?? data.chartId;
+    return { decades: DECADES.map((d) => d.label), entriesByDecade: { [decade.label]: entries }, kind: yec.kind, title };
   });

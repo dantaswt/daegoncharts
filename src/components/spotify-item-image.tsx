@@ -30,7 +30,14 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
       type = "track";
     }
     getSpotifyImage({ data: { query, type } }).then((u) => {
-      if (active && u) setUrl(u);
+      if (!active) return;
+      if (u) {
+        setUrl(u);
+      } else if (kind !== "artist" && artist) {
+        getSpotifyImage({ data: { query: `artist:"${artist}"`, type: "artist" } }).then((u2) => {
+          if (active && u2) setUrl(u2);
+        });
+      }
     });
     return () => { active = false; };
   }, [name, artist, kind]);

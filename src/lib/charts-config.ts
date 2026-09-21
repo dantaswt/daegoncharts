@@ -6,7 +6,7 @@ export interface ChartConfig {
   title: string;
   icon: string;
   kind: ChartKind;
-  group: "weekly" | "yearEnd" | "goat";
+  group: "weekly" | "yearEnd" | "goat" | "decadeEnd";
   secondaryUrl?: string;
 }
 
@@ -34,11 +34,20 @@ export const chartsConfig: Record<string, ChartConfig> = {
   yearEndNewArtists: { id: "yearEndNewArtists", url: SHEET + "0", title: "Top New Artists", icon: "fa-user-plus", kind: "artist", group: "yearEnd" },
   yecHot100Artists: { id: "yecHot100Artists", url: "", title: "Hot 100 — Artists", icon: "fa-trophy", kind: "artist", group: "yearEnd" },
   yecTop100AlbumsArtists: { id: "yecTop100AlbumsArtists", url: "", title: "Top 100 Albums — Artists", icon: "fa-trophy", kind: "artist", group: "yearEnd" },
-  yecArtist50Male: { id: "yecArtist50Male", url: "", title: "Artist 50 — Male", icon: "fa-mars", kind: "artist", group: "yearEnd" },
-  yecArtist50Female: { id: "yecArtist50Female", url: "", title: "Artist 50 — Female", icon: "fa-venus", kind: "artist", group: "yearEnd" },
-  yecArtist50DuoGroup: { id: "yecArtist50DuoGroup", url: "", title: "Artist 50 — Duo/Group", icon: "fa-users", kind: "artist", group: "yearEnd" },
+  yecArtist50Male: { id: "yecArtist50Male", url: "", title: "Top Artists — Male", icon: "fa-mars", kind: "artist", group: "yearEnd" },
+  yecArtist50Female: { id: "yecArtist50Female", url: "", title: "Top Artists — Female", icon: "fa-venus", kind: "artist", group: "yearEnd" },
+  yecArtist50DuoGroup: { id: "yecArtist50DuoGroup", url: "", title: "Top Artists — Duo/Group", icon: "fa-users", kind: "artist", group: "yearEnd" },
   yecRadioSongsArtists: { id: "yecRadioSongsArtists", url: "", title: "Radio Songs — Artists", icon: "fa-broadcast-tower", kind: "artist", group: "yearEnd" },
   yecTopLatinAlbums: { id: "yecTopLatinAlbums", url: "", title: "Top Latin Albums", icon: "fa-fire", kind: "album", group: "yearEnd" },
+
+  decadeEndSongs: { id: "decadeEndSongs", url: "", title: "Hot 100", icon: "fa-music", kind: "song", group: "decadeEnd" },
+  decadeEndAlbums: { id: "decadeEndAlbums", url: "", title: "Top 100 Albums", icon: "fa-compact-disc", kind: "album", group: "decadeEnd" },
+  decadeEndArtists: { id: "decadeEndArtists", url: "", title: "Artist 50", icon: "fa-user", kind: "artist", group: "decadeEnd" },
+  decadeEndRadio: { id: "decadeEndRadio", url: "", title: "Radio Songs", icon: "fa-broadcast-tower", kind: "song", group: "decadeEnd" },
+  decadeEndStreamingSongs: { id: "decadeEndStreamingSongs", url: "", title: "Streaming Songs", icon: "fa-cloud", kind: "song", group: "decadeEnd" },
+  decadeEndTopAlbumSales: { id: "decadeEndTopAlbumSales", url: "", title: "Top Album Sales", icon: "fa-chart-simple", kind: "album", group: "decadeEnd" },
+  decadeEndTopStreamingAlbums: { id: "decadeEndTopStreamingAlbums", url: "", title: "Top Streaming Albums", icon: "fa-headphones", kind: "album", group: "decadeEnd" },
+  decadeEndDigitalSongsSales: { id: "decadeEndDigitalSongsSales", url: "", title: "Digital Songs Sales", icon: "fa-download", kind: "song", group: "decadeEnd" },
 
   goatSongs: { id: "goatSongs", url: SHEET + "1157278896", title: "Greatest of All Time Songs", icon: "fa-trophy", kind: "song", group: "goat" },
   goatArtists: { id: "goatArtists", url: SHEET + "222299678", title: "Greatest of All Time Artists", icon: "fa-trophy", kind: "artist", group: "goat" },
@@ -57,6 +66,7 @@ export const chartBeatConfig = {
 export const weeklyChartIds = ["songs", "artists", "albums", "radioSongs", "topStreamingAlbums", "topAlbumSales", "streamingSongs", "digitalSongsSales"];
 export const yearEndChartIds = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yearEndRadio", "yearEndDigitalSongsSales", "yearEndStreamingSongs", "yearEndTopAlbumSales", "yearEndTopStreamingAlbums", "yecHot100Artists", "yecArtist50Female", "yecArtist50Male", "yecArtist50DuoGroup", "yearEndNewArtists", "yecTop100AlbumsArtists", "yecRadioSongsArtists"];
 export const goatChartIds = ["goatSongs", "goatArtists", "goatAlbums", "goatRadio"];
+export const decadeEndChartIds = ["decadeEndSongs", "decadeEndAlbums", "decadeEndArtists", "decadeEndRadio", "decadeEndStreamingSongs", "decadeEndTopAlbumSales", "decadeEndTopStreamingAlbums", "decadeEndDigitalSongsSales"];
 
 export function slugify(text: string): string {
   return text
@@ -81,6 +91,7 @@ export function parseSongSlug(slug: string): { nameSlug: string; artistSlug: str
 
 export function stripAlbumEdition(name: string): string {
   return name
-    .replace(/\s*\((?:Digital Deluxe Version|Special Edition|International Version)\)/gi, "")
+    .replace(/\s*[-–]?\s*Deluxe\s*(Edition)?/gi, "")
+    .replace(/\s*\((?:Digital Deluxe Version|Special Edition|International Version|Platinum Edition)\)/gi, "")
     .trim();
 }

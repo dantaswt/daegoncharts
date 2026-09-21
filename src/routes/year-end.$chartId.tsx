@@ -196,11 +196,11 @@ function YearEndChartPage() {
             >
               {chartsConfig[chartId]?.title ?? chartId}
             </Link>
-            <YECMobExpand activeId={chartId} />
+            <YECMobExpand activeId={chartId} year={selectedYear} />
           </div>
           {/* Desktop: show all */}
           <div className="hidden md:flex flex-col gap-2 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-            {yearEndChartIds.map((id) => {
+            {(selectedYear && selectedYear < "2017" ? [...YEAR_END_PRE_2017] : [...yearEndChartIds]).map((id) => {
               const c = chartsConfig[id];
               return (
                 <Link
@@ -227,17 +227,15 @@ function YearEndChartPage() {
       {/* Content */}
       <main>
         {/* Header */}
-        <div className="mb-2 text-center md:text-left">
+        <div className="mb-2 text-center">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center md:justify-start">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--foreground)] inline-flex items-center gap-2 justify-center">
                 {cfg?.title ?? "Year-End"}
               </h1>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                {entries.length} items ranked by {metricLabel.toLowerCase()}
-              </p>
+
             </div>
-            <div className="flex justify-center md:justify-end">
+            <div className="flex justify-center sm:justify-end">
               <ChartImage
                 entries={entries.map((e) => ({ position: e.position, diff: "", name: e.name, artist: e.artist, peak: e.peak, weeks: e.weeks, weeksAt1: e.weeksAt1 }))}
                 chartTitle={cfg?.title ?? "Year-End"}
@@ -268,17 +266,17 @@ function YearEndChartPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3 }}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all overflow-hidden"
+                  className="chart-card w-full"
                 >
                   {/* Desktop layout */}
-                  <div className="hidden md:grid gap-3 items-center p-4" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
+                  <div className="hidden md:grid gap-3 items-center" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
                     <div className="flex flex-col items-center justify-center w-16">
                       <div className={`rank-num font-black ${isFirst ? "text-4xl bg-[var(--accent)] text-black w-16 h-16 flex items-center justify-center" : "text-3xl"}`}>{e.position}</div>
                     </div>
                     <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${isFirst ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)]" : "w-24 h-24"}`}>
                       <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={isFirst ? 180 : 96} />
                     </div>
-                    <div className="min-w-0 flex flex-col flex-1 pl-3">
+                    <div className="min-w-0 flex flex-col flex-1">
                       <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isFirst ? "text-xl" : "text-base"}`}>
                         {e.kind === "artist" ? (
                           <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
@@ -295,7 +293,7 @@ function YearEndChartPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                       <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                         {isOpen ? "−" : "+"}
                       </button>
@@ -303,16 +301,16 @@ function YearEndChartPage() {
                   </div>
 
                   {/* Mobile layout */}
-                  <div className="md:hidden flex flex-col p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
-                        <div className="rank-num text-lg font-black">{e.position}</div>
+                  <div className="md:hidden">
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-center justify-center w-8 flex-shrink-0">
+                        <div className="rank-num text-xl font-black leading-none">{e.position}</div>
                       </div>
-                      <div className="placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none w-14 h-14 flex-shrink-0">
-                        <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={56} />
+                      <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] flex-shrink-0 ${isFirst ? "w-[68px] h-[68px] border-l-[3px] border-[var(--accent)]" : "w-[64px] h-[64px]"}`}>
+                        <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={isFirst ? 68 : 64} />
                       </div>
-                      <div className={`min-w-0 flex-1 ${isArtist ? "flex items-center" : ""}`}>
-                        <div className={`font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${isArtist ? "text-center justify-center" : ""}`}>
+                      <div className="min-w-0 flex-1 flex flex-col justify-center">
+                        <div className="font-bold text-[13px] leading-tight break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
                           {e.kind === "artist" ? (
                             <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
                           ) : e.kind === "album" ? (
@@ -322,12 +320,12 @@ function YearEndChartPage() {
                           )}
                         </div>
                         {e.kind !== "artist" && (
-                          <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
+                          <div className="text-[11px] text-[var(--muted-foreground)] leading-tight break-words line-clamp-1">
                             <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.kind === "album" ? (getFeatArtistsFromTitle(e.artist)?.artists ?? e.artist) : e.artist}</Link>
                           </div>
                         )}
                       </div>
-                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
+                      <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-xs hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
                         {isOpen ? "−" : "+"}
                       </button>
                     </div>
@@ -367,8 +365,11 @@ function YearEndChartPage() {
   );
 }
 
-function YECMobExpand({ activeId }: { activeId: string }) {
+const YEAR_END_PRE_2017 = ["yearEndSongs", "yearEndArtists", "yearEndAlbums", "yecHot100Artists", "yecArtist50Female", "yecArtist50Male", "yecArtist50DuoGroup", "yearEndNewArtists", "yecTop100AlbumsArtists"] as const;
+
+function YECMobExpand({ activeId, year }: { activeId: string; year?: string }) {
   const [expanded, setExpanded] = useState(false);
+  const visibleIds = year && year < "2017" ? YEAR_END_PRE_2017 : yearEndChartIds;
   return (
     <>
       <button
@@ -377,7 +378,7 @@ function YECMobExpand({ activeId }: { activeId: string }) {
       >
         {expanded ? "− Less" : "+ More Charts"}
       </button>
-      {expanded && yearEndChartIds.filter((id) => id !== activeId).map((id) => {
+      {expanded && visibleIds.filter((id) => id !== activeId).map((id) => {
         const c = chartsConfig[id];
         return (
           <Link

@@ -280,17 +280,17 @@ function GoatPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.3 }}
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] hover:shadow-md transition-all overflow-hidden"
+                    className="chart-card w-full"
                   >
                     {/* Desktop layout */}
-                    <div className="hidden md:grid gap-3 items-center p-4" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
+                    <div className="hidden md:grid gap-3 items-center" style={{ gridTemplateColumns: "auto auto minmax(0,1fr) auto" }}>
                       <div className="flex flex-col items-center justify-center w-16">
                         <div className={`rank-num font-black ${e.position === 1 ? "text-4xl bg-[var(--accent)] text-black w-16 h-16 flex items-center justify-center" : "text-3xl"}`}>{e.position}</div>
                       </div>
                       <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none flex-shrink-0 ${e.position === 1 ? "w-[180px] h-[180px] border-l-4 border-[var(--accent)]" : "w-24 h-24"}`}>
                         <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={e.position === 1 ? 180 : 96} />
                       </div>
-                      <div className="min-w-0 flex flex-col flex-1 pl-3">
+                      <div className="min-w-0 flex flex-col flex-1">
                         <div className={`font-bold break-words line-clamp-2 flex flex-wrap items-center gap-1.5 ${e.position === 1 ? "text-xl" : "text-base"}`}>
                           {data.kind === "artist" ? (
                             <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
@@ -307,7 +307,7 @@ function GoatPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-4 flex-shrink-0">
                         <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center" aria-label="Toggle details">
                           {isOpen ? "−" : "+"}
                         </button>
@@ -315,16 +315,16 @@ function GoatPage() {
                     </div>
 
                     {/* Mobile layout */}
-                    <div className="md:hidden flex flex-col p-3">
-                      <div className="flex items-start gap-2">
-                        <div className="flex flex-col items-center justify-center w-10 flex-shrink-0">
-                          <div className="rank-num text-lg font-black">{e.position}</div>
+                    <div className="md:hidden">
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-center justify-center w-8 flex-shrink-0">
+                          <div className="rank-num text-xl font-black leading-none">{e.position}</div>
                         </div>
-                        <div className="placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] rounded-none w-14 h-14 flex-shrink-0">
-                          <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={56} />
+                        <div className={`placeholder-art flex items-center justify-center overflow-hidden bg-[var(--muted)] flex-shrink-0 ${e.position === 1 ? "w-[68px] h-[68px] border-l-[3px] border-[var(--accent)]" : "w-[64px] h-[64px]"}`}>
+                          <SpotifyItemImage name={e.name} artist={e.artist} kind={data.kind} size={e.position === 1 ? 68 : 64} />
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-xs break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
+                        <div className="min-w-0 flex-1 flex flex-col justify-center">
+                          <div className="font-bold text-[13px] leading-tight break-words line-clamp-2 flex flex-wrap items-center gap-1.5">
                             {data.kind === "artist" ? (
                               <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.name) }} className="hover:text-[var(--accent)] hover:underline">{e.name}</Link>
                             ) : data.kind === "album" ? (
@@ -334,12 +334,12 @@ function GoatPage() {
                             )}
                           </div>
                           {data.kind !== "artist" && (
-                            <div className="text-[10px] text-[var(--muted-foreground)] break-words line-clamp-2">
+                            <div className="text-[11px] text-[var(--muted-foreground)] leading-tight break-words line-clamp-1">
                               <Link to="/artist/$slug" params={{ slug: slugifyArtist(e.artist) }} className="hover:text-[var(--accent)] hover:underline">{e.artist}</Link>
                             </div>
                           )}
                         </div>
-                        <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-sm hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
+                        <button type="button" onClick={() => toggleDetails(entryKey)} className="details-btn w-8 h-8 rounded-full bg-[var(--muted)] text-[var(--foreground)] text-xs hover:bg-[var(--border)] active:bg-[var(--accent)] active:text-white active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0" aria-label="Toggle details">
                           {isOpen ? "−" : "+"}
                         </button>
                       </div>
