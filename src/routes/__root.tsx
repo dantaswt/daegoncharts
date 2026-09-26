@@ -257,10 +257,6 @@ function SiteHeader() {
           <button
             type="button"
             onClick={toggleMobileMenu}
-            onTouchEnd={(event) => {
-              event.preventDefault();
-              toggleMobileMenu();
-            }}
             className="relative z-[121] pointer-events-auto select-none w-11 h-11 flex items-center justify-center text-[#f5f5f5] text-2xl cursor-pointer touch-manipulation active:scale-95 transition-transform [-webkit-tap-highlight-color:transparent]"
             aria-label="Menu"
           >
