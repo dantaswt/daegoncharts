@@ -226,7 +226,7 @@ function SiteHeader() {
   ];
 
   return (
-    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
+    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-[100] isolate pointer-events-auto bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
       {/* Desktop header */}
       <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto px-4 py-3">
         <Link to="/" className="text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0 mr-4">
@@ -252,11 +252,11 @@ function SiteHeader() {
 
       {/* Mobile header — title truly centered */}
       <div className="lg:hidden relative flex items-center justify-between px-4 py-3">
-        <div className="relative z-20 w-11 h-11 flex items-center justify-center flex-shrink-0">
+        <div className="relative z-[120] w-11 h-11 flex items-center justify-center flex-shrink-0 pointer-events-auto">
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="w-11 h-11 flex items-center justify-center text-[#f5f5f5] text-2xl cursor-pointer touch-manipulation"
+            className="relative z-[121] pointer-events-auto select-none w-11 h-11 flex items-center justify-center text-[#f5f5f5] text-2xl cursor-pointer touch-manipulation active:scale-95 transition-transform"
             aria-label="Menu"
           >
             <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
@@ -264,18 +264,18 @@ function SiteHeader() {
         </div>
         <Link
           to="/"
-          className="absolute left-16 right-16 z-10 text-center text-lg font-extrabold text-[#f5f5f5] lowercase tracking-wide"
+          className="absolute left-16 right-16 z-10 text-center text-lg font-extrabold text-[#f5f5f5] lowercase tracking-wide pointer-events-auto"
         >
           daegon charts
         </Link>
-        <div className="relative z-20 w-11 h-11 flex items-center justify-center flex-shrink-0 touch-manipulation">
+        <div className="relative z-[120] w-11 h-11 flex items-center justify-center flex-shrink-0 pointer-events-auto touch-manipulation">
           <ThemeToggle />
         </div>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="lg:hidden bg-[#0f0f0f] border-t border-[#2a2a2a]">
+        <div className="lg:hidden relative z-[110] pointer-events-auto bg-[#0f0f0f] border-t border-[#2a2a2a]">
           <div className="px-4 py-4 space-y-3">
             {navItems.map((item) => (
               <Link
