@@ -144,25 +144,20 @@ function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "so
 
 function ChartMetrics({ entry, showDiff }: { entry: ChartEntry; showDiff?: boolean }) {
   const lastWeek = entry.lastWeek !== undefined && String(entry.lastWeek).trim() !== "" ? (entry.lastWeek === "0" || entry.lastWeek === 0 ? "-" : String(entry.lastWeek)) : "-";
-  const peak = entry.peak > 0 ? `#${entry.peak}` : "-";
+  const peak = entry.peak > 0 ? String(entry.peak) : "-";
   const weeks = entry.weeks > 0 ? String(entry.weeks) : "-";
 
   return (
-    <div className="flex flex-col items-end gap-0.5 text-[11px] leading-tight">
+    <div className="flex items-center gap-2 text-[11px] lg:text-xs leading-tight whitespace-nowrap flex-shrink-0">
       {showDiff && (
-        <div className="flex items-center gap-2">
-          <span className="text-[var(--muted-foreground)] uppercase tracking-wide">LW</span>
-          <span className="font-bold text-[var(--foreground)] w-6 text-right">{lastWeek}</span>
-        </div>
+        <>
+          <span className="text-[var(--muted-foreground)]">LW <span className="font-medium text-[var(--muted-foreground)]">{lastWeek}</span></span>
+          <span className="text-[var(--border)]">·</span>
+        </>
       )}
-      <div className="flex items-center gap-2">
-        <span className="text-[var(--muted-foreground)] uppercase tracking-wide">Peak</span>
-        <span className="font-bold text-[var(--foreground)] w-6 text-right">{peak.replace("#", "")}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[var(--muted-foreground)] uppercase tracking-wide">Weeks</span>
-        <span className="font-bold text-[var(--foreground)] w-6 text-right">{weeks}</span>
-      </div>
+      <span className="text-[var(--muted-foreground)]">PEAK <span className="font-medium text-[var(--muted-foreground)]">{peak}</span></span>
+      <span className="text-[var(--border)]">·</span>
+      <span className="text-[var(--muted-foreground)]">WEEKS <span className="font-medium text-[var(--muted-foreground)]">{weeks}</span></span>
     </div>
   );
 }
