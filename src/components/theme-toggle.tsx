@@ -19,8 +19,9 @@ export function ThemeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggle}
-      className="w-9 h-9 flex items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors cursor-pointer shrink-0"
+      className="relative z-[120] pointer-events-auto touch-manipulation select-none w-11 h-11 flex items-center justify-center rounded-none border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] active:scale-95 transition-all cursor-pointer shrink-0"
       aria-label="Toggle theme"
     >
       <i className={`fas ${dark ? "fa-sun" : "fa-moon"} text-sm`} />
