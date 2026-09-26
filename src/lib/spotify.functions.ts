@@ -120,6 +120,16 @@ function exactMatch(actual: string, expected: string): boolean {
   return comparable(actual) === comparable(expected);
 }
 
+function isUsableImageUrl(url: string | null | undefined): url is string {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  // Last.fm's generic "no image" asset is a real 200 response, so <img onError>
+  // never fires and the UI can show a black/blank square. Reject it server-side.
+  if (lower.includes("2a96cbd8b46e442fc41c2b86b821562f")) return false;
+  if (lower.includes("default_album") || lower.includes("noimage") || lower.includes("no-image")) return false;
+  return true;
+}
+
 function extractYear(name: string): { year: string | null; stripped: string } {
   const match = name.match(/\b(19|20)\d{2}\b/);
   return { year: match ? match[0] : null, stripped: match ? name.replace(match[0], "").trim() : name };
@@ -209,8 +219,12 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
     const cacheKey = `${data.type}:${data.query.trim()}`;
     if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
     if (persistentCache[cacheKey]) {
-      imageCache.set(cacheKey, persistentCache[cacheKey]);
-      return persistentCache[cacheKey];
+      if (isUsableImageUrl(persistentCache[cacheKey])) {
+        imageCache.set(cacheKey, persistentCache[cacheKey]);
+        return persistentCache[cacheKey];
+      }
+      delete persistentCache[cacheKey];
+      savePersistentCache();
     }
     if (isFailed(cacheKey)) {
       return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" "300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
@@ -265,7 +279,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             if (data?.album?.name && exactMatch(data.album.name, variant)) {
               const images = data.album.image ?? [];
               for (const img of [...images].reverse()) {
-                if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                if (isUsableImageUrl(img["#text"]) && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
                   imageUrl = img["#text"];
                   break;
                 }
@@ -473,7 +487,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             const lastFm = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json`);
             const images = lastFm?.track?.album?.image ?? [];
             for (const img of [...images].reverse()) {
-              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+              if (isUsableImageUrl(img["#text"]) && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
                 imageUrl = img["#text"];
                 break;
               }
@@ -631,7 +645,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             if (data?.artist?.name && exactMatch(data.artist.name, artistName)) {
               const images = data.artist.image ?? [];
               for (const img of [...images].reverse()) {
-                if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                if (isUsableImageUrl(img["#text"]) && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
                   imageUrl = img["#text"];
                   break;
                 }
@@ -646,7 +660,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
             const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&format=json`);
             const images = data?.artist?.image ?? [];
             for (const img of [...images].reverse()) {
-              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+              if (isUsableImageUrl(img["#text"]) && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
                 imageUrl = img["#text"];
                 break;
               }
@@ -715,14 +729,15 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           imageUrl = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
         }
       }
-      if (imageUrl) {
+      if (isUsableImageUrl(imageUrl)) {
         imageCache.set(cacheKey, imageUrl);
         persistentCache[cacheKey] = imageUrl;
         savePersistentCache();
-      } else {
-        markFailed(cacheKey);
+        return imageUrl;
       }
-      return imageUrl;
+
+      markFailed(cacheKey);
+      return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
     } catch (error) {
       console.error("Image search failed", error);
       return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23e5e7eb"/><text x="150" y="170" text-anchor="middle" font-size="120" fill="%239ca3af">♪</text></svg>`);
@@ -870,7 +885,7 @@ export const getSpotifyArtistProfile = createServerFn({ method: "GET" })
       const d = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(data.artistName)}&format=json`);
       const images = d?.artist?.image ?? [];
       for (const img of [...images].reverse()) {
-        if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+        if (isUsableImageUrl(img["#text"]) && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
           imageUrl = img["#text"];
           break;
         }
