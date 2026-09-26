@@ -29,6 +29,7 @@ export function playTrack(artist: string, track: string) {
 
 export function AudioPlayerBar() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const playerBarRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<AudioPlayerState>({
     isOpen: false,
     isPlaying: false,
@@ -48,12 +49,26 @@ export function AudioPlayerBar() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (state.isOpen) {
-      root.style.setProperty("--audio-player-offset", "calc(84px + env(safe-area-inset-bottom, 0px))");
-    } else {
+    if (!state.isOpen) {
       root.style.setProperty("--audio-player-offset", "0px");
+      return;
     }
-    return () => root.style.setProperty("--audio-player-offset", "0px");
+
+    const updateOffset = () => {
+      const height = playerBarRef.current?.getBoundingClientRect().height ?? 0;
+      root.style.setProperty("--audio-player-offset", `${Math.ceil(height)}px`);
+    };
+
+    updateOffset();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateOffset) : null;
+    if (playerBarRef.current) observer?.observe(playerBarRef.current);
+    window.addEventListener("resize", updateOffset);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateOffset);
+      root.style.setProperty("--audio-player-offset", "0px");
+    };
   }, [state.isOpen]);
 
   const { data: preview } = useQuery({
@@ -111,10 +126,17 @@ export function AudioPlayerBar() {
   return (
     <>
       <audio ref={audioRef} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} preload="none" />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--card)] border-t border-[var(--border)]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div ref={playerBarRef} className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--card)] border-t border-[var(--border)]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
           {state.artworkUrl ? (
-            <img src={state.artworkUrl} alt="" className="w-12 h-12 rounded object-cover flex-shrink-0" />
+            <img
+              src={state.artworkUrl}
+              alt=""
+              className="w-12 h-12 rounded object-cover flex-shrink-0"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
           ) : (
             <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
               <i className="fas fa-music text-muted-foreground" />
