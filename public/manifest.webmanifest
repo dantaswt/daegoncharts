@@ -1,0 +1,19 @@
+{
+  "name": "Daegon Charts",
+  "short_name": "Daegon",
+  "description": "Weekly music charts, year-end rankings and greatest of all time lists.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
