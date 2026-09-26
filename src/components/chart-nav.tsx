@@ -183,7 +183,7 @@ export function BackToTop() {
     <button 
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       className="fixed right-4 md:right-6 w-12 h-12 rounded-full bg-[var(--accent)] text-black flex items-center justify-center shadow-lg hover:brightness-95 transition-all z-[120] cursor-pointer touch-manipulation"
-      style={{ bottom: "calc(1rem + env(safe-area-inset-bottom, 0px) + var(--audio-player-offset, 0px))" }}
+      style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px) + var(--audio-player-offset, 0px))" }}
       aria-label="Back to top"
     >
       <i className="fas fa-arrow-up text-xl" />
