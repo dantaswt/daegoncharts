@@ -99,7 +99,6 @@ interface Props {
 
 function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "song" | "album" | "artist"; delay?: number }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [fallbackTried, setFallbackTried] = useState(false);
   const query = useMemo(() => {
     if (kind === "album") {
       return `album:"${entry.name}" artist:"${entry.artist}"`;
@@ -119,7 +118,6 @@ function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "so
 
   useEffect(() => {
     let active = true;
-    setFallbackTried(false);
     const timer = setTimeout(() => {
       getSpotifyImage({ data: { query, type } }).then((url) => {
         if (active && url) setImageUrl(url);
@@ -128,18 +126,6 @@ function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "so
     return () => { active = false; clearTimeout(timer); };
   }, [query, type, delay]);
 
-  const handleImageError = () => {
-    if (kind === "song" && !fallbackTried) {
-      setFallbackTried(true);
-      setImageUrl(null);
-      getSpotifyImage({ data: { query, type, preferFallback: true } }).then((url) => {
-        if (url) setImageUrl(url);
-      });
-      return;
-    }
-    setImageUrl(null);
-  };
-
   if (imageUrl) {
     return (
       <img
@@ -147,7 +133,7 @@ function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "so
         alt={entry.name}
         loading="lazy"
         decoding="async"
-        onError={handleImageError}
+        onError={() => setImageUrl(null)}
         className="w-full h-full object-cover shadow-sm rounded-none animate-fade-in"
       />
     );
@@ -639,14 +625,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             )}
 
             {/* LW / Peak / Weeks — inline below artist */}
-            <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)] leading-tight flex-nowrap whitespace-nowrap mt-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-[var(--muted-foreground)] leading-tight whitespace-nowrap mt-0.5">
               {showDiff && (
-                <span className="shrink-0">LW {entry.lastWeek !== undefined && String(entry.lastWeek).trim() !== "" ? (entry.lastWeek === "0" || entry.lastWeek === 0 ? "-" : String(entry.lastWeek)) : "-"}</span>
+                <span>LW {entry.lastWeek !== undefined && String(entry.lastWeek).trim() !== "" ? (entry.lastWeek === "0" || entry.lastWeek === 0 ? "-" : String(entry.lastWeek)) : "-"}</span>
               )}
-              <span className="text-[var(--border)] shrink-0">·</span>
-              <span className="shrink-0">PEAK {entry.peak > 0 ? entry.peak : "-"}</span>
-              <span className="text-[var(--border)] shrink-0">·</span>
-              <span className="shrink-0">WEEKS {entry.weeks > 0 ? String(entry.weeks) : "-"}</span>
+              <span className="text-[var(--border)]">·</span>
+              <span>PEAK {entry.peak > 0 ? entry.peak : "-"}</span>
+              <span className="text-[var(--border)]">·</span>
+              <span>WEEKS {entry.weeks > 0 ? String(entry.weeks) : "-"}</span>
             </div>
           </div>
 
