@@ -214,9 +214,10 @@ async function searchTheAudioDB(name: string, kind: "artist" | "album", artistNa
 }
 
 export const getSpotifyImage = createServerFn({ method: "GET" })
-  .inputValidator((d: { query: string; type: "album" | "artist" | "track" }) => d)
+  .inputValidator((d: { query: string; type: "album" | "artist" | "track"; preferFallback?: boolean }) => d)
   .handler(async ({ data }) => {
-    const cacheKey = `${data.type}:${data.query.trim()}`;
+    const baseCacheKey = `${data.type}:${data.query.trim()}`;
+    const cacheKey = data.preferFallback ? `${baseCacheKey}:fallback` : baseCacheKey;
     if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
     if (persistentCache[cacheKey]) {
       if (isUsableImageUrl(persistentCache[cacheKey])) {
@@ -481,8 +482,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           return img;
         }
 
-        // 1. Last.fm track artwork — fast and especially useful for older catalog
-        if (!imageUrl && artistName) {
+        // 1. Last.fm track artwork — fast and especially useful for older catalog\n        if (!data.preferFallback && !imageUrl && artistName) {
           try {
             const lastFm = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json`);
             const images = lastFm?.track?.album?.image ?? [];
