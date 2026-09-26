@@ -46,6 +46,16 @@ export function AudioPlayerBar() {
     return () => { globalSetState = null; globalGetState = null; };
   });
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (state.isOpen) {
+      root.style.setProperty("--audio-player-offset", "calc(84px + env(safe-area-inset-bottom, 0px))");
+    } else {
+      root.style.setProperty("--audio-player-offset", "0px");
+    }
+    return () => root.style.setProperty("--audio-player-offset", "0px");
+  }, [state.isOpen]);
+
   const { data: preview } = useQuery({
     queryKey: ["audio-preview", state.artistName, state.trackName],
     queryFn: () => getAudioPreview({ data: { artist: state.artistName, track: state.trackName } }),
