@@ -52,6 +52,10 @@ export function SpotifyItemImage({ name, artist, kind, size = 40, className = ""
         loading="lazy"
         decoding="async"
         onLoad={() => setLoaded(true)}
+        onError={() => {
+          setLoaded(false);
+          setUrl(null);
+        }}
         style={imgStyle}
         className={`object-cover shrink-0 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
       />
