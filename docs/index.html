@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Daegon Charts">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <title>Daegon Charts App</title>
+  <style>
+    :root{--bg:#0b0b0c;--panel:#141416;--panel2:#1c1c1f;--text:#f6f6f7;--muted:#9a9aa1;--line:#2b2b30;--gold:#d4af37;--green:#45c47c;--red:#ff6b6b;--blue:#67a7ff}
+    *{box-sizing:border-box}
+    html{background:var(--bg);color-scheme:dark}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    button,select,input{font:inherit}
+    .shell{max-width:880px;margin:0 auto;padding:env(safe-area-inset-top) 12px calc(28px + env(safe-area-inset-bottom))}
+    header{position:sticky;top:0;z-index:20;background:rgba(11,11,12,.94);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);margin:0 -12px;padding:12px 14px 10px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-size:19px;font-weight:900;letter-spacing:-.4px}
+    .brand span{color:var(--gold)}
+    .status{font-size:11px;color:var(--muted);white-space:nowrap}
+    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+    .tab{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:10px 7px;border-radius:11px;font-size:12px;font-weight:800;cursor:pointer}
+    .tab.active{background:var(--gold);border-color:var(--gold);color:#111}
+    .controls{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:14px 0 10px}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+    select,input,.iconbtn{min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text);padding:0 12px;outline:none}
+    select:focus,input:focus,.iconbtn:focus{border-color:var(--gold)}
+    .iconbtn{width:46px;padding:0;font-size:18px;cursor:pointer}
+    .meta{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:8px 2px 12px}
+    h1{font-size:26px;line-height:1.05;margin:0;font-weight:950;letter-spacing:-.8px}
+    .dateLabel{margin-top:5px;font-size:12px;color:var(--muted)}
+    .count{font-size:12px;color:var(--muted)}
+    #list{display:flex;flex-direction:column;gap:8px}
+    .card{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px}
+    .rank{display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:950;border-right:1px solid var(--line);padding-right:8px}
+    .main{min-width:0}
+    .line1{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+    .name{font-size:15px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .artist{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .diff{font-size:11px;font-weight:900;flex:0 0 auto;padding:3px 6px;border-radius:7px;background:var(--panel2);color:var(--muted)}
+    .diff.up{color:var(--green)}.diff.down{color:var(--red)}.diff.new{color:var(--gold)}.diff.re{color:var(--blue)}
+    .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:10px;color:var(--muted)}
+    .stats b{color:var(--text);font-weight:800}
+    .empty,.loading,.error{padding:40px 18px;text-align:center;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:14px}
+    .error{color:#ff9f9f}
+    .footer{padding:22px 4px 0;text-align:center;color:var(--muted);font-size:11px;line-height:1.5}
+    .install{display:none;margin-top:8px;width:100%;min-height:44px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-weight:850;border-radius:11px;cursor:pointer}
+    @media(min-width:680px){
+      .shell{padding-left:18px;padding-right:18px}
+      header{margin-left:-18px;margin-right:-18px;padding-left:20px;padding-right:20px}
+      .controls{grid-template-columns:1fr 1fr;align-items:center}
+      .card{grid-template-columns:68px minmax(0,1fr);padding:13px 14px}
+      .rank{font-size:30px}
+      .name{font-size:17px}
+      .artist{font-size:14px}
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="top">
+      <div class="brand">daegon <span>charts</span></div>
+      <div class="status" id="status">carregando…</div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-chart="songs">HOT 100</button>
+      <button class="tab" data-chart="albums">ALBUMS</button>
+      <button class="tab" data-chart="artists">ARTISTS</button>
+    </div>
+  </header>
+
+  <section class="controls">
+    <div class="row">
+      <select id="dateSelect" aria-label="Semana"></select>
+      <button id="refresh" class="iconbtn" aria-label="Atualizar">↻</button>
+    </div>
+    <input id="search" type="search" placeholder="Buscar música, álbum ou artista…" autocomplete="off">
+  </section>
+
+  <section class="meta">
+    <div>
+      <h1 id="title">Hot 100 Songs</h1>
+      <div class="dateLabel" id="dateLabel"></div>
+    </div>
+    <div class="count" id="count"></div>
+  </section>
+
+  <main id="list"><div class="loading">Carregando os charts…</div></main>
+  <button id="install" class="install">Adicionar Daegon Charts à tela inicial</button>
+  <div class="footer">Versão app independente do Vercel. Dados lidos das mesmas planilhas públicas usadas pelo Daegon Charts.</div>
+</div>
+<script>
+(() => {
+  const BASE='https://docs.google.com/spreadsheets/d/1t6_7SOlspmNYrXq8PSfJ74frIdrWwQBFITQ3bQmRzeg/gviz/tq?tq=select%20*&tqx=out:csv&gid=';
+  const BASE2='https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tq=select%20*&tqx=out:csv&gid=';
+  const BASE2SONGS='https://docs.google.com/spreadsheets/d/1BUo5KNCtoWAMpezDYwv80MY9njOUyuJJRPQbmPbCZH4/gviz/tq?tq=select%20A,B,C,D,E,F,G,H,I,J&tqx=out:csv&gid=';
+  const CONFIG={
+    songs:{title:'Hot 100 Songs',kind:'song',primary:BASE+'904867620',secondary:BASE2SONGS+'1011796371'},
+    albums:{title:'Top Albums',kind:'album',primary:BASE+'1940039611',secondary:BASE2+'765580865'},
+    artists:{title:'Top Artists',kind:'artist',primary:BASE+'1568177610',secondary:BASE2+'1959135946'}
+  };
+  const state={chart:'songs',data:{},dates:[],query:''};
+  const el=id=>document.getElementById(id);
+  const list=el('list'), dateSelect=el('dateSelect'), title=el('title'), dateLabel=el('dateLabel'), count=el('count'), status=el('status');
+
+  function csv(text){
+    const rows=[]; let row=[], field='', q=false;
+    for(let i=0;i<text.length;i++){
+      const c=text[i], n=text[i+1];
+      if(q){
+        if(c==='"'&&n==='"'){field+='"';i++;}
+        else if(c==='"'){q=false;}
+        else field+=c;
+      }else{
+        if(c==='"')q=true;
+        else if(c===','){row.push(field);field='';}
+        else if(c==='\n'){row.push(field.replace(/\r$/,''));rows.push(row);row=[];field='';}
+        else field+=c;
+      }
+    }
+    if(field.length||row.length){row.push(field.replace(/\r$/,''));rows.push(row);}
+    return rows.filter(r=>r.some(v=>v!==''));
+  }
+  const norm=s=>(s||'').trim().toLowerCase();
+  function idx(h,keys){for(const k of keys){const i=h.indexOf(k);if(i>=0)return i}return -1}
+  function date(v){
+    v=(v||'').trim();
+    if(v.includes('/')){const p=v.split('/');if(p.length===3)return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0')}
+    return v;
+  }
+  function num(v){const n=parseInt(String(v||'').replace(/[^0-9-]/g,''),10);return Number.isFinite(n)?n:0}
+  function parseRows(rows,cfg){
+    if(!rows.length)return {};
+    const h=rows[0].map(norm);
+    const I={
+      date:idx(h,['date','chart date']),pos:idx(h,['position','rank','pos']),diff:idx(h,['dif','diff','▲▼']),
+      song:idx(h,['song','title','track']),album:idx(h,['album']),artist:idx(h,['artist','artists']),
+      lw:idx(h,['last week','lw','last wk','prev week','previous week']),peak:idx(h,['peak']),weeks:idx(h,['weeks','wks']),
+      w1:idx(h,['weeks at 1','wks at 1','week at #1','week at 1','weeks at #1'])
+    };
+    const ni=cfg.kind==='artist'?I.artist:cfg.kind==='album'?I.album:I.song;
+    const out={};
+    for(const r of rows.slice(1)){
+      const d=date(r[I.date]), name=(r[ni]||'').trim(), artist=(r[I.artist]||'').trim(), position=num(r[I.pos]);
+      if(!d||!name||!position)continue;
+      (out[d]||(out[d]=[])).push({position,name,artist,diff:I.diff>=0?(r[I.diff]||'').trim():'',lastWeek:I.lw>=0?(r[I.lw]||'').trim():'',peak:num(r[I.peak]),weeks:num(r[I.weeks]),weeksAt1:I.w1>=0?num(r[I.w1]):0});
+    }
+    return out;
+  }
+  function merge(a,b){
+    const out={...a};
+    for(const [d,arr] of Object.entries(b)){
+      const m=new Map((out[d]||[]).map(x=>[(x.name+'|'+x.artist).toLowerCase(),x]));
+      for(const e of arr){const k=(e.name+'|'+e.artist).toLowerCase();const old=m.get(k);if(!old||e.position<old.position)m.set(k,e)}
+      out[d]=[...m.values()].sort((x,y)=>x.position-y.position);
+    }
+    return out;
+  }
+  function diffClass(v){v=(v||'').toUpperCase();if(v==='NEW')return'new';if(v==='RE')return're';if(v.includes('▲')||v.startsWith('+'))return'up';if(v.includes('▼')||v.startsWith('-'))return'down';return''}
+  function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function prettyDate(v){if(!v)return'';const [y,m,d]=v.split('-');return d+'/'+m+'/'+y}
+  function render(){
+    title.textContent=CONFIG[state.chart].title;
+    const d=dateSelect.value||state.dates[state.dates.length-1]||'';
+    dateLabel.textContent=d?'Semana de '+prettyDate(d):'';
+    const q=norm(el('search').value);
+    const rows=(state.data[d]||[]).filter(e=>!q||norm(e.name).includes(q)||norm(e.artist).includes(q));
+    count.textContent=rows.length+(rows.length===1?' item':' itens');
+    if(!rows.length){list.innerHTML='<div class="empty">Nenhum item encontrado nesta semana.</div>';return}
+    list.innerHTML=rows.map(e=>`
+      <article class="card">
+        <div class="rank">${e.position}</div>
+        <div class="main">
+          <div class="line1">
+            <div style="min-width:0">
+              <div class="name">${escapeHtml(e.name)}</div>
+              <div class="artist">${escapeHtml(e.artist||'')}</div>
+            </div>
+            <div class="diff ${diffClass(e.diff)}">${escapeHtml(e.diff||'=')}</div>
+          </div>
+          <div class="stats">
+            <span>LW <b>${escapeHtml(e.lastWeek||'—')}</b></span>
+            <span>PEAK <b>${e.peak||e.position}</b></span>
+            <span>WEEKS <b>${e.weeks||'—'}</b></span>
+            ${e.weeksAt1?'<span>#1 <b>'+e.weeksAt1+'w</b></span>':''}
+          </div>
+        </div>
+      </article>`).join('');
+  }
+  async function fetchText(url){
+    const res=await fetch(url,{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    return res.text();
+  }
+  async function load(chart,force=false){
+    state.chart=chart;status.textContent='carregando…';list.innerHTML='<div class="loading">Carregando '+CONFIG[chart].title+'…</div>';
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.chart===chart));
+    try{
+      const cfg=CONFIG[chart];
+      const [p,s]=await Promise.all([fetchText(cfg.primary),fetchText(cfg.secondary)]);
+      state.data=merge(parseRows(csv(p),cfg),parseRows(csv(s),cfg));
+      state.dates=Object.keys(state.data).sort();
+      const old=dateSelect.value;
+      dateSelect.innerHTML=state.dates.slice().reverse().map(d=>'<option value="'+d+'">'+prettyDate(d)+'</option>').join('');
+      if(old&&state.data[old])dateSelect.value=old;
+      status.textContent='online';
+      render();
+    }catch(err){
+      console.error(err);
+      status.textContent='erro ao carregar';
+      list.innerHTML='<div class="error">Não consegui ler as planilhas agora. Toque em ↻ para tentar novamente.</div>';
+    }
+  }
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>load(b.dataset.chart)));
+  dateSelect.addEventListener('change',render);
+  el('search').addEventListener('input',render);
+  el('refresh').addEventListener('click',()=>load(state.chart,true));
+
+  let deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;el('install').style.display='block'});
+  el('install').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;el('install').style.display='none'});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  load('songs');
+})();
+</script>
+</body>
+</html>
