@@ -48,7 +48,7 @@ function saveFailCache() {
   } catch {}
 }
 
-const FAIL_TTL = 24 * 60 * 60 * 1000;
+const FAIL_TTL = 30 * 60 * 1000;
 function isFailed(key: string): boolean {
   const ts = failCache[key];
   if (!ts) return false;
@@ -467,7 +467,21 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           return img;
         }
 
-        // 1. Wikipedia single
+        // 1. Last.fm track artwork — fast and especially useful for older catalog
+        if (!imageUrl && artistName) {
+          try {
+            const lastFm = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json`);
+            const images = lastFm?.track?.album?.image ?? [];
+            for (const img of [...images].reverse()) {
+              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
+                imageUrl = img["#text"];
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        // 2. Wikipedia single
         if (!imageUrl && artistName) {
           const titles = [`${trackName} (${artistName} single)`, `${trackName} (${artistName} song)`, `${trackName} (song)`, `${trackName} (single)`];
           for (const title of titles) {
@@ -476,7 +490,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 2. iTunes single (trackCount === 1)
+        // 3. iTunes single (trackCount === 1)
         if (!imageUrl && artistName) {
           const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${artistName}`)}&entity=song&limit=20`);
           for (const r of data?.results ?? []) {
@@ -487,7 +501,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 3. Deezer single (album_type === "single")
+        // 4. Deezer single (album_type === "single")
         if (!imageUrl && artistName) {
           const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${artistName}`)}&limit=20`);
           for (const r of data?.data ?? []) {
@@ -498,7 +512,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 4. iTunes any result (track + artist)
+        // 5. iTunes any result (track + artist)
         if (!imageUrl && artistName) {
           const data = await fetchJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${trackName} ${artistName}`)}&entity=song&limit=20`);
           for (const r of data?.results ?? []) {
@@ -510,7 +524,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 5. Deezer any result (track + artist)
+        // 6. Deezer any result (track + artist)
         if (!imageUrl && artistName) {
           const data = await fetchJson(`https://api.deezer.com/search/track?q=${encodeURIComponent(`${trackName} ${artistName}`)}&limit=20`);
           for (const r of data?.data ?? []) {
@@ -522,7 +536,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 6. EPs by artist containing the track (Deezer)
+        // 7. EPs by artist containing the track (Deezer)
         if (!imageUrl && artistName) {
           const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
           const eps = (data?.data ?? []).filter((a: any) => a.record_type === "EP");
@@ -536,7 +550,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 7. Albums by artist containing the track (Deezer)
+        // 8. Albums by artist containing the track (Deezer)
         if (!imageUrl && artistName) {
           const data = await fetchJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(artistName)}&limit=50`);
           const albums = (data?.data ?? []).filter((a: any) => a.record_type === "album");
@@ -550,7 +564,7 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
           }
         }
 
-        // 8. Artist image (last resort — Spotify)
+        // 9. Artist image (last resort — Spotify)
         if (!imageUrl && token && artistName) {
           const result = await spotifySearch(token, `artist:"${artistName}"`, "artist");
           const artists = (result?.artists?.items ?? [])
@@ -561,20 +575,6 @@ export const getSpotifyImage = createServerFn({ method: "GET" })
               return (b.popularity ?? 0) - (a.popularity ?? 0);
             });
           imageUrl = artists[0]?.images?.[0]?.url ?? null;
-        }
-
-        // 9. Last.fm track image
-        if (!imageUrl && artistName) {
-          try {
-            const data = await fetchJson(`https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=8fc896e5a34e6491b19710f4f1212a34&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json`);
-            const images = data?.track?.album?.image ?? [];
-            for (const img of [...images].reverse()) {
-              if (img["#text"] && (img.size === "extralarge" || img.size === "large" || img.size === "mega")) {
-                imageUrl = img["#text"];
-                break;
-              }
-            }
-          } catch {}
         }
 
         // 10. Absolute fallback
