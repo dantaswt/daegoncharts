@@ -12,11 +12,11 @@ function computeChartPoints(position: number, chartId: string): number {
 }
 
 // ─── DB Layer: reads secondary sheet data (2000-2017) from Supabase ───
-// In-memory cache: loads once per server process, subsequent requests are instant
-const secondaryDbCache = new Map<string, Record<string, ChartEntry[]> | null>();
-
+// IMPORTANT: do not persist this historical dataset in process memory.
+// Vercel may keep multiple warm instances alive at once; a permanent in-memory
+// cache can make different requests serve different historical chart versions
+// after chart_data is replaced in Supabase.
 async function loadSecondaryFromDB(chartId: string): Promise<Record<string, ChartEntry[]> | null> {
-  if (secondaryDbCache.has(chartId)) return secondaryDbCache.get(chartId)!;
   try {
     const sb = getSupabase();
     const BATCH = 1000;
@@ -53,9 +53,7 @@ async function loadSecondaryFromDB(chartId: string): Promise<Record<string, Char
         }
       }
     }
-    const result = Object.keys(merged).length > 0 ? merged : null;
-    secondaryDbCache.set(chartId, result);
-    return result;
+    return Object.keys(merged).length > 0 ? merged : null;
   } catch { return null; }
 }
 
@@ -780,6 +778,12 @@ export const getWeeklyChart = createServerFn({ method: "GET" })
   .inputValidator((d: { chartId: string }) => d)
   .handler(async ({ data }) => {
     if (!weeklyChartIds.includes(data.chartId)) throw new Error("Unknown chart");
+    // The three main charts merge live historical data from Supabase.
+    // Do not cache the assembled chart in process memory: otherwise a warm
+    // Vercel instance can keep serving stale 2000-2017 data after a DB update.
+    if (chartsConfig[data.chartId]?.secondaryUrl) {
+      return loadWeekly(data.chartId);
+    }
     return cached(`weekly:${data.chartId}`, () => loadWeekly(data.chartId));
   });
 
