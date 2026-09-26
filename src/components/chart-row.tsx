@@ -133,6 +133,7 @@ function SpotifyImage({ entry, kind, delay = 0 }: { entry: ChartEntry; kind: "so
         alt={entry.name}
         loading="lazy"
         decoding="async"
+        onError={() => setImageUrl(null)}
         className="w-full h-full object-cover shadow-sm rounded-none animate-fade-in"
       />
     );
