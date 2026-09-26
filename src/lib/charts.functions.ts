@@ -798,6 +798,53 @@ async function loadAlbumDetails(slug: string): Promise<AlbumDetails | null> {
   };
 }
 
+export const getHistoricalWeeklyChart = createServerFn({ method: "GET" })
+  .inputValidator((d: { chartId: string }) => d)
+  .handler(async ({ data }) => {
+    if (!["songs", "artists", "albums"].includes(data.chartId)) throw new Error("Historical chart unavailable");
+
+    const version = await getSecondaryVersion(data.chartId);
+    return cached(`historical-weekly:${data.chartId}:${version}`, async () => {
+      const raw = await loadSecondaryFromDB(data.chartId, version);
+      if (!raw) throw new Error("Historical chart data unavailable");
+
+      const entriesByDate: Record<string, ChartEntry[]> = {};
+      for (const [date, entries] of Object.entries(raw)) {
+        entriesByDate[date] = entries.map((entry) => ({ ...entry })).sort((a, b) => a.position - b.position);
+      }
+
+      const dates = Object.keys(entriesByDate).sort();
+      const runningState = new Map<string, { weeks: number; peak: number; weeksAt1: number }>();
+      const prevDatePositions = new Map<string, number>();
+
+      for (const date of dates) {
+        for (const entry of entriesByDate[date]) {
+          const key = `${entry.name.toLowerCase()}|${entry.artist.toLowerCase()}`;
+          const state = runningState.get(key) ?? { weeks: 0, peak: Infinity, weeksAt1: 0 };
+
+          state.weeks++;
+          state.peak = Math.min(state.peak, entry.position);
+          if (entry.position === 1) state.weeksAt1++;
+
+          entry.lastWeek = prevDatePositions.has(key) ? String(prevDatePositions.get(key)!) : undefined;
+          entry.weeks = state.weeks;
+          entry.peak = state.peak;
+          entry.weeksAt1 = state.weeksAt1 > 0 ? state.weeksAt1 : undefined;
+          runningState.set(key, state);
+        }
+
+        prevDatePositions.clear();
+        for (const entry of entriesByDate[date]) {
+          prevDatePositions.set(`${entry.name.toLowerCase()}|${entry.artist.toLowerCase()}`, entry.position);
+        }
+      }
+
+      computeDiffs(dates, entriesByDate);
+      const cfg = chartsConfig[data.chartId];
+      return { chartId: data.chartId, title: cfg.title, kind: cfg.kind, dates, entriesByDate };
+    });
+  });
+
 export const getWeeklyChart = createServerFn({ method: "GET" })
   .inputValidator((d: { chartId: string }) => d)
   .handler(async ({ data }) => {
