@@ -21,10 +21,6 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      onTouchEnd={(event) => {
-        event.preventDefault();
-        toggle();
-      }}
       className="relative z-[120] pointer-events-auto touch-manipulation select-none w-11 h-11 flex items-center justify-center rounded-none border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] active:scale-95 transition-all cursor-pointer shrink-0 [-webkit-tap-highlight-color:transparent]"
       aria-label="Toggle theme"
     >
