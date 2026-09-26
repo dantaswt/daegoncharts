@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getWeeklyChart } from "@/lib/charts.functions";
+import { getHistoricalWeeklyChart, getWeeklyChart } from "@/lib/charts.functions";
 import { chartsConfig, weeklyChartIds, slugifyArtist } from "@/lib/charts-config";
 import { ChartTypeNav, WeekNavigator } from "@/components/chart-nav";
 import { ChartRow } from "@/components/chart-row";
@@ -58,7 +58,19 @@ function ChartPageSkeleton() {
 export const Route = createFileRoute("/chart/$chartId/$date")({
   loader: async ({ params }) => {
     if (!weeklyChartIds.includes(params.chartId)) throw notFound();
-    const data = await getWeeklyChart({ data: { chartId: params.chartId } });
+    const useHistoricalOnly =
+      ["songs", "artists", "albums"].includes(params.chartId) &&
+      params.date < "2017-06-24";
+
+    const data = useHistoricalOnly
+      ? await getHistoricalWeeklyChart({ data: { chartId: params.chartId } })
+      : await getWeeklyChart({ data: { chartId: params.chartId } });
+
+    // Let the last historical week navigate into the first primary-sheet week
+    // without forcing historical pages to download the large 2017+ CSV.
+    if (useHistoricalOnly && !data.dates.includes("2017-06-24")) {
+      data.dates = [...data.dates, "2017-06-24"].sort();
+    }
     // normalize incoming date to the Saturday of that week (charts publish on Saturdays)
     function toSaturdayIso(dStr: string) {
       try {
