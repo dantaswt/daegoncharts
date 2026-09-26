@@ -12,11 +12,31 @@ function computeChartPoints(position: number, chartId: string): number {
 }
 
 // ─── DB Layer: reads secondary sheet data (2000-2017) from Supabase ───
-// IMPORTANT: do not persist this historical dataset in process memory.
-// Vercel may keep multiple warm instances alive at once; a permanent in-memory
-// cache can make different requests serve different historical chart versions
-// after chart_data is replaced in Supabase.
-async function loadSecondaryFromDB(chartId: string): Promise<Record<string, ChartEntry[]> | null> {
+// Cache is versioned by chart_data.synced_at so warm Vercel instances stay fast
+// without serving stale historical data after a Supabase replacement.
+const secondaryDbCache = new Map<string, { version: string; data: Record<string, ChartEntry[]> | null }>();
+
+async function getSecondaryVersion(chartId: string): Promise<string> {
+  try {
+    const sb = getSupabase();
+    const { data, error } = await sb
+      .from("chart_data")
+      .select("synced_at")
+      .like("chart_id", `${chartId}_%`)
+      .order("synced_at", { ascending: false })
+      .limit(1);
+    if (error) return "unknown";
+    return data?.[0]?.synced_at ?? "none";
+  } catch {
+    return "unknown";
+  }
+}
+
+async function loadSecondaryFromDB(chartId: string, knownVersion?: string): Promise<Record<string, ChartEntry[]> | null> {
+  const version = knownVersion ?? await getSecondaryVersion(chartId);
+  const hit = secondaryDbCache.get(chartId);
+  if (hit && hit.version === version) return hit.data;
+
   try {
     const sb = getSupabase();
     const BATCH = 1000;
@@ -53,8 +73,12 @@ async function loadSecondaryFromDB(chartId: string): Promise<Record<string, Char
         }
       }
     }
-    return Object.keys(merged).length > 0 ? merged : null;
-  } catch { return null; }
+    const result = Object.keys(merged).length > 0 ? merged : null;
+    secondaryDbCache.set(chartId, { version, data: result });
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 export interface ChartEntry {
@@ -778,12 +802,12 @@ export const getWeeklyChart = createServerFn({ method: "GET" })
   .inputValidator((d: { chartId: string }) => d)
   .handler(async ({ data }) => {
     if (!weeklyChartIds.includes(data.chartId)) throw new Error("Unknown chart");
-    // The three main charts merge live historical data from Supabase.
-    // Do not cache the assembled chart in process memory: otherwise a warm
-    // Vercel instance can keep serving stale 2000-2017 data after a DB update.
+
     if (chartsConfig[data.chartId]?.secondaryUrl) {
-      return loadWeekly(data.chartId);
+      const version = await getSecondaryVersion(data.chartId);
+      return cached(`weekly:${data.chartId}:${version}`, () => loadWeekly(data.chartId));
     }
+
     return cached(`weekly:${data.chartId}`, () => loadWeekly(data.chartId));
   });
 
