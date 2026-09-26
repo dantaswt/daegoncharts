@@ -54,12 +54,16 @@ export function AudioPlayerBar() {
       return;
     }
 
+    // Set a safe mobile fallback immediately so fixed controls never render
+    // behind the player before ResizeObserver measures the final bar height.
+    root.style.setProperty("--audio-player-offset", "96px");
+
     const updateOffset = () => {
       const height = playerBarRef.current?.getBoundingClientRect().height ?? 0;
-      root.style.setProperty("--audio-player-offset", `${Math.ceil(height)}px`);
+      root.style.setProperty("--audio-player-offset", `${Math.max(96, Math.ceil(height))}px`);
     };
 
-    updateOffset();
+    requestAnimationFrame(updateOffset);
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateOffset) : null;
     if (playerBarRef.current) observer?.observe(playerBarRef.current);
     window.addEventListener("resize", updateOffset);
