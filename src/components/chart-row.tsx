@@ -639,14 +639,14 @@ export function ChartRow({ entry, kind, chartId, date, chartDates, chartEntriesB
             )}
 
             {/* LW / Peak / Weeks — inline below artist */}
-            <div className="flex items-center gap-2 text-[10px] text-[var(--muted-foreground)] leading-tight flex-wrap mt-0.5">
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)] leading-tight flex-nowrap whitespace-nowrap mt-0.5 min-w-0">
               {showDiff && (
-                <span>LW {entry.lastWeek !== undefined && String(entry.lastWeek).trim() !== "" ? (entry.lastWeek === "0" || entry.lastWeek === 0 ? "-" : String(entry.lastWeek)) : "-"}</span>
+                <span className="shrink-0">LW {entry.lastWeek !== undefined && String(entry.lastWeek).trim() !== "" ? (entry.lastWeek === "0" || entry.lastWeek === 0 ? "-" : String(entry.lastWeek)) : "-"}</span>
               )}
-              <span className="text-[var(--border)]">·</span>
-              <span>PEAK {entry.peak > 0 ? entry.peak : "-"}</span>
-              <span className="text-[var(--border)]">·</span>
-              <span>WEEKS {entry.weeks > 0 ? String(entry.weeks) : "-"}</span>
+              <span className="text-[var(--border)] shrink-0">·</span>
+              <span className="shrink-0">PEAK {entry.peak > 0 ? entry.peak : "-"}</span>
+              <span className="text-[var(--border)] shrink-0">·</span>
+              <span className="shrink-0">WEEKS {entry.weeks > 0 ? String(entry.weeks) : "-"}</span>
             </div>
           </div>
 
