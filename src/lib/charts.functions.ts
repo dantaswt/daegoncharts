@@ -12,11 +12,19 @@ function computeChartPoints(position: number, chartId: string): number {
 }
 
 // ─── DB Layer: reads secondary sheet data (2000-2017) from Supabase ───
-// Cache is versioned by chart_data.synced_at so warm Vercel instances stay fast
-// without serving stale historical data after a Supabase replacement.
+// Cache is versioned by chart_data.synced_at. Version checks are short-lived so
+// DB replacements propagate quickly, while stale data remains available if a
+// serverless cold start hits a transient Supabase timeout.
 const secondaryDbCache = new Map<string, { version: string; data: Record<string, ChartEntry[]> | null }>();
+const secondaryVersionCache = new Map<string, { version: string; at: number }>();
+const SECONDARY_VERSION_TTL = 60 * 1000;
 
 async function getSecondaryVersion(chartId: string): Promise<string> {
+  const cachedVersion = secondaryVersionCache.get(chartId);
+  if (cachedVersion && Date.now() - cachedVersion.at < SECONDARY_VERSION_TTL) {
+    return cachedVersion.version;
+  }
+
   try {
     const sb = getSupabase();
     const { data, error } = await sb
@@ -25,60 +33,75 @@ async function getSecondaryVersion(chartId: string): Promise<string> {
       .like("chart_id", `${chartId}_%`)
       .order("synced_at", { ascending: false })
       .limit(1);
-    if (error) return "unknown";
-    return data?.[0]?.synced_at ?? "none";
+    if (error) throw error;
+    const version = data?.[0]?.synced_at ?? "none";
+    secondaryVersionCache.set(chartId, { version, at: Date.now() });
+    return version;
   } catch {
-    return "unknown";
+    // Never invalidate a known-good historical cache just because the version
+    // probe failed. This is especially important on Vercel cold starts.
+    return cachedVersion?.version ?? secondaryDbCache.get(chartId)?.version ?? "unknown";
   }
 }
 
 async function loadSecondaryFromDB(chartId: string, knownVersion?: string): Promise<Record<string, ChartEntry[]> | null> {
   const version = knownVersion ?? await getSecondaryVersion(chartId);
   const hit = secondaryDbCache.get(chartId);
-  if (hit && hit.version === version) return hit.data;
+  if (hit && hit.version === version && hit.data) return hit.data;
 
-  try {
-    const sb = getSupabase();
-    const BATCH = 1000;
-    const allRows: { data: WeeklyChartData }[] = [];
-    let offset = 0;
-    while (true) {
-      const { data, error } = await sb.from("chart_data").select("data").like("chart_id", `${chartId}_%`).order("chart_id").range(offset, offset + BATCH - 1);
-      if (error || !data || data.length === 0) break;
-      allRows.push(...data);
-      if (data.length < BATCH) break;
-      offset += BATCH;
-    }
-    if (allRows.length === 0) return null;
-    const merged: Record<string, ChartEntry[]> = {};
-    for (const row of allRows) {
-      const chunk = row.data as WeeklyChartData;
-      if (chunk.entriesByDate) {
-        for (const [d, entries] of Object.entries(chunk.entriesByDate)) {
-          for (const entry of entries) {
-            if (chunk.chartId === "songs") {
-              entry.points = String(computeChartPoints(entry.position, "songs"));
-            } else {
-              if (entry.units == null || entry.units === "") {
-                entry.units = String(computeChartPoints(entry.position, chunk.chartId));
-              } else {
-                entry.units = String(entry.units);
+  // Retry once on transient serverless/Supabase failures. If both attempts fail,
+  // keep serving the last known-good in-memory snapshot instead of breaking the page.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const sb = getSupabase();
+      const BATCH = 1000;
+      const allRows: { data: WeeklyChartData }[] = [];
+      let offset = 0;
+      while (true) {
+        const { data, error } = await sb.from("chart_data").select("data").like("chart_id", `${chartId}_%`).order("chart_id").range(offset, offset + BATCH - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allRows.push(...data);
+        if (data.length < BATCH) break;
+        offset += BATCH;
+      }
+
+      if (allRows.length > 0) {
+        const merged: Record<string, ChartEntry[]> = {};
+        for (const row of allRows) {
+          const chunk = row.data as WeeklyChartData;
+          if (chunk.entriesByDate) {
+            for (const [d, entries] of Object.entries(chunk.entriesByDate)) {
+              for (const entry of entries) {
+                if (chunk.chartId === "songs") {
+                  entry.points = String(computeChartPoints(entry.position, "songs"));
+                } else {
+                  if (entry.units == null || entry.units === "") {
+                    entry.units = String(computeChartPoints(entry.position, chunk.chartId));
+                  } else {
+                    entry.units = String(entry.units);
+                  }
+                  if (entry.totalUnits != null && entry.totalUnits !== "") {
+                    entry.totalUnits = String(entry.totalUnits);
+                  }
+                }
               }
-              if (entry.totalUnits != null && entry.totalUnits !== "") {
-                entry.totalUnits = String(entry.totalUnits);
-              }
+              (merged[d] ||= []).push(...entries);
             }
           }
-          (merged[d] ||= []).push(...entries);
+        }
+        const result = Object.keys(merged).length > 0 ? merged : null;
+        if (result) {
+          secondaryDbCache.set(chartId, { version, data: result });
+          return result;
         }
       }
+    } catch {
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    const result = Object.keys(merged).length > 0 ? merged : null;
-    secondaryDbCache.set(chartId, { version, data: result });
-    return result;
-  } catch {
-    return null;
   }
+
+  return hit?.data ?? null;
 }
 
 export interface ChartEntry {
