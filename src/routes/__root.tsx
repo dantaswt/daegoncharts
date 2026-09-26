@@ -201,11 +201,11 @@ function RootShell({ children }: { children: ReactNode }) {
 function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     }
@@ -226,7 +226,7 @@ function SiteHeader() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
+    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#0f0f0f] to-[#161616] border-b border-[#2a2a2a]">
       {/* Desktop header */}
       <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto px-4 py-3">
         <Link to="/" className="text-xl font-extrabold text-[#f5f5f5] lowercase tracking-wide shrink-0 mr-4">
@@ -252,26 +252,30 @@ function SiteHeader() {
 
       {/* Mobile header — title truly centered */}
       <div className="lg:hidden relative flex items-center justify-between px-4 py-3">
-        <div className="w-9 flex items-center justify-center flex-shrink-0">
+        <div className="relative z-20 w-11 h-11 flex items-center justify-center flex-shrink-0">
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-[#f5f5f5] text-2xl p-1 cursor-pointer"
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="w-11 h-11 flex items-center justify-center text-[#f5f5f5] text-2xl cursor-pointer touch-manipulation"
             aria-label="Menu"
           >
             <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
           </button>
         </div>
-        <Link to="/" className="absolute left-0 right-0 text-center text-lg font-extrabold text-[#f5f5f5] lowercase tracking-wide pointer-events-auto">
+        <Link
+          to="/"
+          className="absolute left-16 right-16 z-10 text-center text-lg font-extrabold text-[#f5f5f5] lowercase tracking-wide"
+        >
           daegon charts
         </Link>
-        <div className="w-9 flex items-center justify-center flex-shrink-0">
+        <div className="relative z-20 w-11 h-11 flex items-center justify-center flex-shrink-0 touch-manipulation">
           <ThemeToggle />
         </div>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div ref={menuRef} className="lg:hidden bg-[#0f0f0f] border-t border-[#2a2a2a]">
+        <div className="lg:hidden bg-[#0f0f0f] border-t border-[#2a2a2a]">
           <div className="px-4 py-4 space-y-3">
             {navItems.map((item) => (
               <Link
