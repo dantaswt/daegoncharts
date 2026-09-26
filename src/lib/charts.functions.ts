@@ -49,59 +49,64 @@ async function loadSecondaryFromDB(chartId: string, knownVersion?: string): Prom
   const hit = secondaryDbCache.get(chartId);
   if (hit && hit.version === version && hit.data) return hit.data;
 
-  // Retry once on transient serverless/Supabase failures. If both attempts fail,
-  // keep serving the last known-good in-memory snapshot instead of breaking the page.
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // Only a handful of rows exist per historical chart (songs_0, songs_200, ...).
+  // Fetch them in one request instead of paging. On serverless cold starts this
+  // removes several unnecessary network round trips and greatly reduces the
+  // chance of showing "Historical chart data unavailable".
+  for (let attempt = 0; attempt < 4; attempt++) {
     try {
       const sb = getSupabase();
-      const BATCH = 1000;
-      const allRows: { data: WeeklyChartData }[] = [];
-      let offset = 0;
-      while (true) {
-        const { data, error } = await sb.from("chart_data").select("data").like("chart_id", `${chartId}_%`).order("chart_id").range(offset, offset + BATCH - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allRows.push(...data);
-        if (data.length < BATCH) break;
-        offset += BATCH;
-      }
+      const { data, error } = await sb
+        .from("chart_data")
+        .select("data")
+        .like("chart_id", `${chartId}_%`)
+        .order("chart_id");
 
-      if (allRows.length > 0) {
-        const merged: Record<string, ChartEntry[]> = {};
-        for (const row of allRows) {
-          const chunk = row.data as WeeklyChartData;
-          if (chunk.entriesByDate) {
-            for (const [d, entries] of Object.entries(chunk.entriesByDate)) {
-              for (const entry of entries) {
-                if (chunk.chartId === "songs") {
-                  entry.points = String(computeChartPoints(entry.position, "songs"));
-                } else {
-                  if (entry.units == null || entry.units === "") {
-                    entry.units = String(computeChartPoints(entry.position, chunk.chartId));
-                  } else {
-                    entry.units = String(entry.units);
-                  }
-                  if (entry.totalUnits != null && entry.totalUnits !== "") {
-                    entry.totalUnits = String(entry.totalUnits);
-                  }
-                }
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("No historical chart rows returned");
+
+      const merged: Record<string, ChartEntry[]> = {};
+      for (const row of data as { data: WeeklyChartData }[]) {
+        const chunk = row.data as WeeklyChartData;
+        if (!chunk.entriesByDate) continue;
+
+        for (const [d, entries] of Object.entries(chunk.entriesByDate)) {
+          for (const entry of entries) {
+            if (chunk.chartId === "songs") {
+              entry.points = String(computeChartPoints(entry.position, "songs"));
+            } else {
+              if (entry.units == null || entry.units === "") {
+                entry.units = String(computeChartPoints(entry.position, chunk.chartId));
+              } else {
+                entry.units = String(entry.units);
               }
-              (merged[d] ||= []).push(...entries);
+              if (entry.totalUnits != null && entry.totalUnits !== "") {
+                entry.totalUnits = String(entry.totalUnits);
+              }
             }
           }
-        }
-        const result = Object.keys(merged).length > 0 ? merged : null;
-        if (result) {
-          secondaryDbCache.set(chartId, { version, data: result });
-          return result;
+          (merged[d] ||= []).push(...entries);
         }
       }
+
+      if (Object.keys(merged).length === 0) {
+        throw new Error("Historical chart rows contained no dated entries");
+      }
+
+      secondaryDbCache.set(chartId, { version, data: merged });
+      return merged;
     } catch {
-      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 250));
+      // Exponential-ish backoff: 300ms, 700ms, 1500ms before the next try.
+      if (attempt < 3) {
+        const waits = [300, 700, 1500];
+        await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
+      }
     }
   }
 
-  return hit?.data ?? null;
+  // If this warm instance has any previously successful snapshot, serve it
+  // rather than breaking the page. Version checks still refresh every minute.
+  return hit?.data ?? secondaryDbCache.get(chartId)?.data ?? null;
 }
 
 export interface ChartEntry {
