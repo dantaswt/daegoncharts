@@ -56,11 +56,11 @@ export function AudioPlayerBar() {
 
     // Set a safe mobile fallback immediately so fixed controls never render
     // behind the player before ResizeObserver measures the final bar height.
-    root.style.setProperty("--audio-player-offset", "96px");
+    root.style.setProperty("--audio-player-offset", "112px");
 
     const updateOffset = () => {
       const height = playerBarRef.current?.getBoundingClientRect().height ?? 0;
-      root.style.setProperty("--audio-player-offset", `${Math.max(96, Math.ceil(height))}px`);
+      root.style.setProperty("--audio-player-offset", `${Math.max(112, Math.ceil(height))}px`);
     };
 
     requestAnimationFrame(updateOffset);
