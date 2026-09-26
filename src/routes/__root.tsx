@@ -141,7 +141,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#0f0f0f" },
+      { name: "application-name", content: "Daegon Charts" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Daegon Charts" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { title: "daegon charts — weekly music charts" },
       { name: "description", content: "Weekly music charts, year-end rankings and greatest of all time lists based on dantaswt's Last.fm data. Each week gets its own shareable page." },
       { property: "og:title", content: "daegon charts — weekly music charts" },
@@ -155,7 +161,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
       links: [
         { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: "https://i.imgur.com/jaBZ19n.png", type: "image/png" },
+        { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+        { rel: "manifest", href: "/manifest.webmanifest" },
+        { rel: "apple-touch-icon", href: "https://i.imgur.com/jaBZ19n.png" },
         { rel: "stylesheet", href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
