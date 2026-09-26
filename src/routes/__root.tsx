@@ -202,6 +202,7 @@ function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
+  const toggleMobileMenu = useCallback(() => setMenuOpen((open) => !open), []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -255,8 +256,12 @@ function SiteHeader() {
         <div className="relative z-[120] w-11 h-11 flex items-center justify-center flex-shrink-0 pointer-events-auto">
           <button
             type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            className="relative z-[121] pointer-events-auto select-none w-11 h-11 flex items-center justify-center text-[#f5f5f5] text-2xl cursor-pointer touch-manipulation active:scale-95 transition-transform"
+            onClick={toggleMobileMenu}
+            onTouchEnd={(event) => {
+              event.preventDefault();
+              toggleMobileMenu();
+            }}
+            className="relative z-[121] pointer-events-auto select-none w-11 h-11 flex items-center justify-center text-[#f5f5f5] text-2xl cursor-pointer touch-manipulation active:scale-95 transition-transform [-webkit-tap-highlight-color:transparent]"
             aria-label="Menu"
           >
             <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`} />
